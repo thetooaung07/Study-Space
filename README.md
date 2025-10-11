@@ -168,8 +168,6 @@ _Note: This creates a **secondary Many-to-Many** relationship between User and S
 
 ## 2. Complex Query Description
 
-### Query Purpose
-
 Identify the most active and productive study groups based on their members' collective study performance over a specified time period.
 
 ### Query Description (Natural Language)
@@ -201,3 +199,27 @@ Identify the most active and productive study groups based on their members' col
 
 **Business Value:**
 This query helps identify highly engaged study communities, which can be featured on leaderboards, recommended to new users, or rewarded with achievements. It demonstrates complex aggregation across multiple entities with filtering and grouping.
+
+## 3. Complex Business Logic Operation
+
+**Operation Name:** `EndStudySessionAndUpdateStats`
+
+**Description (in words):**
+When a user ends a study session, the system must:
+
+1. Calculate the session duration (`endTime - startTime`).
+2. Update the `durationMinutes` in the `study_sessions` table.
+3. For each participant:
+
+    - Calculate their individual participation time (`leftAt - joinedAt`).
+    - Update their cumulative `totalStudyMinutes` in the `users` table.
+
+4. If the session belongs to a group:
+
+    - Update the group’s total activity stats (e.g., `group_study_minutes` cache or leaderboard entry).
+
+5. Mark the session `status = COMPLETED`.
+6. Create an `Activity` record with type `MILESTONE_REACHED`.
+
+**Business Value:**
+Ensures consistent user and group statistics, keeps leaderboards accurate, and automates progress tracking after each session.
