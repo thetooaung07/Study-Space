@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Zap, Users, TrendingUp } from "lucide-react"
+import { api } from "@/lib/api"
 import { Card } from "@/components/ui/card"
 import { LiveActivityFeed } from "@/components/live-activity-feed"
 import { UserStatus } from "@/components/user-status"
@@ -9,6 +10,27 @@ import { TrendingContent } from "@/components/trending-content"
 
 export function TrendingDashboard() {
   const [filter, setFilter] = useState("all")
+  const [analytics, setAnalytics] = useState({
+    activeUsersNow: 0,
+    hotSessionsCount: 0,
+    newGroupsToday: 0,
+    totalStudyMinutes: 0
+  })
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const data = await api.get<any>('/analytics/overview')
+        setAnalytics(data)
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error)
+      }
+    }
+    fetchAnalytics()
+    // Poll every 30 seconds
+    const interval = setInterval(fetchAnalytics, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="p-6 space-y-6">
@@ -27,7 +49,7 @@ export function TrendingDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">Active Now</p>
           </div>
-          <p className="text-2xl font-bold text-foreground">234</p>
+          <p className="text-2xl font-bold text-foreground">{analytics.activeUsersNow}</p>
           <p className="text-xs text-muted-foreground mt-1">students studying</p>
         </Card>
 
@@ -38,7 +60,7 @@ export function TrendingDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">Hot Sessions</p>
           </div>
-          <p className="text-2xl font-bold text-foreground">12</p>
+          <p className="text-2xl font-bold text-foreground">{analytics.hotSessionsCount}</p>
           <p className="text-xs text-accent mt-1">trending right now</p>
         </Card>
 
@@ -49,7 +71,7 @@ export function TrendingDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">New Groups</p>
           </div>
-          <p className="text-2xl font-bold text-foreground">5</p>
+          <p className="text-2xl font-bold text-foreground">{analytics.newGroupsToday}</p>
           <p className="text-xs text-muted-foreground mt-1">created today</p>
         </Card>
 
@@ -60,8 +82,8 @@ export function TrendingDashboard() {
             </div>
             <p className="text-sm text-muted-foreground">Total Study Time</p>
           </div>
-          <p className="text-2xl font-bold text-foreground">482h</p>
-          <p className="text-xs text-accent mt-1">+45h this week</p>
+          <p className="text-2xl font-bold text-foreground">{Math.floor(analytics.totalStudyMinutes / 60)}h</p>
+          <p className="text-xs text-accent mt-1">aggregate total</p>
         </Card>
       </div>
 

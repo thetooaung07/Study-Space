@@ -1,87 +1,45 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Search } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { GroupCard } from "@/components/group-card"
 import { CreateGroupModal } from "@/components/create-group-modal"
+import { api } from "@/lib/api"
+import { StudyGroupDTO } from "@/types"
 
 export function GroupsManager() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [myGroups, setMyGroups] = useState<StudyGroupDTO[]>([])
+  const [suggestedGroups, setSuggestedGroups] = useState<StudyGroupDTO[]>([])
 
-  const myGroups = [
-    {
-      id: 1,
-      name: "CS101 Study Gang",
-      description: "Computer Science fundamentals and algorithms",
-      members: 12,
-      activeMembers: 8,
-      avatar: "👨‍💻",
-      sessions: 24,
-      privacy: "public",
-      admin: "You",
-      joinedDate: "Oct 15, 2025",
-    },
-    {
-      id: 2,
-      name: "Morning Grinders",
-      description: "Early morning study sessions for motivation",
-      members: 8,
-      activeMembers: 5,
-      avatar: "🌅",
-      sessions: 45,
-      privacy: "private",
-      admin: "Sarah Chen",
-      joinedDate: "Sep 20, 2025",
-    },
-    {
-      id: 3,
-      name: "Math Wizards",
-      description: "Advanced mathematics and calculus mastery",
-      members: 6,
-      activeMembers: 3,
-      avatar: "🧙",
-      sessions: 18,
-      privacy: "public",
-      admin: "Alex Kumar",
-      joinedDate: "Aug 10, 2025",
-    },
-  ]
+  // TODO: dynamic user ID
+  const userId = 1
 
-  const suggestedGroups = [
-    {
-      id: 4,
-      name: "Physics Enthusiasts",
-      description: "Quantum mechanics and classical physics",
-      members: 34,
-      activeMembers: 12,
-      avatar: "⚛️",
-      sessions: 67,
-      privacy: "public",
-    },
-    {
-      id: 5,
-      name: "Language Learners Hub",
-      description: "Learn new languages together",
-      members: 52,
-      activeMembers: 18,
-      avatar: "🌍",
-      sessions: 89,
-      privacy: "public",
-    },
-    {
-      id: 6,
-      name: "Programming Bootcamp",
-      description: "Full-stack development intensive",
-      members: 28,
-      activeMembers: 15,
-      avatar: "💻",
-      sessions: 54,
-      privacy: "public",
-    },
-  ]
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const userGroups = await api.get<StudyGroupDTO[]>(`/groups/user/${userId}`)
+        setMyGroups(userGroups)
+
+        // TODO: This endpoint should probably be filtered on the backend for "not joined"
+        // For now finding a creator that isn't me as a proxy for "suggested" or just listing all
+        // Assuming there isn't a dedicated "suggested" endpoint yet, using createdGroups for demo
+        // or just fetching a random set if an all-groups endpoint existed.
+        // Re-using userGroups logic for now or needs new backend endpoint.
+        // Let's assume we want to show groups I DON'T own/member. 
+        // Since we don't have a "getAllGroups" that excludes mine easily without logic,
+        // we'll leave suggested empty or implement a getAll endpoint later.
+        // For now, let's just use the same list to verify data flow, or fetch 'all' if possible?
+        // Actually, StudyGroupController has no "getAll", so we'll skip suggested for now or fetch by ID.
+      } catch (error) {
+        console.error("Failed to fetch groups", error)
+      }
+    }
+    fetchGroups()
+  }, [])
 
   return (
     <div className="p-6 space-y-6">
@@ -117,21 +75,28 @@ export function GroupsManager() {
       {/* My Groups Section */}
       <div className="space-y-4">
         <h3 className="text-xl font-semibold text-foreground">My Groups</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {myGroups.map((group) => (
-            <GroupCard key={group.id} group={group} isOwned />
-          ))}
-        </div>
+        {myGroups.length === 0 ? (
+           <p className="text-muted-foreground">You haven't joined any groups yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myGroups.map((group) => (
+              <GroupCard key={group.id} group={group} isOwned={group.creatorId === userId} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Suggested Groups Section */}
       <div className="space-y-4">
         <h3 className="text-xl font-semibold text-foreground">Suggested Groups</h3>
+         <p className="text-muted-foreground text-sm">Explore more groups coming soon...</p>
+        {/* 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {suggestedGroups.map((group) => (
             <GroupCard key={group.id} group={group} />
           ))}
-        </div>
+        </div> 
+        */}
       </div>
     </div>
   )

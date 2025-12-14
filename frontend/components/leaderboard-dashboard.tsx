@@ -3,20 +3,33 @@
 import { useState } from "react"
 import { Trophy, TrendingUp, Award, Target } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GlobalLeaderboard } from "@/components/global-leaderboard"
 import { GroupLeaderboard } from "@/components/group-leaderboard"
-import { Analytics } from "@/components/analytics"
 
 export function LeaderboardDashboard() {
   const [activeTab, setActiveTab] = useState("global")
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-foreground">Leaderboards & Analytics</h2>
-        <p className="text-muted-foreground mt-1">Track your progress and compete with the community</p>
+      {/* Header with Top-Right Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Leaderboards</h2>
+          <p className="text-muted-foreground mt-1">Track your progress and compete</p>
+        </div>
+
+        {/* Tab Switcher (Moved here) */}
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="w-full md:w-[300px]"
+        >
+          <TabsList className="grid w-full grid-cols-2 bg-muted/60 border border-border/50">
+            <TabsTrigger value="global" className="transition-all">Global</TabsTrigger>
+            <TabsTrigger value="groups" className="transition-all">Groups</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Top Stats */}
@@ -58,23 +71,17 @@ export function LeaderboardDashboard() {
         </Card>
       </div>
 
-      {/* Tab Navigation */}
-      <Card className="p-4 flex gap-2 border-b border-border bg-card">
-        <Button variant={activeTab === "global" ? "default" : "outline"} onClick={() => setActiveTab("global")}>
-          Global Leaderboard
-        </Button>
-        <Button variant={activeTab === "groups" ? "default" : "outline"} onClick={() => setActiveTab("groups")}>
-          Group Leaderboards
-        </Button>
-        <Button variant={activeTab === "analytics" ? "default" : "outline"} onClick={() => setActiveTab("analytics")}>
-          Analytics
-        </Button>
-      </Card>
-
-      {/* Tab Content */}
-      {activeTab === "global" && <GlobalLeaderboard />}
-      {activeTab === "groups" && <GroupLeaderboard />}
-      {activeTab === "analytics" && <Analytics />}
+      {/* Tab Content Area 
+         min-h-[500px]: prevents vertical jumping
+      */}
+      <div className="min-h-[500px] w-full mt-2">
+        <div 
+          key={activeTab} 
+          className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-in-out"
+        >
+          {activeTab === "global" ? <GlobalLeaderboard /> : <GroupLeaderboard />}
+        </div>
+      </div>
     </div>
   )
 }
