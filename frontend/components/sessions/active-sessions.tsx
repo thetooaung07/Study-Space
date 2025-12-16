@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { StudySessionDTO } from "@/types"
-import { JoinSessionModal } from "@/components/join-session-modal"
+import { JoinSessionModal } from "@/components/sessions/join-session-modal"
 import { useAuth } from "@/context/auth-context"
 
 export function ActiveSessions() {

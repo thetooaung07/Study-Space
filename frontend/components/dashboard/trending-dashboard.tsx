@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { Zap, Users, TrendingUp } from "lucide-react"
 import { api } from "@/lib/api"
 import { Card } from "@/components/ui/card"
-import { LiveActivityFeed } from "@/components/live-activity-feed"
-import { UserStatus } from "@/components/user-status"
-import { TrendingContent } from "@/components/trending-content"
+import { LiveActivityFeed } from "@/components/dashboard/live-activity-feed"
+import { UserStatus } from "@/components/common/user-status"
+import { TrendingContent } from "@/components/dashboard/trending-content"
 
 export function TrendingDashboard() {
   const [filter, setFilter] = useState("all")

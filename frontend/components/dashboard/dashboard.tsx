@@ -1,16 +1,18 @@
 "use client"
 
 import { Users, Clock, Trophy, Zap, CloudCog } from "lucide-react"
-import { useAuth } from "@/context/auth-context"
 import { StatCard } from "@/components/common/stat-card"
+import { ActiveSessions } from "@/components/sessions/active-sessions"
 import { MyGroups } from "@/components/groups/my-groups"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
-import { ActiveSessions } from "@/components/sessions/active-sessions"
+import { useAuth } from "@/context/auth-context"
 
 export function Dashboard() {
 
   const {user } = useAuth() 
-  
+
+  console.log(user);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}

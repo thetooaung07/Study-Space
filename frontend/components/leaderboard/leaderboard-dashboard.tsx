@@ -4,8 +4,8 @@ import { useState } from "react"
 import { Trophy, TrendingUp, Award, Target } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { GlobalLeaderboard } from "@/components/global-leaderboard"
-import { GroupLeaderboard } from "@/components/group-leaderboard"
+import { GlobalLeaderboard } from "@/components/leaderboard/global-leaderboard"
+import { GroupLeaderboard } from "@/components/leaderboard/group-leaderboard"
 
 export function LeaderboardDashboard() {
   const [activeTab, setActiveTab] = useState("global")

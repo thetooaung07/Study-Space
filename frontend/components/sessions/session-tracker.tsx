@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SessionForm } from "@/components/session-form"
-import { SessionHistory } from "@/components/session-history"
+import { SessionForm } from "@/components/sessions/session-form"
+import { SessionHistory } from "@/components/sessions/session-history"
 import { cn } from "@/lib/utils"
 
 const PRESETS = [15, 25, 45, 60]

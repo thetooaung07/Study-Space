@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { GroupsManager } from "@/components/groups-manager"
+import { Header } from "@/components/common/header"
+import { Sidebar } from "@/components/common/sidebar"
+import { GroupsManager } from "@/components/groups/groups-manager"
 
 export default function GroupsPage() {
   return (

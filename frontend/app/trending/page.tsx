@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { TrendingDashboard } from "@/components/trending-dashboard"
+import { Header } from "@/components/common/header"
+import { Sidebar } from "@/components/common/sidebar"
+import { TrendingDashboard } from "@/components/dashboard/trending-dashboard"
 
 export default function TrendingPage() {
   return (

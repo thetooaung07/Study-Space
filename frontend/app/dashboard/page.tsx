@@ -1,6 +1,6 @@
-import { Header } from "@/components/header";
-import { Sidebar } from "@/components/sidebar";
-import { Dashboard } from "@/components/dashboard";
+import { Header } from "@/components/common/header";
+import { Sidebar } from "@/components/common/sidebar";
+import { Dashboard } from "@/components/dashboard/dashboard";
 // import { BentoDashboard } from "@/components/bento-dashboard";
 
 export default function Home() {

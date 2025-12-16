@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trophy, Medal, Crown, Flame, Calendar, Users } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card } from "@/components/ui/card"
+import { Trophy, Medal, Crown, Flame, Calendar, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
+// import { api } from "@/lib/api" // Assuming api client exists, using fetch for now or mock if preferred
 
 // Mock data for initial invalidation issues or fallback
 const MOCK_LEADERBOARD = [
@@ -71,8 +73,8 @@ export function LeaderboardPage() {
         {/* Second Place */}
         <div className="order-2 md:order-1">
           <Card className="p-6 flex flex-col items-center bg-card/50 border-muted relative overflow-hidden">
-             <div className="relative mb-4">
              <div className="absolute top-0 left-0 w-full h-1 bg-gray-300" />
+             <div className="relative mb-4">
                 <Avatar className="h-24 w-24 border-4 border-gray-300">
                   <AvatarImage src={leaderboardData[1]?.avatar} />
                   <AvatarFallback className="text-xl bg-muted">2</AvatarFallback>

@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { LeaderboardDashboard } from "@/components/leaderboard-dashboard"
+import { Header } from "@/components/common/header"
+import { LeaderboardDashboard } from "@/components/leaderboard/leaderboard-dashboard"
+import { Sidebar } from "@/components/common/sidebar"
 
 export default function LeaderboardPage() {
   return (

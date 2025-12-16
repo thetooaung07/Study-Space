@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { SessionTracker } from "@/components/session-tracker"
+import { Header } from "@/components/common/header"
+import { Sidebar } from "@/components/common/sidebar"
+import { SessionTracker } from "@/components/sessions/session-tracker"
 
 export default function SessionsPage() {
   return (

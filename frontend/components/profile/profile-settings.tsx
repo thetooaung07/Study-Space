@@ -3,16 +3,15 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { User, Mail, Lock, Camera, Save, CloudCog, Eye, EyeOff } from "lucide-react"
-import { toast } from "sonner"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
-import { Card } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-
+import { toast } from "sonner"
 
 
 export function ProfileSettings() {

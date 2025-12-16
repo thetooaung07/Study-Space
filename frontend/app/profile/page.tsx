@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { ProfileSettings } from "@/components/profile-settings"
+import { Header } from "@/components/common/header"
+import { Sidebar } from "@/components/common/sidebar"
+import { ProfileSettings } from "@/components/profile/profile-settings"
 
 export default function ProfilePage() {
   return (
