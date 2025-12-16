@@ -1,11 +1,11 @@
 -- Insert Sample Users
 INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, created_at, updated_at)
 VALUES
-('john_doe', 'john.doe@example.com', 'hashed_password_123', 'John Doe', 'https://api.example.com/avatars/john.jpg', 450, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('jane_smith', 'jane.smith@example.com', 'hashed_password_456', 'Jane Smith', 'https://api.example.com/avatars/jane.jpg', 720, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bob_wilson', 'bob.wilson@example.com', 'hashed_password_789', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 300, 'BREAK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('alice_johnson', 'alice.johnson@example.com', 'hashed_password_012', 'Alice Johnson', 'https://api.example.com/avatars/alice.jpg', 600, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('charlie_brown', 'charlie.brown@example.com', 'hashed_password_345', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 900, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', 'https://api.example.com/avatars/john.jpg', 450, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', 'https://api.example.com/avatars/jane.jpg', 720, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 300, 'BREAK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', 'https://api.example.com/avatars/alice.jpg', 600, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 900, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert Sample Study Groups
 INSERT INTO study_groups (name, description, invite_code, is_private, creator_id, created_at, updated_at)

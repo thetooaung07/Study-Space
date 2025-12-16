@@ -40,6 +40,8 @@ export interface StudySessionDTO {
     createdAt: string;
     creatorId: number;
     studyGroupId?: number;
+    participantCount: number;
+    duration: string;
 }
 
 export interface UserDTO {

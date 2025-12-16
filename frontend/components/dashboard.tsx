@@ -1,18 +1,24 @@
 "use client"
 
-import { Users, Clock, Trophy, Zap } from "lucide-react"
+import { Users, Clock, Trophy, Zap, CloudCog } from "lucide-react"
 import { StatCard } from "@/components/stat-card"
 import { ActiveSessions } from "@/components/active-sessions"
 import { MyGroups } from "@/components/my-groups"
 import { ActivityFeed } from "@/components/activity-feed"
+import { useAuth } from "@/context/auth-context"
 
 export function Dashboard() {
+
+  const {user } = useAuth() 
+
+  console.log(user);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Welcome back, Thet</h2>
+          <h2 className="text-3xl font-bold text-foreground">Welcome back, {user ? user.fullName : ""} </h2>
           <p className="text-muted-foreground mt-1">Track your study progress and connect with peers</p>
         </div>
       </div>

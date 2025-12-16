@@ -23,4 +23,6 @@ public class StudySessionDTO {
     private LocalDateTime createdAt;
     private Long creatorId;
     private Long studyGroupId;
+    private Integer participantCount;
+    private String duration;
 }

@@ -8,14 +8,18 @@ import java.time.LocalDateTime;
 @Table(name = "session_participants", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"study_session_id", "user_id"})
 })
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SessionParticipant {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
     
     @Column(nullable = false)

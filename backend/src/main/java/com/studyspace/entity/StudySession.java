@@ -10,14 +10,18 @@ import java.util.Set;
 
 @Entity
 @Table(name = "study_sessions")
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class StudySession {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
     
     @Column(nullable = false)
@@ -57,9 +61,13 @@ public class StudySession {
     private StudyGroup studyGroup;
     
     @OneToMany(mappedBy = "studySession", cascade = CascadeType.ALL)
+    @ToString.Exclude 
+    @Builder.Default
     private Set<SessionParticipant> participants = new HashSet<>();
     
     @OneToMany(mappedBy = "studySession", cascade = CascadeType.ALL)
+    @ToString.Exclude 
+    @Builder.Default
     private Set<Activity> activities = new HashSet<>();
     
     @PrePersist

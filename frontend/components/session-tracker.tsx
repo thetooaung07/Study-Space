@@ -81,7 +81,6 @@ export function SessionTracker() {
     // Calculate total duration for saving
     const duration = mode === "stopwatch" ? elapsedTime : (initialTime - timeLeft)
     
-    console.log("Session Saved:", { mode, durationSeconds: duration })
     
     // Reset states after saving
     if (mode === "stopwatch") {
@@ -130,14 +129,14 @@ export function SessionTracker() {
                     <TabsTrigger 
                         value="stopwatch" 
                         disabled={isSessionActive}
-                        className="transition-all  data-[state=active]:bg-accent data-[state=active]:shadow-sm"
+                        className="transition-all  data-[state=active]:bg-secondary data-[state=active]:shadow-sm"
                     >
                         Stopwatch
                     </TabsTrigger>
                     <TabsTrigger 
                         value="timer" 
                         disabled={isSessionActive}
-                        className="transition-all data-[state=active]:bg-accent data-[state=active]:shadow-sm"
+                        className="transition-all data-[state=active]:bg-secondary data-[state=active]:shadow-sm"
                     >
                         Timer
                     </TabsTrigger>
@@ -181,8 +180,8 @@ export function SessionTracker() {
                                     size="sm"
                                     onClick={() => handlePreset(min)}
                                     className={cn(  
-                                        "not-italic h-8 px-3 text-xs transition-all duration-200 border-accent hover:border-primary/50",
-                                        customMinutes === min.toString() ? "bg-accent text-primary border-accent" : ""
+                                        "not-italic h-8 px-3 text-xs transition-all duration-200 border-secondary hover:border-primary/50",
+                                        customMinutes === min.toString() ? "bg-secondary text-primary border-secondary" : ""
                                     )}
                                 >
                                     {min}m
@@ -285,7 +284,7 @@ export function SessionTracker() {
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Today's Study Time</p>
           <p className="text-2xl font-bold text-foreground mt-2">3h 45m</p>
-          <p className="text-xs text-accent mt-2">+30m from yesterday</p>
+          <p className="text-xs text-secondary mt-2">+30m from yesterday</p>
         </Card>
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Sessions Today</p>
@@ -295,7 +294,7 @@ export function SessionTracker() {
         <Card className="p-4">
           <p className="text-sm text-muted-foreground">Current Streak</p>
           <p className="text-2xl font-bold text-foreground mt-2">12 days</p>
-          <p className="text-xs text-accent mt-2">Keep it going!</p>
+          <p className="text-xs text-secondary mt-2">Keep it going!</p>
         </Card>
       </div>
 

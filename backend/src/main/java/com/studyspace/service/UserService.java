@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class UserService {
     
     private final UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     
     public UserDTO createUser(CreateUserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -29,7 +30,7 @@ public class UserService {
         User user = User.builder()
             .username(request.getUsername())
             .email(request.getEmail())
-            .password(request.getPassword())
+            .password(passwordEncoder.encode(request.getPassword()))
             .fullName(request.getFullName())
             .profilePictureUrl(request.getProfilePictureUrl())
             .totalStudyMinutes(0)
@@ -38,6 +39,47 @@ public class UserService {
         
         User savedUser = userRepository.save(user);
         return convertToDTO(savedUser);
+    }
+    
+    public UserDTO updateUser(Long userId, com.studyspace.dto.UpdateUserRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+            
+        if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
+             if (userRepository.existsByUsername(request.getUsername())) {
+                 throw new RuntimeException("Username already exists");
+             }
+             user.setUsername(request.getUsername());
+        }
+        
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+             if (userRepository.existsByEmail(request.getEmail())) {
+                 throw new RuntimeException("Email already exists");
+             }
+             user.setEmail(request.getEmail());
+        }
+        
+        if (request.getFullName() != null) {
+            user.setFullName(request.getFullName());
+        }
+        
+        if (request.getProfilePictureUrl() != null) {
+            user.setProfilePictureUrl(request.getProfilePictureUrl());
+        }
+        
+        return convertToDTO(userRepository.save(user));
+    }
+    
+    public void changePassword(Long userId, com.studyspace.dto.ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+            
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid current password");
+        }
+        
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
     
     @Transactional(readOnly = true)

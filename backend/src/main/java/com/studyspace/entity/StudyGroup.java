@@ -48,10 +48,12 @@ public class StudyGroup {
     
     @ManyToMany(mappedBy = "groups", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @ToString.Exclude // Prevent infinite loops in logs
+    @Builder.Default
     private Set<User> members = new HashSet<>();
     
     @OneToMany(mappedBy = "studyGroup", cascade = CascadeType.ALL)
     @ToString.Exclude // Prevent infinite loops in logs
+    @Builder.Default
     private Set<StudySession> sessions = new HashSet<>();
     
     @PrePersist

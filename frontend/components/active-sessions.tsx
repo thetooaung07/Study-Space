@@ -6,20 +6,29 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { StudySessionDTO } from "@/types"
+import { JoinSessionModal } from "@/components/join-session-modal"
+import { useAuth } from "@/context/auth-context"
 
 export function ActiveSessions() {
   const [sessions, setSessions] = useState<StudySessionDTO[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   
-  // TODO: dynamic user ID
-  const userId = 1
+  const { user } = useAuth()
+  
+
 
   useEffect(() => {
     const fetchSessions = async () => {
+      if (!user) return
+
       try {
         // Fetch sessions for the user or their groups
         // Using user sessions for now as a starting point
-        const data = await api.get<StudySessionDTO[]>(`/sessions/user/${userId}`)
+        const data = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
         // Filter for active sessions if needed, though backend might return all
         setSessions(data.filter(s => s.status === 'ACTIVE' || s.status === 'SCHEDULED'))
       } catch (error) {
@@ -29,8 +38,10 @@ export function ActiveSessions() {
       }
     }
 
-    fetchSessions()
-  }, [])
+    if (user) {
+        fetchSessions()
+    }
+  }, [user])
 
   const subjectColors: Record<string, string> = {
     MATH: "from-orange-500/20 to-orange-600/20",
@@ -53,7 +64,13 @@ export function ActiveSessions() {
     )
   }
 
+    const handleJoinClick = (sessionId: number) => {
+    setSelectedSessionId(sessionId)
+    setIsModalOpen(true)
+  }
+
   return (
+    <>
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">Active Sessions</h3>
@@ -80,8 +97,8 @@ export function ActiveSessions() {
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${
                         session.status === "ACTIVE"
-                          ? "bg-accent/20 text-accent"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-pale-green text-status-live-fg border border-pale-green/50"
+                          : "bg-pale-blue text-status-scheduled-fg border border-pale-blue/50"
                       }`}
                     >
                       {session.status === "ACTIVE" ? "● Live" : "Scheduled"}
@@ -93,21 +110,20 @@ export function ActiveSessions() {
                   </p>
                 </div>
                 {session.status === "ACTIVE" && (
-                  <Button size="sm" className="gap-2">
+                 <Button size="sm" className="gap-2" onClick={() => handleJoinClick(session.id)}>
                     <Play className="h-4 w-4" />
                     Join
                   </Button>
                 )}
               </div>
-              <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
+               <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{session.durationMinutes ? `${session.durationMinutes}min` : 'N/A'}</span>
+                  <span>{session.duration}</span>
                 </div>
-                {/* Participant count needs to be added to DTO or separately fetched */}
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>? studying</span> 
+                  <span>{session.participantCount} studying</span>
                 </div>
               </div>
             </div>
@@ -115,5 +131,11 @@ export function ActiveSessions() {
         )}
       </div>
     </Card>
+
+     {selectedSessionId && (
+        <JoinSessionModal sessionId={selectedSessionId} open={isModalOpen} onOpenChange={setIsModalOpen} />
+      )}
+
+      </>
   )
 }

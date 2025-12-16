@@ -44,7 +44,14 @@ public class User {
     
     @Enumerated(EnumType.STRING)
     @Column(columnDefinition = "VARCHAR(50) DEFAULT 'OFFLINE'")
-    private UserStatus currentStatus;
+    @Builder.Default
+    private UserStatus currentStatus = UserStatus.OFFLINE;
+
+    @Column(columnDefinition = "INTEGER DEFAULT 0")
+    @Builder.Default
+    private Integer currentStreak = 0;
+
+    private LocalDateTime lastStudyDate;
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -54,10 +61,12 @@ public class User {
     
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     @ToString.Exclude 
+    @Builder.Default
     private Set<StudySession> createdSessions = new HashSet<>();
     
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
     @ToString.Exclude 
+    @Builder.Default
     private Set<StudyGroup> createdGroups = new HashSet<>();
     
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -67,14 +76,17 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "group_id")
     )
     @ToString.Exclude 
+    @Builder.Default
     private Set<StudyGroup> groups = new HashSet<>();
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude 
+    @Builder.Default
     private Set<SessionParticipant> participations = new HashSet<>();
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude // Prevent infinite loops
+    @Builder.Default
     private Set<Activity> activities = new HashSet<>();
     
     @PrePersist
@@ -86,6 +98,9 @@ public class User {
         }
         if (totalStudyMinutes == null) {
             totalStudyMinutes = 0;
+        }
+        if (currentStreak == null) {
+            currentStreak = 0;
         }
     }
     

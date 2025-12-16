@@ -24,6 +24,7 @@ public class StudySessionService {
     private final SessionParticipantRepository participantRepository;
     private final ActivityRepository activityRepository;
     private final StudyGroupRepository groupRepository;
+    private final GamificationService gamificationService;
     
     public StudySessionDTO createSession(Long userId, CreateSessionRequest request) {
         User creator = userRepository.findById(userId)
@@ -101,7 +102,14 @@ public class StudySessionService {
             participant.setMinutesParticipated((int) participationMinutes);
             
             User user = participant.getUser();
-            user.setTotalStudyMinutes(user.getTotalStudyMinutes() + (int) participationMinutes);
+            // Update total minutes with null check
+            int currentTotal = user.getTotalStudyMinutes() != null ? user.getTotalStudyMinutes() : 0;
+            // Actually GamificationService uses the total minutes, so let's set it first.
+            user.setTotalStudyMinutes(currentTotal + (int) participationMinutes);
+            
+            // --- GAMIFICATION LOGIC (Complex Business Logic) ---
+            gamificationService.processSessionCompletion(user, (int) participationMinutes);
+            
             userRepository.save(user);
             participantRepository.save(participant);
         });
@@ -173,20 +181,40 @@ public class StudySessionService {
     }
     
     private StudySessionDTO convertToDTO(StudySession session) {
+        String durationStr = "0 min";
+        if (session.getStartTime() != null) {
+            long minutes;
+            if (session.getEndTime() != null) {
+                minutes = java.time.temporal.ChronoUnit.MINUTES.between(session.getStartTime(), session.getEndTime());
+            } else if (session.getStatus() == com.studyspace.types.SessionStatus.ACTIVE) {
+                minutes = java.time.temporal.ChronoUnit.MINUTES.between(session.getStartTime(), java.time.LocalDateTime.now());
+            } else {
+                minutes = session.getDurationMinutes() != null ? session.getDurationMinutes() : 0;
+            }
+            
+            if (minutes >= 60) {
+                durationStr = (minutes / 60) + "h " + (minutes % 60) + "m";
+            } else {
+                durationStr = minutes + " min";
+            }
+        }
+
         return StudySessionDTO.builder()
-            .id(session.getId())
-            .title(session.getTitle())
-            .description(session.getDescription())
-            .subject(session.getSubject())
-            .startTime(session.getStartTime())
-            .endTime(session.getEndTime())
-            .durationMinutes(session.getDurationMinutes())
-            .isGroupSession(session.getIsGroupSession())
-            .roomCode(session.getRoomCode())
-            .status(session.getStatus())
-            .createdAt(session.getCreatedAt())
-            .creatorId(session.getCreator().getId())
-            .studyGroupId(session.getStudyGroup() != null ? session.getStudyGroup().getId() : null)
-            .build();
+                .id(session.getId())
+                .title(session.getTitle())
+                .description(session.getDescription())
+                .subject(session.getSubject())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
+                .durationMinutes(session.getDurationMinutes())
+                .isGroupSession(session.getIsGroupSession())
+                .roomCode(session.getRoomCode())
+                .status(session.getStatus())
+                .createdAt(session.getCreatedAt())
+                .creatorId(session.getCreator().getId())
+                .studyGroupId(session.getStudyGroup() != null ? session.getStudyGroup().getId() : null)
+                .participantCount(session.getParticipants().size())
+                .duration(durationStr)
+                .build();
     }
 }
