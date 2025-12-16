@@ -5,47 +5,109 @@ import { useParams, useRouter } from "next/navigation"
 import { Users, MessageSquare, Pause, Play, Coffee, LogOut, Volume2, VolumeX, Hand, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { api } from "@/lib/api"
+import { toast } from "sonner"
+import { StudySessionDTO, ActivityDTO, UserDTO } from "@/types"
+import { useAuth } from "@/context/auth-context"
 
 export default function ActiveSessionPage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useAuth()
+  const sessionId = params.id
+  
   const [isPlaying, setIsPlaying] = useState(true)
   const [isMuted, setIsMuted] = useState(true)
-  const [elapsedTime, setElapsedTime] = useState(3825) // 1h 3m 45s
+  const [elapsedTime, setElapsedTime] = useState(0)
   const [message, setMessage] = useState("")
+  
+  const [session, setSession] = useState<StudySessionDTO | null>(null)
+  const [activities, setActivities] = useState<ActivityDTO[]>([])
+  const [loading, setLoading] = useState(true)
+  
+  // Per-user timer tracking
+  const [userStartTime, setUserStartTime] = useState<number | null>(null)
+  const [totalPausedTime, setTotalPausedTime] = useState(0)
+  const [pauseStartTime, setPauseStartTime] = useState<number | null>(null)
+  const [hasJoined, setHasJoined] = useState(false)
 
-  // Mock session data
-  const session = {
-    id: params.id,
-    title: "Calculus Study Session",
-    subject: "MATH",
-    focusLevel: "High",
-  }
-
-  const participants = [
-    { id: 1, name: "Sarah Chen", avatar: "SC", status: "studying", isHost: true },
-    { id: 2, name: "Alex Kumar", avatar: "AK", status: "studying", isHost: false },
-    { id: 3, name: "Jamie Lee", avatar: "JL", status: "on-break", isHost: false },
-    { id: 4, name: "Chris Taylor", avatar: "CT", status: "studying", isHost: false },
-    { id: 5, name: "Morgan Smith", avatar: "MS", status: "studying", isHost: false },
-  ]
-
-  const activities = [
-    { id: 1, user: "Alex Kumar", action: "raised hand", time: "Just now" },
-    { id: 2, user: "Jamie Lee", action: "took a break", time: "2 min ago" },
-    { id: 3, user: "Chris Taylor", action: "sent a message", time: "5 min ago" },
-    { id: 4, user: "Sarah Chen", action: "started session", time: "1h 3m ago" },
-  ]
-
+  // Auto-join session when entering (if not creator)
   useEffect(() => {
-    if (!isPlaying) return
+    const joinSession = async () => {
+      if (!user || !sessionId || hasJoined) return
+      
+      try {
+        const sessionData = await api.get<StudySessionDTO>(`/sessions/${sessionId}`)
+        
+        // If user is not the creator and not already a participant, join
+        const isCreator = sessionData.creatorId === user.id
+        const isParticipant = sessionData.participants?.some(p => p.id === user.id)
+        
+        if (!isCreator && !isParticipant) {
+          await api.post(`/sessions/${sessionId}/participants/${user.id}`, {})
+          toast.success("Joined session!")
+        }
+        
+        // Set status to STUDYING when entering session
+        await api.put(`/users/${user.id}/status?status=STUDYING`, {})
+        
+        setHasJoined(true)
+      } catch (error) {
+        console.error("Failed to join session:", error)
+      }
+    }
+    
+    joinSession()
+  }, [user, sessionId, hasJoined])
 
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1)
+  // Fetch session data and activities (separate from timer)
+  useEffect(() => {
+      if (!sessionId) return
+
+      const fetchData = async () => {
+          try {
+              const sessionData = await api.get<StudySessionDTO>(`/sessions/${sessionId}`)
+              setSession(sessionData)
+
+              const activitiesData = await api.get<ActivityDTO[]>(`/activities/session/${sessionId}`)
+              setActivities(activitiesData)
+          } catch (error) {
+              console.error("Failed to load session:", error)
+              toast.error("Failed to load session details")
+              router.push("/dashboard")
+          } finally {
+              setLoading(false)
+          }
+      }
+      
+      fetchData()
+      
+      // Poll for updates every 10 seconds
+      const pollInterval = setInterval(fetchData, 10000)
+      return () => clearInterval(pollInterval)
+  }, [sessionId, router])
+
+  // Initialize user's personal timer when component mounts
+  useEffect(() => {
+    if (!userStartTime) {
+      setUserStartTime(new Date().getTime())
+    }
+  }, [userStartTime])
+
+  // User's personal stopwatch timer - runs independently every second
+  useEffect(() => {
+    if (!isPlaying || !userStartTime) return
+
+    // Calculate elapsed time every second
+    const timerInterval = setInterval(() => {
+      const now = new Date().getTime()
+      const elapsed = Math.floor((now - userStartTime - totalPausedTime) / 1000)
+      setElapsedTime(elapsed)
     }, 1000)
 
-    return () => clearInterval(interval)
-  }, [isPlaying])
+    return () => clearInterval(timerInterval)
+  }, [isPlaying, userStartTime, totalPausedTime])
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600)
@@ -54,9 +116,153 @@ export default function ActiveSessionPage() {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
   }
 
-  const handleLeaveSession = () => {
-    router.push("/dashboard")
+  const formatSessionStartTime = (startTime?: string) => {
+    if (!startTime) return "Not started"
+    const date = new Date(startTime)
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
+
+  const handleLeaveSession = async () => {
+    if (!user || !session) return
+    
+    const isCreator = session.creatorId === user.id
+    
+    const confirmMessage = isCreator 
+      ? "As the creator, leaving will END the session for ALL participants. Are you sure?"
+      : "Are you sure you want to leave this session?"
+    
+    if (!confirm(confirmMessage)) return
+    
+    try {
+      if (isCreator) {
+        // Creator leaving: End the entire session for everyone
+        // This will update stats for ALL participants automatically
+        await api.put(`/sessions/${sessionId}/end`, {})
+        toast.success("Session ended for all participants")
+      } else {
+        // Regular participant leaving: Just remove themselves
+        // Calculate their personal study time in minutes
+        if (userStartTime) {
+          const now = new Date().getTime()
+          const totalElapsed = now - userStartTime - totalPausedTime
+          const studyMinutes = Math.floor(totalElapsed / 60000)
+          
+          // Call API to record study time and leave
+          await api.delete(`/sessions/${sessionId}/participants/${user.id}?studyMinutes=${studyMinutes}`)
+          toast.success("Left session")
+        }
+      }
+      
+      // Reset user status to ONLINE when leaving
+      await api.put(`/users/${user.id}/status?status=ONLINE`, {})
+      
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Failed to leave session:", error)
+      toast.error("Failed to leave session")
+    }
+  }
+
+  const handlePauseToggle = async () => {
+    const now = new Date().getTime()
+    
+    if (isPlaying) {
+      // Pausing: Going on break
+      setPauseStartTime(now)
+      if (user && sessionId) {
+        try {
+          await api.put(`/users/${user.id}/status?status=AWAY`, {})
+          
+          // Announce to activity feed
+          const params = new URLSearchParams({
+            sessionId: sessionId as string,
+            userId: user.id.toString(),
+            type: "COFFEE_BREAK",
+            message: `${user.fullName} is taking a break`
+          })
+          await api.post(`/activities?${params.toString()}`, {})
+        } catch (error) {
+          console.error("Failed to update status to AWAY:", error)
+        }
+      }
+    } else {
+      // Resuming: Returning from break
+      if (pauseStartTime) {
+        const pauseDuration = now - pauseStartTime
+        setTotalPausedTime(prev => prev + pauseDuration)
+        setPauseStartTime(null)
+      }
+      if (user && sessionId) {
+        try {
+          await api.put(`/users/${user.id}/status?status=STUDYING`, {})
+          
+          // Announce return from break
+          const params = new URLSearchParams({
+            sessionId: sessionId as string,
+            userId: user.id.toString(),
+            type: "MESSAGE",
+            message: `${user.fullName} returned from break`
+          })
+          await api.post(`/activities?${params.toString()}`, {})
+        } catch (error) {
+          console.error("Failed to update status to STUDYING:", error)
+        }
+      }
+    }
+    
+    setIsPlaying(!isPlaying)
+  }
+
+  // handleTakeBreak removed - now combined with pause/play functionality
+
+  const handleRaiseHand = async () => {
+    if (!user || !sessionId) return
+    try {
+      const params = new URLSearchParams({
+        sessionId: sessionId as string,
+        userId: user.id.toString(),
+        type: "HAND_RAISE",
+        message: `${user.fullName} raised their hand`
+      })
+      
+      await api.post(`/activities?${params.toString()}`, {})
+      toast.success("Hand raised! ✋")
+    } catch (e) {
+      console.error("Failed to raise hand", e)
+    }
+  }
+
+  const handleSendMessage = async () => {
+      if (!message.trim() || !user || !sessionId) return
+      try {
+          const params = new URLSearchParams({
+              sessionId: sessionId as string,
+              userId: user.id.toString(),
+              type: "MESSAGE", 
+              message: message
+          })
+          
+          await api.post(`/activities?${params.toString()}`, {})
+          
+          setMessage("")
+      } catch (e) {
+          console.error("Failed to send message", e)
+          toast.error("Failed to send message")
+      }
+  }
+
+  if (loading) {
+      return <div className="min-h-screen flex items-center justify-center">Loading session...</div>
+  }
+
+  if (!session) return null
+
+  // Participants list from session DTO
+  // We need to map it to display format or use directly
+  const participantsList = session.participants || []
+
+  // If current user is not in participants (e.g. host just created it but backend update lag), manually add?
+  // Usually backend handles this.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--pale-blue)] via-[var(--pale-purple)] to-[var(--pale-green)] p-4 lg:p-6">
@@ -75,11 +281,11 @@ export default function ActiveSessionPage() {
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs lg:text-sm text-gray-600">{session.subject}</span>
                     <span className="h-1 w-1 rounded-full bg-gray-400" />
-                    <span className="text-xs lg:text-sm text-gray-600">{session.focusLevel} Focus</span>
+                    <span className="text-xs lg:text-sm text-gray-600">Started: {formatSessionStartTime(session.startTime)}</span>
                     <span className="h-1 w-1 rounded-full bg-gray-400" />
                     <span className="flex items-center gap-1.5 text-xs lg:text-sm text-green-700">
-                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      Live
+                      <span className={`h-2 w-2 rounded-full ${session.status === 'ACTIVE' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                      {session.status === 'ACTIVE' ? 'Live' : 'Scheduled'}
                     </span>
                   </div>
                 </div>
@@ -91,7 +297,9 @@ export default function ActiveSessionPage() {
                 className="gap-2 backdrop-blur-sm bg-white/40 border-white/30 hover:bg-red-50/50 hover:border-red-200 hover:text-red-600"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden lg:inline">Leave</span>
+                <span className="hidden lg:inline">
+                  {session.creatorId === user?.id ? 'End Session' : 'Leave'}
+                </span>
               </Button>
             </div>
           </Card>
@@ -104,31 +312,40 @@ export default function ActiveSessionPage() {
                 <div className="text-5xl sm:text-6xl lg:text-8xl font-bold text-gray-900 font-mono tracking-tight">
                   {formatTime(elapsedTime)}
                 </div>
-                <p className="text-sm lg:text-base text-gray-600 mt-3 lg:mt-4">Study session in progress</p>
+                <p className="text-sm lg:text-base text-gray-600 mt-3 lg:mt-4">
+                    Your study time {isPlaying ? '(studying)' : '(on break)'}
+                </p>
               </div>
 
               {/* Session Controls */}
               <div className="flex items-center justify-center gap-3 lg:gap-4">
                 <Button
                   size="lg"
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="h-14 lg:h-16 w-14 lg:w-16 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg p-0"
+                  variant="outline"
+                  onClick={handlePauseToggle}
+                  className={`w-36 h-12 lg:h-14 px-6 lg:px-8 gap-2 ${
+                    !isPlaying 
+                      ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:text-white  border-transparent' 
+                      : 'backdrop-blur-sm bg-white/40 border-white/30 hover:bg-white/60'
+                  }`}
                 >
-                  {isPlaying ? <Pause className="h-6 w-6 lg:h-7 lg:w-7" /> : <Play className="h-6 w-6 lg:h-7 lg:w-7" />}
+                  {isPlaying ? (
+                    <>
+                      <Coffee className="h-5 w-5" />
+                      <span className="hidden sm:inline">Take a Break</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5" />
+                      <span className="hidden sm:inline">Resume</span>
+                    </>
+                  )}
                 </Button>
 
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 lg:h-14 px-6 lg:px-8 gap-2 backdrop-blur-sm bg-white/40 border-white/30 hover:bg-white/60"
-                >
-                  <Coffee className="h-5 w-5" />
-                  <span className="hidden sm:inline">Take Break</span>
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
+                  onClick={handleRaiseHand}
                   className="h-12 lg:h-14 px-6 lg:px-8 gap-2 backdrop-blur-sm bg-white/40 border-white/30 hover:bg-white/60"
                 >
                   <Hand className="h-5 w-5" />
@@ -140,18 +357,18 @@ export default function ActiveSessionPage() {
               <div className="grid grid-cols-3 gap-3 lg:gap-4 pt-4 lg:pt-6">
                 <div className="p-3 lg:p-4 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
                   <p className="text-xs lg:text-sm text-gray-600">Participants</p>
-                  <p className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">{participants.length}</p>
+                  <p className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">{participantsList.length}</p>
                 </div>
                 <div className="p-3 lg:p-4 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
                   <p className="text-xs lg:text-sm text-gray-600">Studying</p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">
-                    {participants.filter((p) => p.status === "studying").length}
+                    {participantsList.filter(p => !p.currentStatus || p.currentStatus === 'STUDYING' || p.currentStatus === 'ONLINE').length}
                   </p>
                 </div>
                 <div className="p-3 lg:p-4 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
                   <p className="text-xs lg:text-sm text-gray-600">On Break</p>
                   <p className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">
-                    {participants.filter((p) => p.status === "on-break").length}
+                     {participantsList.filter(p => p.currentStatus === 'AWAY').length}
                   </p>
                 </div>
               </div>
@@ -167,7 +384,7 @@ export default function ActiveSessionPage() {
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 lg:h-5 lg:w-5 text-gray-700" />
                 <h3 className="font-semibold text-gray-900 text-sm lg:text-base">
-                  Participants ({participants.length})
+                  Participants ({participantsList.length})
                 </h3>
               </div>
               <Button
@@ -181,29 +398,37 @@ export default function ActiveSessionPage() {
             </div>
 
             <div className="space-y-2 max-h-48 overflow-y-auto">
-              {participants.map((participant) => (
+              {participantsList.map((participant: UserDTO) => (
                 <div
                   key={participant.id}
                   className="flex items-center gap-3 p-2 lg:p-2.5 rounded-lg backdrop-blur-sm bg-white/40 hover:bg-white/50 transition-colors"
                 >
-                  <div className="h-8 w-8 lg:h-9 lg:w-9 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white text-xs font-semibold shrink-0">
-                    {participant.avatar}
-                  </div>
+                  <Avatar className="h-8 w-8 lg:h-9 lg:w-9 shrink-0">
+                    <AvatarImage src={participant.profilePictureUrl || ""} alt={participant.fullName} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-400 text-white text-xs font-semibold">
+                      {participant.fullName
+                        ? participant.fullName
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                        : participant.username?.charAt(0).toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 text-xs lg:text-sm truncate">{participant.name}</p>
-                      {participant.isHost && (
+                      <p className="font-medium text-gray-900 text-xs lg:text-sm truncate">{participant.fullName}</p>
+                      {participant.id === session.creatorId && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-700 border border-blue-500/20 shrink-0">
                           Host
                         </span>
                       )}
                     </div>
                     <p className="text-[10px] lg:text-xs text-gray-600 capitalize">
-                      {participant.status.replace("-", " ")}
+                      {participant.currentStatus?.toLowerCase() || 'offline'}
                     </p>
                   </div>
                   <div
-                    className={`h-2 w-2 rounded-full shrink-0 ${participant.status === "studying" ? "bg-green-500" : "bg-yellow-500"}`}
+                    className={`h-2 w-2 rounded-full shrink-0 ${participant.currentStatus === "STUDYING" || participant.currentStatus === 'ONLINE' ? "bg-green-500" : "bg-yellow-500"}`}
                   />
                 </div>
               ))}
@@ -218,19 +443,20 @@ export default function ActiveSessionPage() {
             </div>
 
             <div className="flex-1 space-y-2 overflow-y-auto mb-4 min-h-0">
-              {activities.map((activity) => (
+              {activities.length === 0 ? <p className="text-xs text-gray-500 text-center">No recent activity</p> : 
+               activities.map((activity) => (
                 <div key={activity.id} className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
                   <p className="text-xs lg:text-sm text-gray-900">
-                    <span className="font-semibold">{activity.user}</span>{" "}
-                    <span className="text-gray-600">{activity.action}</span>
+                    <span className="font-semibold">{activity.userName || "Unknown"}</span>{" "}
+                    <span className="text-gray-600">{activity.message || activity.type}</span>
                   </p>
-                  <p className="text-[10px] lg:text-xs text-gray-500 mt-1">{activity.time}</p>
+                  <p className="text-[10px] lg:text-xs text-gray-500 mt-1">{new Date(activity.timestamp).toLocaleTimeString()}</p>
                 </div>
               ))}
             </div>
 
             {/* Message Input */}
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 items-center">
               <input
                 type="text"
                 value={message}
@@ -240,6 +466,7 @@ export default function ActiveSessionPage() {
               />
               <Button
                 size="sm"
+                onClick={handleSendMessage}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shrink-0"
               >
                 Send

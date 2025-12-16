@@ -70,6 +70,8 @@ public class ActivityService {
                 .timestamp(activity.getTimestamp())
                 .sessionId(activity.getStudySession().getId())
                 .userId(activity.getUser().getId())
+                .userName(activity.getUser().getFullName()) // Using full name for display
+                .userProfilePictureUrl(activity.getUser().getProfilePictureUrl())
                 .build();
     }
 }

@@ -38,6 +38,7 @@ public class AuthService {
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .authProvider(com.studyspace.types.AuthProvider.LOCAL)
                 .build();
         
         // Initialize fields properly via builder default or here if not working

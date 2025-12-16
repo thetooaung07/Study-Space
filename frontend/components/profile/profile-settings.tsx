@@ -174,8 +174,14 @@ export function ProfileSettings() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
                 placeholder="Enter email"
+                  disabled={user.authProvider !== 'LOCAL'}
               />
             </div>
+            {user.authProvider !== 'LOCAL' && (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Email cannot be changed because you are logged in via {user.authProvider}.
+                </p>
+            )}
           </div>
 
           <div className="flex justify-end pt-2">
@@ -191,7 +197,8 @@ export function ProfileSettings() {
         </form>
       </Card>
 
-      {/* Password Update Card */}
+      {/* Password Update Card - Only for LOCAL users */}
+      {user.authProvider === 'LOCAL' && (
       <Card className="p-6 bg-pale-purple/60 backdrop-blur-md border border-border/40 hover:bg-pale-purple/70 transition-all">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-lg bg-background/30 backdrop-blur-sm flex items-center justify-center">
@@ -297,6 +304,7 @@ export function ProfileSettings() {
           </div>
         </form>
       </Card>
+      )}
 
       {/* Account Stats Card */}
       <Card className="p-6 bg-pale-green/60 backdrop-blur-md border border-border/40 hover:bg-pale-green/70 transition-all">

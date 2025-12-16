@@ -47,6 +47,11 @@ public class User {
     @Builder.Default
     private UserStatus currentStatus = UserStatus.OFFLINE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'LOCAL'")
+    @Builder.Default
+    private com.studyspace.types.AuthProvider authProvider = com.studyspace.types.AuthProvider.LOCAL;
+
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     @Builder.Default
     private Integer currentStreak = 0;

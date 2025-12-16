@@ -4,6 +4,7 @@ import com.studyspace.types.SessionStatus;
 import com.studyspace.types.Subject;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -22,7 +23,9 @@ public class StudySessionDTO {
     private SessionStatus status;
     private LocalDateTime createdAt;
     private Long creatorId;
+    private UserDTO creator;
     private Long studyGroupId;
     private Integer participantCount;
+    private List<UserDTO> participants;
     private String duration;
 }

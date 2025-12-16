@@ -1,8 +1,8 @@
 "use client"
 
-import { Header } from "@/components/header"
-import { Sidebar } from "@/components/sidebar"
-import { AnalyticsDashboard } from "@/components/analytics-dashboard"
+import { Header } from "@/components/common/header"
+import { Sidebar } from "@/components/common/sidebar"
+import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard"
 
 export default function AnalyticsPage() {
   return (

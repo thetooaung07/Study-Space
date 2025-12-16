@@ -15,4 +15,6 @@ public class ActivityDTO {
     private LocalDateTime timestamp;
     private Long sessionId;
     private Long userId;
+    private String userName;
+    private String userProfilePictureUrl;
 }

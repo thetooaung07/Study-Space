@@ -19,4 +19,6 @@ public class CreateSessionRequest {
     private Boolean isGroupSession;
     
     private Long studyGroupId;
+    
+    private Boolean startImmediately;
 }

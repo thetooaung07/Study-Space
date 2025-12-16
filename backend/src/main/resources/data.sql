@@ -3,7 +3,7 @@ INSERT INTO users (username, email, password, full_name, profile_picture_url, to
 VALUES
 ('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', 'https://api.example.com/avatars/john.jpg', 450, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', 'https://api.example.com/avatars/jane.jpg', 720, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 300, 'BREAK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 300, 'AWAY', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', 'https://api.example.com/avatars/alice.jpg', 600, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 900, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 

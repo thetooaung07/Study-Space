@@ -12,6 +12,8 @@ export interface ActivityDTO {
     timestamp: string; // ISO 8601
     sessionId?: number;
     userId?: number;
+    userName?: string;
+    userProfilePictureUrl?: string;
 }
 
 export interface StudyGroupDTO {
@@ -39,8 +41,10 @@ export interface StudySessionDTO {
     status: SessionStatus;
     createdAt: string;
     creatorId: number;
+    creator?: UserDTO;
     studyGroupId?: number;
     participantCount: number;
+    participants?: UserDTO[];
     duration: string;
 }
 
@@ -54,7 +58,10 @@ export interface UserDTO {
     currentStatus: UserStatus;
     createdAt: string;
     updatedAt: string;
+    authProvider: 'LOCAL' | 'GOOGLE' | 'GITHUB'; 
 }
+
+
 
 export interface CreateSessionRequest {
     title: string;

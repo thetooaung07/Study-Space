@@ -19,6 +19,7 @@ public class UserMapper {
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .totalStudyMinutes(user.getTotalStudyMinutes())
                 .currentStatus(user.getCurrentStatus())
+                .authProvider(user.getAuthProvider())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();

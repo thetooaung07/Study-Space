@@ -3,6 +3,7 @@ package com.studyspace.service;
 import com.studyspace.dto.CreateSessionRequest;
 import com.studyspace.dto.StudySessionDTO;
 import com.studyspace.entity.*;
+import com.studyspace.mapper.UserMapper;
 import com.studyspace.types.ActivityType;
 import com.studyspace.types.SessionStatus;
 import com.studyspace.repository.*;
@@ -36,7 +37,12 @@ public class StudySessionService {
             .subject(request.getSubject())
             .creator(creator)
             .isGroupSession(request.getIsGroupSession() != null ? request.getIsGroupSession() : false)
-            .status(SessionStatus.SCHEDULED)
+            .status(request.getStartImmediately() != null && request.getStartImmediately() 
+                ? SessionStatus.ACTIVE 
+                : SessionStatus.SCHEDULED)
+            .startTime(request.getStartImmediately() != null && request.getStartImmediately() 
+                ? LocalDateTime.now() 
+                : null)
             .build();
         
         if (request.getStudyGroupId() != null) {
@@ -50,6 +56,24 @@ public class StudySessionService {
         session.setRoomCode(generateRoomCode());
         
         StudySession savedSession = sessionRepository.save(session);
+        
+        // Automatically add creator as a participant
+        SessionParticipant creatorParticipant = SessionParticipant.builder()
+            .studySession(savedSession)
+            .user(creator)
+            .joinedAt(LocalDateTime.now())
+            .build();
+        participantRepository.save(creatorParticipant);
+        
+        // Log activity that creator started the session
+        Activity activity = Activity.builder()
+            .type(ActivityType.SESSION_CREATED)
+            .studySession(savedSession)
+            .user(creator)
+            .message(creator.getFullName() + " created the session")
+            .build();
+        activityRepository.save(activity);
+        
         return convertToDTO(savedSession);
     }
     
@@ -61,8 +85,34 @@ public class StudySessionService {
     }
     
     @Transactional(readOnly = true)
+    public List<StudySessionDTO> getAllSessions() {
+        return sessionRepository.findAll().stream()
+            .sorted((s1, s2) -> {
+                // Sort by start time if available, otherwise by created time
+                LocalDateTime t1 = s1.getStartTime() != null ? s1.getStartTime() : s1.getCreatedAt();
+                LocalDateTime t2 = s2.getStartTime() != null ? s2.getStartTime() : s2.getCreatedAt();
+                return t2.compareTo(t1); // Newest first
+            })
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
     public List<StudySessionDTO> getUserSessions(Long userId) {
-        return sessionRepository.findByCreatorId(userId).stream()
+        // Get sessions created by user
+        List<StudySession> createdSessions = sessionRepository.findByCreatorId(userId);
+        
+        // Get sessions joined by user
+        List<StudySession> joinedSessions = participantRepository.findByUserId(userId).stream()
+            .map(SessionParticipant::getStudySession)
+            .collect(Collectors.toList());
+            
+        // Combine and distinct
+        java.util.Set<StudySession> allSessions = new java.util.HashSet<>(createdSessions);
+        allSessions.addAll(joinedSessions);
+        
+        return allSessions.stream()
+            .sorted((s1, s2) -> s2.getStartTime().compareTo(s1.getStartTime())) // Sort by newest first
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
@@ -132,14 +182,39 @@ public class StudySessionService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Check if already participating
-        if (participantRepository.findByStudySessionIdAndUserId(sessionId, userId).isPresent()) {
-            throw new RuntimeException("User already in this session");
+        // Check if participant record already exists
+        var existingParticipant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId);
+        
+        if (existingParticipant.isPresent()) {
+            SessionParticipant participant = existingParticipant.get();
+            
+            // If they've left before, allow them to rejoin
+            if (participant.getLeftAt() != null) {
+                participant.setLeftAt(null);  // Reset left time
+                participant.setJoinedAt(LocalDateTime.now());  // Update join time
+                participant.setMinutesParticipated(null);  // Reset minutes for new session
+                participantRepository.save(participant);
+                
+                // Log rejoin activity
+                Activity activity = Activity.builder()
+                    .type(ActivityType.JOINED)
+                    .studySession(session)
+                    .user(user)
+                    .message(user.getFullName() + " rejoined the session")
+                    .build();
+                activityRepository.save(activity);
+                return;
+            } else {
+                // They're currently in the session
+                throw new RuntimeException("User already in this session");
+            }
         }
         
+        // Create new participant record
         SessionParticipant participant = SessionParticipant.builder()
             .studySession(session)
             .user(user)
+            .joinedAt(LocalDateTime.now())
             .build();
         
         participantRepository.save(participant);
@@ -153,11 +228,17 @@ public class StudySessionService {
         activityRepository.save(activity);
     }
     
-    public void removeParticipant(Long sessionId, Long userId) {
+    public void removeParticipant(Long sessionId, Long userId, Integer studyMinutes) {
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
             .orElseThrow(() -> new RuntimeException("Participant not found"));
         
         participant.setLeftAt(LocalDateTime.now());
+        
+        // Record study time if provided
+        if (studyMinutes != null && studyMinutes > 0) {
+            participant.setMinutesParticipated(studyMinutes);
+        }
+        
         participantRepository.save(participant);
         
         // Log activity
@@ -180,6 +261,8 @@ public class StudySessionService {
         return "ROOM-" + System.currentTimeMillis();
     }
     
+    private final UserMapper userMapper;
+
     private StudySessionDTO convertToDTO(StudySession session) {
         String durationStr = "0 min";
         if (session.getStartTime() != null) {
@@ -199,6 +282,15 @@ public class StudySessionService {
             }
         }
 
+        // Filter for active participants only (those who haven't left)
+        List<SessionParticipant> activeParticipants = session.getParticipants().stream()
+                .filter(p -> p.getLeftAt() == null)
+                .collect(Collectors.toList());
+
+        List<com.studyspace.dto.UserDTO> participantDTOs = activeParticipants.stream()
+                .map(p -> userMapper.toDTO(p.getUser()))
+                .collect(Collectors.toList());
+
         return StudySessionDTO.builder()
                 .id(session.getId())
                 .title(session.getTitle())
@@ -212,8 +304,10 @@ public class StudySessionService {
                 .status(session.getStatus())
                 .createdAt(session.getCreatedAt())
                 .creatorId(session.getCreator().getId())
+                .creator(userMapper.toDTO(session.getCreator()))
                 .studyGroupId(session.getStudyGroup() != null ? session.getStudyGroup().getId() : null)
-                .participantCount(session.getParticipants().size())
+                .participantCount(activeParticipants.size())
+                .participants(participantDTOs)
                 .duration(durationStr)
                 .build();
     }

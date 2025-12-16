@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Chrome, Github, Apple, Mail, Lock, BookOpen, CloudCog, Eye, EyeOff } from "lucide-react";
+import { Chrome, Github, Mail, Lock, BookOpen, Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -40,7 +40,7 @@ export function LoginForm() {
   };
 
   const handleOAuthLogin = (provider: string) => {
-    // Handle OAuth login logic here
+    window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
   };
 
   return (
@@ -79,15 +79,7 @@ export function LoginForm() {
             <Github className="w-4 h-4 mr-2" />
             Continue with GitHub
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full bg-background/50 backdrop-blur-sm hover:bg-background/80 border-border/60 transition-all"
-            onClick={() => handleOAuthLogin("apple")}
-          >
-            <Apple className="w-4 h-4 mr-2" />
-            Continue with Apple
-          </Button>
+         
         </div>
 
         {/* Divider */}

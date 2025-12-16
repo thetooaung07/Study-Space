@@ -2,6 +2,8 @@ package com.studyspace.dto;
 
 import com.studyspace.types.UserStatus;
 import lombok.*;
+
+import com.studyspace.types.AuthProvider;
 import java.time.LocalDateTime;
 
 @Data
@@ -18,4 +20,5 @@ public class UserDTO {
     private UserStatus currentStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private AuthProvider authProvider;
 }

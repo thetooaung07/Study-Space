@@ -45,16 +45,25 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
             
-        if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
-             if (userRepository.existsByUsername(request.getUsername())) {
-                 throw new RuntimeException("Username already exists");
+        if (request.getUsername() != null) {
+             String newUsername = request.getUsername().trim();
+             if (!newUsername.equalsIgnoreCase(user.getUsername())) {
+                 // Check if username exists and belongs to SOMEONE ELSE
+                 userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
+                     if (!existingUser.getId().equals(user.getId())) {
+                         throw new RuntimeException("Username already exists");
+                     }
+                 });
              }
-             user.setUsername(request.getUsername());
+             user.setUsername(newUsername);
         }
         
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
              if (userRepository.existsByEmail(request.getEmail())) {
-                 throw new RuntimeException("Email already exists");
+                  throw new RuntimeException("Email already exists");
+             }
+             if (user.getAuthProvider() != com.studyspace.types.AuthProvider.LOCAL) {
+                 throw new RuntimeException("You cannot change your email as you are logged in via " + user.getAuthProvider());
              }
              user.setEmail(request.getEmail());
         }
@@ -76,6 +85,10 @@ public class UserService {
             
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid current password");
+        }
+        
+        if (user.getAuthProvider() != com.studyspace.types.AuthProvider.LOCAL) {
+            throw new RuntimeException("You cannot change your password as you are logged in via " + user.getAuthProvider());
         }
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -126,6 +139,7 @@ public class UserService {
             .profilePictureUrl(user.getProfilePictureUrl())
             .totalStudyMinutes(user.getTotalStudyMinutes())
             .currentStatus(user.getCurrentStatus())
+            .authProvider(user.getAuthProvider())
             .createdAt(user.getCreatedAt())
             .updatedAt(user.getUpdatedAt())
             .build();

@@ -50,6 +50,7 @@ export function SignupForm() {
   };
 
   const handleOAuthSignup = (provider: string) => {
+    window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
   };
 
   return (
@@ -88,15 +89,7 @@ export function SignupForm() {
             <Github className="w-4 h-4 mr-2" />
             Continue with GitHub
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full bg-background/50 backdrop-blur-sm hover:bg-background/80 border-border/60 transition-all"
-            onClick={() => handleOAuthSignup("apple")}
-          >
-            <Apple className="w-4 h-4 mr-2" />
-            Continue with Apple
-          </Button>
+         
         </div>
 
         {/* Divider */}

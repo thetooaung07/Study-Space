@@ -31,6 +31,11 @@ public class StudySessionController {
         return ResponseEntity.ok(sessionService.getSessionById(id));
     }
     
+    @GetMapping
+    public ResponseEntity<List<StudySessionDTO>> getAllSessions() {
+        return ResponseEntity.ok(sessionService.getAllSessions());
+    }
+    
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<StudySessionDTO>> getUserSessions(@PathVariable Long userId) {
         return ResponseEntity.ok(sessionService.getUserSessions(userId));
@@ -63,8 +68,12 @@ public class StudySessionController {
     }
     
     @DeleteMapping("/{id}/participants/{userId}")
-    public ResponseEntity<Void> removeParticipant(@PathVariable Long id, @PathVariable Long userId) {
-        sessionService.removeParticipant(id, userId);
+    public ResponseEntity<Void> removeParticipant(
+        @PathVariable Long id, 
+        @PathVariable Long userId,
+        @RequestParam(required = false) Integer studyMinutes
+    ) {
+        sessionService.removeParticipant(id, userId, studyMinutes);
         return ResponseEntity.noContent().build();
     }
 }

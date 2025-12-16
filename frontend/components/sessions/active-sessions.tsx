@@ -1,43 +1,66 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Clock, Users, Play } from "lucide-react"
+import { Clock, Users, Play, RefreshCcw } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { StudySessionDTO } from "@/types"
 import { JoinSessionModal } from "@/components/sessions/join-session-modal"
 import { useAuth } from "@/context/auth-context"
+import { useRouter } from "next/navigation"
 
 export function ActiveSessions() {
   const [sessions, setSessions] = useState<StudySessionDTO[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-
   
+  // Join by ID state
+  const [joinId, setJoinId] = useState("")
+
   const { user } = useAuth()
-  
+  const router = useRouter()
 
+  const fetchSessions = async () => {
+    console.log("Fetching sessions...") 
+    if (!user) return
+
+    try {
+      setRefreshing(true)
+      
+      // Fetch user's own sessions (created or joined)
+      const userSessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
+      console.log("User sessions:", userSessions)
+      
+      // Fetch all sessions to find public group sessions
+      const allSessions = await api.get<StudySessionDTO[]>(`/sessions`)
+      console.log("All sessions:", allSessions)
+      
+      // Filter for public group sessions (exclude user's own to avoid duplicates)
+      const publicGroupSessions = allSessions.filter(s => 
+        s.isGroupSession && 
+        !userSessions.some(us => us.id === s.id) // Exclude if already in user's sessions
+      )
+      
+      // Combine user sessions and public group sessions
+      const combinedSessions = [...userSessions, ...publicGroupSessions]
+      
+      // Filter for active or scheduled only
+      setSessions(combinedSessions.filter(s => s.status === 'ACTIVE' || s.status === 'SCHEDULED'))
+
+      console.log("Combined sessions:", combinedSessions)
+    } catch (error) {
+      console.error("Failed to fetch sessions:", error)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchSessions = async () => {
-      if (!user) return
-
-      try {
-        // Fetch sessions for the user or their groups
-        // Using user sessions for now as a starting point
-        const data = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
-        // Filter for active sessions if needed, though backend might return all
-        setSessions(data.filter(s => s.status === 'ACTIVE' || s.status === 'SCHEDULED'))
-      } catch (error) {
-        console.error("Failed to fetch sessions:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     if (user) {
         fetchSessions()
     }
@@ -54,6 +77,17 @@ export function ActiveSessions() {
     MUSIC: "from-indigo-500/20 to-indigo-600/20",
     OTHER: "from-gray-500/20 to-gray-600/20",
   }
+  
+  const handleJoinById = () => {
+      if (joinId) {
+          setSelectedSessionId(parseInt(joinId))
+          setIsModalOpen(true)
+      }
+  }
+
+  const handleDetailsClick = (sessionId: number) => {
+    router.push(`/sessions/active/${sessionId}`)
+  }
 
   if (loading) {
     return (
@@ -64,7 +98,7 @@ export function ActiveSessions() {
     )
   }
 
-    const handleJoinClick = (sessionId: number) => {
+  const handleJoinClick = (sessionId: number) => {
     setSelectedSessionId(sessionId)
     setIsModalOpen(true)
   }
@@ -74,12 +108,33 @@ export function ActiveSessions() {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">Active Sessions</h3>
-        <Button size="sm" variant="outline">
-          View All
-        </Button>
+        <div className="flex gap-2">
+             <div className="flex items-center gap-2">
+                <input 
+                    type="number" 
+                    placeholder="Session ID" 
+                    className="h-8 w-28 px-2 rounded-md border border-input bg-background text-sm"
+                    value={joinId}
+                    onChange={(e) => setJoinId(e.target.value)}
+                />
+                <Button size="sm" variant="outline" onClick={handleJoinById}>
+                  Join ID
+                </Button>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={fetchSessions}
+              disabled={refreshing}
+              className="gap-2"
+            >
+              <RefreshCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2">
         {sessions.length === 0 ? (
           <p className="text-muted-foreground text-sm">No active sessions found.</p>
         ) : (
@@ -93,7 +148,12 @@ export function ActiveSessions() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-foreground">{session.title}</h4>
+                    <h4 className="font-semibold text-foreground">
+                        {session.title} 
+                        <span className="ml-2 text-xs font-normal text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                            ID: {session.id}
+                        </span>
+                    </h4>
                     <span
                       className={`text-xs px-2 py-1 rounded-full ${
                         session.status === "ACTIVE"
@@ -105,16 +165,28 @@ export function ActiveSessions() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {/* Access to host name might need an extra fetch or DTO update, showing ID for now or placeholder */}
                     Hosted by User #{session.creatorId}
                   </p>
                 </div>
-                {session.status === "ACTIVE" && (
-                 <Button size="sm" className="gap-2" onClick={() => handleJoinClick(session.id)}>
-                    <Play className="h-4 w-4" />
-                    Join
-                  </Button>
+                
+                {session.creatorId === user?.id ? (
+                     <Button 
+                       size="sm" 
+                       variant="secondary" 
+                       className="gap-2"
+                       onClick={() => handleDetailsClick(session.id)}
+                     >
+                        Details
+                      </Button>
+                ) : (
+                    session.status === "ACTIVE" && (
+                      <Button size="sm" className="gap-2" onClick={() => handleJoinClick(session.id)}>
+                        <Play className="h-4 w-4" />
+                        Join
+                      </Button>
+                    )
                 )}
+
               </div>
                <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
