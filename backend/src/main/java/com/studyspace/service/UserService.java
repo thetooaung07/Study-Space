@@ -144,4 +144,10 @@ public class UserService {
             .updatedAt(user.getUpdatedAt())
             .build();
     }
+    
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository.delete(user);
+    }
 }

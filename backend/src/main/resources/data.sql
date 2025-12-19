@@ -1,11 +1,11 @@
 -- Insert Sample Users
 INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, created_at, updated_at)
 VALUES
-('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', 'https://api.example.com/avatars/john.jpg', 450, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', 'https://api.example.com/avatars/jane.jpg', 720, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 300, 'AWAY', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', 'https://api.example.com/avatars/alice.jpg', 600, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 900, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', 'https://api.example.com/avatars/john.jpg', 495, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', 'https://api.example.com/avatars/jane.jpg', 345, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', 'https://api.example.com/avatars/bob.jpg', 330, 'AWAY', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', 'https://api.example.com/avatars/alice.jpg', 206, 'OFFLINE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 240, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert Sample Study Groups
 INSERT INTO study_groups (name, description, invite_code, is_private, creator_id, created_at, updated_at)
@@ -39,12 +39,12 @@ VALUES
 -- Insert Sample Study Sessions
 INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, is_group_session, room_code, status, user_id, study_group_id, created_at)
 VALUES
-('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH', DATEADD('HOUR', -48, CURRENT_TIMESTAMP), DATEADD('MINUTE', 72, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 120, true, 'ROOM-1701100800000', 'COMPLETED', 1, 1, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)),
+('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH', DATEADD('HOUR', -48, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 120, true, 'ROOM-1701100800000', 'COMPLETED', 1, 1, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)),
 ('Java OOP Concepts', 'Reviewing inheritance, polymorphism, and abstraction', 'PROGRAMMING', DATEADD('HOUR', -24, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 90, true, 'ROOM-1701187200000', 'COMPLETED', 2, 2, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)),
 ('Biology Lab Report Writing', 'How to write effective lab reports', 'SCIENCE', DATEADD('HOUR', -72, CURRENT_TIMESTAMP), DATEADD('MINUTE', 60, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 60, true, 'ROOM-1700928000000', 'COMPLETED', 3, 3, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)),
 ('World War II Overview', 'Comprehensive review of major events and figures', 'HISTORY', DATEADD('HOUR', -120, CURRENT_TIMESTAMP), DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 150, true, 'ROOM-1700755200000', 'COMPLETED', 4, 4, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)),
 ('Spanish Conversation Practice', 'Informal Spanish speaking session', 'LANGUAGE', DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45, true, 'ROOM-1700841600000', 'COMPLETED', 5, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)),
-('Linear Algebra Problem Set', 'Working through chapter 5 exercises', 'MATH', DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90, false, 'ROOM-1701270000000', 'ACTIVE', 1, NULL, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)),
+('Linear Algebra Problem Set', 'Working through chapter 5 exercises', 'MATH', DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90, false, 'ROOM-1701270000000', 'COMPLETED', 1, NULL, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)),
 ('Python Data Structures', 'Lists, dictionaries, and sets deep dive', 'PROGRAMMING', DATEADD('HOUR', 1, CURRENT_TIMESTAMP), NULL, NULL, false, 'ROOM-1701360000000', 'SCHEDULED', 2, NULL, CURRENT_TIMESTAMP),
 ('Genetics Quiz Prep', 'Final preparation for midterm exam', 'SCIENCE', DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 120, false, 'ROOM-1701316800000', 'COMPLETED', 3, NULL, DATEADD('HOUR', -8, CURRENT_TIMESTAMP));
 
@@ -65,7 +65,7 @@ VALUES
 (5, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45),
 (5, 1, DATEADD('MINUTE', 3, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 48, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45),
 (5, 3, DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 40, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 40),
-(6, 1, DATEADD('HOUR', -6, CURRENT_TIMESTAMP), NULL, NULL),
+(6, 1, DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90),
 (7, 2, DATEADD('HOUR', 1, CURRENT_TIMESTAMP), NULL, NULL),
 (8, 3, DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 120),
 (8, 5, DATEADD('MINUTE', 10, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 115, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 105);

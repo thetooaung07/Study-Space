@@ -3,6 +3,7 @@ export type ActivityType = 'SESSION_JOIN' | 'SESSION_LEAVE' | 'GROUP_JOIN' | 'AC
 export type SessionStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type Subject = 'MATH' | 'SCIENCE' | 'HISTORY' | 'LITERATURE' | 'PROGRAMMING' | 'ART' | 'MUSIC' | 'OTHER';
 export type UserStatus = 'ONLINE' | 'OFFLINE' | 'STUDYING' | 'AWAY';
+export type FocusLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
 // DTOs
 export interface ActivityDTO {
@@ -39,6 +40,7 @@ export interface StudySessionDTO {
     isGroupSession: boolean;
     roomCode: string;
     status: SessionStatus;
+    focusLevel?: FocusLevel;
     createdAt: string;
     creatorId: number;
     creator?: UserDTO;
@@ -55,6 +57,7 @@ export interface UserDTO {
     fullName: string;
     profilePictureUrl?: string;
     totalStudyMinutes: number;
+    currentStreak?: number;
     currentStatus: UserStatus;
     createdAt: string;
     updatedAt: string;
@@ -92,3 +95,13 @@ export interface AnalyticsOverviewDTO {
     hotSessionsCount: number;
     newGroupsToday: number;
 }
+
+// DTO for complex JPQL query results (group member leaderboard)
+export interface GroupMemberStatsDTO {
+    userId: number;
+    fullName: string;
+    profilePictureUrl?: string;
+    totalMinutes: number;
+    sessionCount: number;
+}
+

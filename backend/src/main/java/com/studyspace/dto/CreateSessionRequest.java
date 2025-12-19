@@ -1,6 +1,7 @@
 package com.studyspace.dto;
 
 import com.studyspace.types.Subject;
+import com.studyspace.types.FocusLevel;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -20,5 +21,6 @@ public class CreateSessionRequest {
     
     private Long studyGroupId;
     
-    private Boolean startImmediately;
+    private FocusLevel focusLevel;
 }
+

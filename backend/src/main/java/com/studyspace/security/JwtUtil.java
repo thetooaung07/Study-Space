@@ -3,7 +3,6 @@ package com.studyspace.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -17,7 +16,6 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // In a real app, this should be in application.properties/environment variables
     private static final String SECRET_KEY = "YourSecretKeyShouldBeVeryLongAndComplexToEnsureSecurityStudySpaceApp2024";
 
     public String extractUsername(String token) {
@@ -65,7 +63,7 @@ public class JwtUtil {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        // byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
         // Ensure key is long enough for HS256 if strict, but our string is just raw characters.
         // For simplicity with this raw string, we can just use Keys.hmacShaKeyFor
         // But proper Base64 decoding expects a Base64 encoded string.

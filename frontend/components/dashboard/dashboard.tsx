@@ -1,17 +1,51 @@
 "use client"
 
-import { Users, Clock, Trophy, Zap, CloudCog } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Users, Clock, Trophy, Zap } from "lucide-react"
 import { StatCard } from "@/components/common/stat-card"
 import { ActiveSessions } from "@/components/sessions/active-sessions"
 import { MyGroups } from "@/components/groups/my-groups"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { useAuth } from "@/context/auth-context"
+import { api } from "@/lib/api"
+import { StudyGroupDTO } from "@/types"
+
+/** Format minutes to human-readable time */
+function formatStudyTime(minutes: number): string {
+  if (minutes >= 60) {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+  }
+  return `${minutes}m`
+}
 
 export function Dashboard() {
+  const { user } = useAuth()
+  const [groupCount, setGroupCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
-  const {user } = useAuth() 
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return
+      
+      try {
+        // Fetch user's groups
+        const groups = await api.get<StudyGroupDTO[]>(`/groups/user/${user.id}`)
+        setGroupCount(groups.length)
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  console.log(user);
+    fetchStats()
+  }, [user])
+
+  // Calculate stats from user data
+  const totalStudyMinutes = user?.totalStudyMinutes || 0
+  const streak = user?.currentStreak || 0
 
   return (
     <div className="p-6 space-y-6">
@@ -25,10 +59,34 @@ export function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard icon={Clock} label="Total Study Time" value="42h 30m" trend="Up 12% this week" positive />
-        <StatCard icon={Users} label="Study Groups" value="5" trend="2 new invitations" positive />
-        <StatCard icon={Trophy} label="Leaderboard Rank" value="#47" trend="Up 5 positions" positive />
-        <StatCard icon={Zap} label="Streak Days" value="12" trend="Keep it going!" positive />
+        <StatCard 
+          icon={Clock} 
+          label="Total Study Time" 
+          value={formatStudyTime(totalStudyMinutes)} 
+          trend={totalStudyMinutes > 0 ? "Keep studying!" : "Start your journey"} 
+          positive={totalStudyMinutes > 0} 
+        />
+        <StatCard 
+          icon={Users} 
+          label="Study Groups" 
+          value={loading ? "..." : groupCount.toString()} 
+          trend={groupCount > 0 ? `${groupCount} group${groupCount !== 1 ? 's' : ''} joined` : "Join a group!"} 
+          positive={groupCount > 0} 
+        />
+        <StatCard 
+          icon={Trophy} 
+          label="Sessions Completed" 
+          value={Math.floor(totalStudyMinutes / 30).toString()} 
+          trend="Based on 30min avg" 
+          positive={totalStudyMinutes > 0} 
+        />
+        <StatCard 
+          icon={Zap} 
+          label="Streak Days" 
+          value={streak.toString()} 
+          trend={streak > 0 ? "Keep it going! 🔥" : "Start your streak!"} 
+          positive={streak > 0} 
+        />
       </div>
 
       {/* Main Content Grid */}

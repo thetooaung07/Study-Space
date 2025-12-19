@@ -1,6 +1,7 @@
 package com.studyspace.service;
 
 import com.studyspace.entity.Activity;
+import com.studyspace.entity.StudySession;
 import com.studyspace.entity.User;
 import com.studyspace.repository.ActivityRepository;
 import com.studyspace.repository.UserRepository;
@@ -31,10 +32,11 @@ public class GamificationService {
      *
      * @param user User entity to update
      * @param sessionMinutes Minutes spent in the just-finished session
+     * @param session The study session (for activity logging)
      */
-    public void processSessionCompletion(User user, int sessionMinutes) {
+    public void processSessionCompletion(User user, int sessionMinutes, StudySession session) {
         updateStreak(user);
-        checkAchievements(user, sessionMinutes);
+        checkAchievements(user, sessionMinutes, session);
         userRepository.save(user);
     }
 
@@ -57,22 +59,23 @@ public class GamificationService {
         user.setLastStudyDate(LocalDateTime.now());
     }
 
-    private void checkAchievements(User user, int sessionMinutes) {
+    private void checkAchievements(User user, int sessionMinutes, StudySession session) {
         int totalMinutes = user.getTotalStudyMinutes() != null ? user.getTotalStudyMinutes() : 0;
         int previousMinutes = totalMinutes - sessionMinutes; // Estimate previous total
         
         // Simple milestone checks - logging activities if crossed a threshold
-        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_1_HOUR, "First Hour of Power!");
-        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_10_HOURS, "Dedication Unlock: 10 Hours!");
-        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_100_HOURS, "Master Scholar: 100 Hours!");
+        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_1_HOUR, "First Hour of Power!", session);
+        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_10_HOURS, "Dedication Unlock: 10 Hours!", session);
+        checkAndLogMilestone(user, previousMinutes, totalMinutes, MILESTONE_100_HOURS, "Master Scholar: 100 Hours!", session);
     }
     
-    private void checkAndLogMilestone(User user, int oldTotal, int newTotal, int threshold, String message) {
+    private void checkAndLogMilestone(User user, int oldTotal, int newTotal, int threshold, String message, StudySession session) {
         if (oldTotal < threshold && newTotal >= threshold) {
             Activity milestone = Activity.builder()
                 .user(user)
                 .type(ActivityType.MILESTONE_REACHED)
                 .message(message)
+                .studySession(session)
                 .timestamp(LocalDateTime.now())
                 .build();
             activityRepository.save(milestone);

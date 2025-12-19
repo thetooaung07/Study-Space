@@ -9,5 +9,6 @@ public enum ActivityType {
     MILESTONE_REACHED,
     MESSAGE,
     HAND_RAISE,
-    COFFEE_BREAK
+    COFFEE_BREAK,
+    QUESTION
 }

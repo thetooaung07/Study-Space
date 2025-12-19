@@ -1,8 +1,9 @@
 "use client"
 
-import { Settings, MessageSquare, Share2, Bell } from "lucide-react"
+import { Settings, MessageSquare, Share2, Bell, BarChart3 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface GroupDetailProps {
   groupId: number
@@ -53,6 +54,11 @@ export function GroupDetail({ groupId }: GroupDetailProps) {
             </div>
           </div>
           <div className="flex gap-2">
+            <Link href={`/groups/analytics/${groupId}`}>
+              <Button variant="outline" size="icon">
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+            </Link>
             <Button variant="outline" size="icon">
               <Settings className="h-4 w-4" />
             </Button>

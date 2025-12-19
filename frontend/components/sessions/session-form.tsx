@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
-import { StudySessionDTO } from "@/types"
+import { StudySessionDTO, FocusLevel } from "@/types"
 
 interface SessionFormProps {
   onClose: () => void
@@ -22,10 +22,9 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
   const [formData, setFormData] = useState({
     title: "",
     subject: "",
-    sessionType: "", // Only used for UI logic, backend handles basics
+    sessionType: "",
     description: "",
-    focusLevel: "Medium", // Not in CreateSessionRequest but kept for UI
-    startTiming: "now", // "now" or "schedule"
+    focusLevel: "MEDIUM" as FocusLevel,
   })
 
   const subjects = ["MATH", "SCIENCE", "LANGUAGE", "HISTORY", "PROGRAMMING", "OTHER"]
@@ -45,15 +44,13 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
         description: formData.description,
         subject: formData.subject,
         isGroupSession: formData.sessionType !== "Solo",
-        startImmediately: formData.startTiming === "now",
-        // studyGroupId is omitted for now, will be null
+        focusLevel: formData.focusLevel,
       })
       
       toast.success("Session created successfully!")
       onSuccess?.()
       onClose()
       
-      // Navigate to the active session page
       router.push(`/sessions/active/${createdSession.id}`)
     } catch (error) {
       console.error("Failed to create session:", error)
@@ -118,28 +115,6 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-foreground block mb-2">When to Start</label>
-          <div className="flex gap-2">
-            <Button 
-              type="button"
-              variant={formData.startTiming === "now" ? "default" : "outline"}
-              onClick={() => setFormData({ ...formData, startTiming: "now" })}
-              className={`flex-1 ${formData.startTiming !== "now" ? "bg-transparent" : ""}`}
-            >
-              Start Now
-            </Button>
-            <Button 
-              type="button"
-              variant={formData.startTiming === "schedule" ? "default" : "outline"}
-              onClick={() => setFormData({ ...formData, startTiming: "schedule" })}
-              className={`flex-1 ${formData.startTiming !== "schedule" ? "bg-transparent" : ""}`}
-            >
-              Schedule for Later
-            </Button>
-          </div>
-        </div>
-
-        <div>
           <label className="text-sm font-medium text-foreground block mb-2">Description (Optional)</label>
           <textarea
             placeholder="Add notes about what you'll study..."
@@ -153,14 +128,14 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
         <div>
           <label className="text-sm font-medium text-foreground block mb-3">Focus Level</label>
           <div className="flex gap-2">
-            {["Low", "Medium", "High"].map((level) => (
+            {(["LOW", "MEDIUM", "HIGH"] as FocusLevel[]).map((level) => (
               <Button 
                 key={level} 
                 variant={formData.focusLevel === level ? "default" : "outline"}
                 onClick={() => setFormData({ ...formData, focusLevel: level })}
                 className={`flex-1 ${formData.focusLevel !== level ? "bg-transparent" : ""}`}
               >
-                {level}
+                {level.charAt(0) + level.slice(1).toLowerCase()}
               </Button>
             ))}
           </div>

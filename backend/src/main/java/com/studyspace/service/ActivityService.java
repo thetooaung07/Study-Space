@@ -68,7 +68,7 @@ public class ActivityService {
                 .type(activity.getType())
                 .message(activity.getMessage())
                 .timestamp(activity.getTimestamp())
-                .sessionId(activity.getStudySession().getId())
+                .sessionId(activity.getStudySession() != null ? activity.getStudySession().getId() : null)
                 .userId(activity.getUser().getId())
                 .userName(activity.getUser().getFullName()) // Using full name for display
                 .userProfilePictureUrl(activity.getUser().getProfilePictureUrl())

@@ -1,11 +1,13 @@
 package com.studyspace.service;
 
 import com.studyspace.dto.CreateGroupRequest;
+import com.studyspace.dto.GroupMemberStatsDTO;
 import com.studyspace.dto.GroupStatsDTO;
 import com.studyspace.dto.StudyGroupDTO;
 import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.StudySession;
 import com.studyspace.entity.User;
+import com.studyspace.repository.SessionParticipantRepository;
 import com.studyspace.repository.StudyGroupRepository;
 import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
@@ -24,6 +26,7 @@ public class StudyGroupService {
     private final StudyGroupRepository groupRepository;
     private final UserRepository userRepository;
     private final StudySessionRepository sessionRepository;
+    private final SessionParticipantRepository participantRepository;
     
     public StudyGroupDTO createGroup(Long creatorId, CreateGroupRequest request) {
         User creator = userRepository.findById(creatorId)
@@ -72,6 +75,14 @@ public class StudyGroupService {
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public List<StudyGroupDTO> getAllGroups() {
+        return groupRepository.findAll().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+    }
+
     
     public void addMember(Long groupId, Long userId) {
         StudyGroup group = groupRepository.findById(groupId)
@@ -96,6 +107,34 @@ public class StudyGroupService {
         user.getGroups().remove(group);
         groupRepository.save(group);
     }
+    
+    public StudyGroupDTO updateGroup(Long groupId, CreateGroupRequest request) {
+        StudyGroup group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+            
+        group.setName(request.getName());
+        group.setDescription(request.getDescription());
+        if (request.getIsPrivate() != null) {
+            group.setIsPrivate(request.getIsPrivate());
+        }
+        
+        return convertToDTO(groupRepository.save(group));
+    }
+    
+    public void deleteGroup(Long groupId) {
+        StudyGroup group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+            
+        // Remove group from all members first (because User is the owning side of ManyToMany)
+        for (User member : group.getMembers()) {
+            member.getGroups().remove(group);
+            userRepository.save(member);
+        }
+        group.getMembers().clear();
+        
+        groupRepository.delete(group);
+    }
+
     
     @Transactional(readOnly = true)
     public GroupStatsDTO getGroupStats(Long groupId, LocalDateTime cutoffDate, Integer minimumMinutes) {
@@ -145,6 +184,26 @@ public class StudyGroupService {
             .sorted((g1, g2) -> Long.compare(g2.getTotalStudyMinutes(), g1.getTotalStudyMinutes()))
             .limit(10)
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get group member leaderboard using the complex JPQL query.
+     * This query joins 4 tables: User, SessionParticipant, StudySession, StudyGroup
+     * and uses GROUP BY, HAVING, and ORDER BY.
+     * 
+     * @param groupId The group to get leaderboard for
+     * @param since Only include sessions after this date
+     * @param minMinutes Minimum minutes threshold
+     * @return List of GroupMemberStatsDTO sorted by total study minutes
+     */
+    @Transactional(readOnly = true)
+    public List<GroupMemberStatsDTO> getGroupMemberLeaderboard(Long groupId, LocalDateTime since, Integer minMinutes) {
+        // Validate group exists
+        groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+        
+        // Use the complex JPQL query
+        return participantRepository.findGroupMemberStatsByGroupId(groupId, since, minMinutes);
     }
     
     private String generateInviteCode() {

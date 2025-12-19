@@ -18,6 +18,7 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .totalStudyMinutes(user.getTotalStudyMinutes())
+                .currentStreak(user.getCurrentStreak())
                 .currentStatus(user.getCurrentStatus())
                 .authProvider(user.getAuthProvider())
                 .createdAt(user.getCreatedAt())

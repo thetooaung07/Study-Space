@@ -27,7 +27,7 @@ public class Activity {
     private LocalDateTime timestamp;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_session_id", nullable = false)
+    @JoinColumn(name = "study_session_id", nullable = true)
     private StudySession studySession;
     
     @ManyToOne(fetch = FetchType.LAZY)

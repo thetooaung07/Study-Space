@@ -76,4 +76,10 @@ public class StudySessionController {
         sessionService.removeParticipant(id, userId, studyMinutes);
         return ResponseEntity.noContent().build();
     }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSession(@PathVariable Long id) {
+        sessionService.deleteSession(id);
+        return ResponseEntity.noContent().build();
+    }
 }

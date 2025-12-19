@@ -37,12 +37,9 @@ public class StudySessionService {
             .subject(request.getSubject())
             .creator(creator)
             .isGroupSession(request.getIsGroupSession() != null ? request.getIsGroupSession() : false)
-            .status(request.getStartImmediately() != null && request.getStartImmediately() 
-                ? SessionStatus.ACTIVE 
-                : SessionStatus.SCHEDULED)
-            .startTime(request.getStartImmediately() != null && request.getStartImmediately() 
-                ? LocalDateTime.now() 
-                : null)
+            .status(SessionStatus.ACTIVE)
+            .startTime(LocalDateTime.now())
+            .focusLevel(request.getFocusLevel() != null ? request.getFocusLevel() : com.studyspace.types.FocusLevel.MEDIUM)
             .build();
         
         if (request.getStudyGroupId() != null) {
@@ -158,7 +155,7 @@ public class StudySessionService {
             user.setTotalStudyMinutes(currentTotal + (int) participationMinutes);
             
             // --- GAMIFICATION LOGIC (Complex Business Logic) ---
-            gamificationService.processSessionCompletion(user, (int) participationMinutes);
+            gamificationService.processSessionCompletion(user, (int) participationMinutes, session);
             
             userRepository.save(user);
             participantRepository.save(participant);
@@ -302,6 +299,7 @@ public class StudySessionService {
                 .isGroupSession(session.getIsGroupSession())
                 .roomCode(session.getRoomCode())
                 .status(session.getStatus())
+                .focusLevel(session.getFocusLevel())
                 .createdAt(session.getCreatedAt())
                 .creatorId(session.getCreator().getId())
                 .creator(userMapper.toDTO(session.getCreator()))
@@ -310,5 +308,24 @@ public class StudySessionService {
                 .participants(participantDTOs)
                 .duration(durationStr)
                 .build();
+    }
+
+    @Transactional
+    public void deleteSession(Long id) {
+        StudySession session = sessionRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Session not found"));
+            
+        // Revert study minutes for all participants
+        for (SessionParticipant participant : session.getParticipants()) {
+            if (participant.getMinutesParticipated() != null && participant.getMinutesParticipated() > 0) {
+                User user = participant.getUser();
+                if (user.getTotalStudyMinutes() != null) {
+                    user.setTotalStudyMinutes(Math.max(0, user.getTotalStudyMinutes() - participant.getMinutesParticipated()));
+                    userRepository.save(user);
+                }
+            }
+        }
+        
+        sessionRepository.delete(session);
     }
 }

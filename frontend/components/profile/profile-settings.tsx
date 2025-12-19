@@ -8,14 +8,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Mail, Lock, Camera, Save, CloudCog, Eye, EyeOff } from "lucide-react"
+import { User, Mail, Lock, Camera, Save, CloudCog, Eye, EyeOff, AlertTriangle, Trash2 } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 
 export function ProfileSettings() {
-  const { user, login, updateUser } = useAuth()
+  const { user, login, updateUser, logout } = useAuth()
+  const router = useRouter()
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [currentPassword, setCurrentPassword] = useState("")
@@ -90,6 +103,23 @@ export function ProfileSettings() {
     } catch (error) {
       console.error("Failed to update password", error)
       toast.error("Failed to update password. Check your current password.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!user) return
+    setLoading(true)
+
+    try {
+      await api.delete(`/users/${user.id}`)
+      toast.success("Account deleted successfully")
+      logout()
+      router.push("/login")
+    } catch (error) {
+      console.error("Failed to delete account", error)
+      toast.error("Failed to delete account.")
     } finally {
       setLoading(false)
     }
@@ -326,6 +356,48 @@ export function ProfileSettings() {
             </p>
             <p className="text-sm text-muted-foreground">Member Duration</p>
           </div>
+        </div>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="p-6 bg-red-500/5 backdrop-blur-md border border-red-500/20 hover:bg-red-500/10 transition-all">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <h2 className="text-xl font-semibold text-red-500">Danger Zone</h2>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-foreground">Delete Account</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="bg-red-500 hover:bg-red-600">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete your account and remove your
+                  data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-500 hover:bg-red-600 text-white">
+                  Delete Account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </Card>
     </div>

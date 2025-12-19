@@ -49,6 +49,10 @@ public class StudySession {
     @Column(columnDefinition = "VARCHAR(50) DEFAULT 'SCHEDULED'")
     private SessionStatus status;
     
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'MEDIUM'")
+    private com.studyspace.types.FocusLevel focusLevel;
+    
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     

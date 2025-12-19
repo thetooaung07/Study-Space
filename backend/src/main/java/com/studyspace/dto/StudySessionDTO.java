@@ -2,6 +2,7 @@ package com.studyspace.dto;
 
 import com.studyspace.types.SessionStatus;
 import com.studyspace.types.Subject;
+import com.studyspace.types.FocusLevel;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +22,7 @@ public class StudySessionDTO {
     private Boolean isGroupSession;
     private String roomCode;
     private SessionStatus status;
+    private FocusLevel focusLevel;
     private LocalDateTime createdAt;
     private Long creatorId;
     private UserDTO creator;
@@ -29,3 +31,4 @@ public class StudySessionDTO {
     private List<UserDTO> participants;
     private String duration;
 }
+

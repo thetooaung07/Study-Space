@@ -17,6 +17,7 @@ public class UserDTO {
     private String fullName;
     private String profilePictureUrl;
     private Integer totalStudyMinutes;
+    private Integer currentStreak;
     private UserStatus currentStatus;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

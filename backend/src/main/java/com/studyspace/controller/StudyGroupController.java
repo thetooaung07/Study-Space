@@ -1,6 +1,7 @@
 package com.studyspace.controller;
 
 import com.studyspace.dto.CreateGroupRequest;
+import com.studyspace.dto.GroupMemberStatsDTO;
 import com.studyspace.dto.GroupStatsDTO;
 import com.studyspace.dto.StudyGroupDTO;
 import com.studyspace.service.StudyGroupService;
@@ -29,6 +30,21 @@ public class StudyGroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(groupService.createGroup(creatorId, request));
     }
     
+    @PutMapping("/{id}")
+    public ResponseEntity<StudyGroupDTO> updateGroup(
+        @PathVariable Long id,
+        @Valid @RequestBody CreateGroupRequest request
+    ) {
+        return ResponseEntity.ok(groupService.updateGroup(id, request));
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGroup(@PathVariable Long id) {
+        groupService.deleteGroup(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    
     @GetMapping("/{id}")
     public ResponseEntity<StudyGroupDTO> getGroup(@PathVariable Long id) {
         return ResponseEntity.ok(groupService.getGroupById(id));
@@ -48,6 +64,12 @@ public class StudyGroupController {
     public ResponseEntity<List<StudyGroupDTO>> getCreatedGroups(@PathVariable Long userId) {
         return ResponseEntity.ok(groupService.getCreatedGroups(userId));
     }
+    
+    @GetMapping
+    public ResponseEntity<List<StudyGroupDTO>> getAllGroups() {
+        return ResponseEntity.ok(groupService.getAllGroups());
+    }
+
     
     @PostMapping("/{id}/members/{userId}")
     public ResponseEntity<Void> addMember(@PathVariable Long id, @PathVariable Long userId) {
@@ -77,4 +99,22 @@ public class StudyGroupController {
         }
         return ResponseEntity.ok(groupService.getGroupStats(id, cutoffDate, minimumMinutes));
     }
+    
+    /**
+     * Get member leaderboard for a group using complex JPQL query.
+     * This endpoint uses a query that joins 4 tables (User, SessionParticipant, 
+     * StudySession, StudyGroup) with GROUP BY, HAVING, and ORDER BY.
+     */
+    @GetMapping("/{id}/members/leaderboard")
+    public ResponseEntity<List<GroupMemberStatsDTO>> getGroupMemberLeaderboard(
+        @PathVariable Long id,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since,
+        @RequestParam(defaultValue = "0") Integer minMinutes
+    ) {
+        if (since == null) {
+            since = LocalDateTime.now().minusDays(30);
+        }
+        return ResponseEntity.ok(groupService.getGroupMemberLeaderboard(id, since, minMinutes));
+    }
 }
+

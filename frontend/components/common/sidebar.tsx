@@ -11,7 +11,7 @@ export function Sidebar() {
 	const navItems = [
 		{ icon: BookOpen, label: "Dashboard", href: "/dashboard" },
 		{ icon: Clock, label: "My Sessions", href: "/sessions" },
-		// { icon: Users, label: "Groups", href: "/groups" },
+		{ icon: Users, label: "Groups", href: "/groups" },
 		// { icon: BarChart3, label: "Leaderboard", href: "/leaderboard" },
 		// { icon: Zap, label: "Trending", href: "/trending" },
 		// { icon: PieChart, label: "Analytics", href: "/analytics" },

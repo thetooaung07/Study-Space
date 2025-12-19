@@ -2,7 +2,7 @@
 
 import { Header } from "@/components/common/header"
 import { Sidebar } from "@/components/common/sidebar"
-import { AnalyticsDashboard } from "@/components/analytics/analytics-dashboard"
+import { AnalyticsDashboard } from "@/components/groups/analytics/analytics-dashboard"
 
 export default function AnalyticsPage() {
   return (

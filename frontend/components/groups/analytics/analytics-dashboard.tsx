@@ -1,6 +1,6 @@
 "use client"
 
-import { Analytics } from "@/components/analytics/analytics"
+import { Analytics } from "@/components/groups/analytics/analytics"
 
 export function AnalyticsDashboard() {
   return (

@@ -41,8 +41,6 @@ public class AuthService {
                 .authProvider(com.studyspace.types.AuthProvider.LOCAL)
                 .build();
         
-        // Initialize fields properly via builder default or here if not working
-        // User entity @PrePersist handles defaults but let's be safe.
 
         var savedUser = userRepository.save(user);
         var jwtToken = jwtUtil.generateToken(new org.springframework.security.core.userdetails.User(
