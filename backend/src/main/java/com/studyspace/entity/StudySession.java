@@ -2,7 +2,9 @@ package com.studyspace.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import com.studyspace.types.SessionStatus;
+import com.studyspace.types.SessionVisibility;
 import com.studyspace.types.Subject;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -46,12 +48,12 @@ public class StudySession {
     private String roomCode;
     
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "VARCHAR(50) DEFAULT 'SCHEDULED'")
+    @Column(columnDefinition = "VARCHAR(50) DEFAULT 'ACTIVE'")
     private SessionStatus status;
-    
+
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'MEDIUM'")
-    private com.studyspace.types.FocusLevel focusLevel;
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'PUBLIC'")
+    private SessionVisibility visibility;
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -79,7 +81,10 @@ public class StudySession {
         createdAt = LocalDateTime.now();
         startTime = LocalDateTime.now();
         if (status == null) {
-            status = SessionStatus.SCHEDULED;
+            status = SessionStatus.ACTIVE;
+        }
+        if (visibility == null) {
+            visibility = SessionVisibility.PUBLIC;
         }
         if (isGroupSession == null) {
             isGroupSession = false;

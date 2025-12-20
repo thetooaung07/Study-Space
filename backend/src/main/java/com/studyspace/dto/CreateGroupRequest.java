@@ -1,5 +1,7 @@
 package com.studyspace.dto;
 
+import com.studyspace.types.GroupType;
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -14,5 +16,5 @@ public class CreateGroupRequest {
     
     private String description;
     
-    private Boolean isPrivate;
+    private GroupType groupType;
 }

@@ -38,6 +38,12 @@ public class StudyGroupController {
         return ResponseEntity.ok(groupService.updateGroup(id, request));
     }
     
+    @PutMapping("/{id}/transfer")
+    public ResponseEntity<Void> transferOwnership(@PathVariable Long id, @RequestParam Long newOwnerId) {
+        groupService.transferOwnership(id, newOwnerId);
+        return ResponseEntity.ok().build();
+    }
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteGroup(@PathVariable Long id) {
         groupService.deleteGroup(id);
@@ -48,6 +54,14 @@ public class StudyGroupController {
     @GetMapping("/{id}")
     public ResponseEntity<StudyGroupDTO> getGroup(@PathVariable Long id) {
         return ResponseEntity.ok(groupService.getGroupById(id));
+    }
+
+    @GetMapping("/{id}/details")
+    public ResponseEntity<com.studyspace.dto.StudyGroupDetailsDTO> getGroupDetails(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long requestingUserId
+    ) {
+        return ResponseEntity.ok(groupService.getGroupDetails(id, requestingUserId));
     }
     
     @GetMapping("/invite/{inviteCode}")

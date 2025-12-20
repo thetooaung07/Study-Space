@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
-import { StudySessionDTO, FocusLevel } from "@/types"
+import { StudySessionDTO } from "@/types"
 
 interface SessionFormProps {
   onClose: () => void
@@ -24,7 +24,7 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
     subject: "",
     sessionType: "",
     description: "",
-    focusLevel: "MEDIUM" as FocusLevel,
+    visibility: "PUBLIC"
   })
 
   const subjects = ["MATH", "SCIENCE", "LANGUAGE", "HISTORY", "PROGRAMMING", "OTHER"]
@@ -44,7 +44,7 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
         description: formData.description,
         subject: formData.subject,
         isGroupSession: formData.sessionType !== "Solo",
-        focusLevel: formData.focusLevel,
+        visibility: formData.visibility
       })
       
       toast.success("Session created successfully!")
@@ -126,16 +126,16 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-foreground block mb-3">Focus Level</label>
+          <label className="text-sm font-medium text-foreground block mb-3">Visibility</label>
           <div className="flex gap-2">
-            {(["LOW", "MEDIUM", "HIGH"] as FocusLevel[]).map((level) => (
+            {(["PUBLIC", "PRIVATE"] as const).map((visibility) => (
               <Button 
-                key={level} 
-                variant={formData.focusLevel === level ? "default" : "outline"}
-                onClick={() => setFormData({ ...formData, focusLevel: level })}
-                className={`flex-1 ${formData.focusLevel !== level ? "bg-transparent" : ""}`}
+                key={visibility} 
+                variant={formData.visibility === visibility ? "default" : "outline"}
+                onClick={() => setFormData({ ...formData, visibility })}
+                className={`flex-1 ${formData.visibility !== visibility ? "bg-transparent" : ""}`}
               >
-                {level.charAt(0) + level.slice(1).toLowerCase()}
+                {visibility.charAt(0) + visibility.slice(1).toLowerCase()}
               </Button>
             ))}
           </div>

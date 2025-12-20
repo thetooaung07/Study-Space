@@ -3,7 +3,6 @@ package com.studyspace.config;
 import com.studyspace.security.JwtAuthenticationFilter;
 import com.studyspace.security.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,7 +37,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless APIs
                 .authorizeHttpRequests(authz -> authz
                         // Public Endpoints
-                        .requestMatchers(PathRequest.toH2Console()).permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll() // Allow only auth entry points
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         

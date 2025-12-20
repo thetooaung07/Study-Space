@@ -34,11 +34,8 @@ export function SessionHistory({ onSessionDeleted }: SessionHistoryProps) {
       if (!user) return
       
       try {
-        // Fetch user's sessions (completed ones)
         const allSessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
-        // Filter to only show completed sessions
-        const completedSessions = allSessions.filter(s => s.status === 'COMPLETED')
-        setSessions(completedSessions)
+        setSessions(allSessions)
       } catch (error) {
         console.error("Failed to fetch session history:", error)
       } finally {

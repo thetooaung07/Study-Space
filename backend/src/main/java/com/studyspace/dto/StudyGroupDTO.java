@@ -3,6 +3,8 @@ package com.studyspace.dto;
 import lombok.*;
 import java.time.LocalDateTime;
 
+import com.studyspace.types.GroupType;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,7 +14,7 @@ public class StudyGroupDTO {
     private String name;
     private String description;
     private String inviteCode;
-    private Boolean isPrivate;
+    private GroupType groupType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Long creatorId;

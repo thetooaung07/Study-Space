@@ -25,33 +25,21 @@ export function ActiveSessions() {
   const router = useRouter()
 
   const fetchSessions = async () => {
-    console.log("Fetching sessions...") 
     if (!user) return
 
     try {
       setRefreshing(true)
       
-      // Fetch user's own sessions (created or joined)
       const userSessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
-      console.log("User sessions:", userSessions)
-      
-      // Fetch all sessions to find public group sessions
       const allSessions = await api.get<StudySessionDTO[]>(`/sessions`)
-      console.log("All sessions:", allSessions)
       
-      // Filter for public group sessions (exclude user's own to avoid duplicates)
       const publicGroupSessions = allSessions.filter(s => 
         s.isGroupSession && 
-        !userSessions.some(us => us.id === s.id) // Exclude if already in user's sessions
+        !userSessions.some(us => us.id === s.id) 
       )
-      
-      // Combine user sessions and public group sessions
       const combinedSessions = [...userSessions, ...publicGroupSessions]
-      
-      // Filter for active or scheduled only
-      setSessions(combinedSessions.filter(s => s.status === 'ACTIVE' || s.status === 'SCHEDULED'))
+      setSessions(combinedSessions.filter(s => s.status === 'ACTIVE'))
 
-      console.log("Combined sessions:", combinedSessions)
     } catch (error) {
       console.error("Failed to fetch sessions:", error)
     } finally {
@@ -155,13 +143,9 @@ export function ActiveSessions() {
                         </span>
                     </h4>
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        session.status === "ACTIVE"
-                          ? "bg-pale-green text-status-live-fg border border-pale-green/50"
-                          : "bg-pale-blue text-status-scheduled-fg border border-pale-blue/50"
-                      }`}
+                      className={`text-xs px-2 py-1 rounded-full bg-pale-green text-status-live-fg border border-pale-green/50`}
                     >
-                      {session.status === "ACTIVE" ? "● Live" : "Scheduled"}
+                      ● Live
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">

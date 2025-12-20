@@ -11,6 +11,8 @@ import com.studyspace.repository.SessionParticipantRepository;
 import com.studyspace.repository.StudyGroupRepository;
 import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
+import com.studyspace.types.GroupType;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class StudyGroupService {
     private final UserRepository userRepository;
     private final StudySessionRepository sessionRepository;
     private final SessionParticipantRepository participantRepository;
+    private final com.studyspace.mapper.UserMapper userMapper;
     
     public StudyGroupDTO createGroup(Long creatorId, CreateGroupRequest request) {
         User creator = userRepository.findById(creatorId)
@@ -36,7 +39,7 @@ public class StudyGroupService {
             .name(request.getName())
             .description(request.getDescription())
             .creator(creator)
-            .isPrivate(request.getIsPrivate() != null ? request.getIsPrivate() : false)
+            .groupType(request.getGroupType() != null ? request.getGroupType() : GroupType.PUBLIC)
             .inviteCode(generateInviteCode())
             .build();
         
@@ -114,18 +117,46 @@ public class StudyGroupService {
             
         group.setName(request.getName());
         group.setDescription(request.getDescription());
-        if (request.getIsPrivate() != null) {
-            group.setIsPrivate(request.getIsPrivate());
+        if (request.getGroupType() != null) {
+            group.setGroupType(request.getGroupType());
         }
         
         return convertToDTO(groupRepository.save(group));
     }
     
+    public void transferOwnership(Long groupId, Long newOwnerId) {
+        StudyGroup group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+            
+        User newOwner = userRepository.findById(newOwnerId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+            
+        // Check if new owner is a member
+        if (!group.getMembers().contains(newOwner)) {
+            throw new RuntimeException("New owner must be a member of the group");
+        }
+        
+        group.setCreator(newOwner);
+        groupRepository.save(group);
+    }
+
     public void deleteGroup(Long groupId) {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
             
-        // Remove group from all members first (because User is the owning side of ManyToMany)
+        if (group.getGroupType() == GroupType.PUBLIC) {
+            // Public group: cannot delete if there are other members (excluding creator if they are leaving, but here we are deleting)
+            // Rule: "Group will be only deleted if the last user wants to leave (meaning the group will become empty)"
+            if (group.getMembers().size() > 1) {
+                throw new RuntimeException("Cannot delete a public group with active members. Please transfer ownership or wait until it is empty.");
+            }
+        } else if (group.getGroupType() == GroupType.INVITE_ONLY) {
+             // Join-via-id: Creator offered options, but API just deletes.
+             // We allow delete, but frontend should have warned/offered transfer.
+        }
+        // Personal group: Deleted if creator leaves (so delete is fine).
+
+        // Remove group from all members
         for (User member : group.getMembers()) {
             member.getGroups().remove(group);
             userRepository.save(member);
@@ -216,11 +247,98 @@ public class StudyGroupService {
             .name(group.getName())
             .description(group.getDescription())
             .inviteCode(group.getInviteCode())
-            .isPrivate(group.getIsPrivate())
+            .groupType(group.getGroupType())
             .createdAt(group.getCreatedAt())
             .updatedAt(group.getUpdatedAt())
             .creatorId(group.getCreator().getId())
             .memberCount(group.getMembers().size())
+            .build();
+    }
+    @Transactional(readOnly = true)
+    public com.studyspace.dto.StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
+        StudyGroup group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+            
+        // Fetch active sessions
+        // Logic similar to getGroupSessions in StudySessionService but we can reuse or replicate query
+        // For simplicity, let's inject StudySessionService if possible, or just use sessionRepository
+        // We really should use StudySessionService to ensure consistency (like hiding private sessions)
+        // But circular dependency risk if StudySessionService depends on StudyGroupService.
+        // Let's use sessionRepository directly for now, replicating the visibility logic or simpler:
+        // "Active sessions for this group"
+        // If we want to support PRIVATE sessions logic properly, we need to check visibility.
+        // Let's assume for now we return ALL Group sessions that are ACTIVE.
+        
+        // Filter out completed/cancelled? The UI shows "Sessions". 
+        // Typically we want ACTIVE sessions for the "Live" view, and maybe recent for list.
+        // Current frontend implementation fetched `/sessions/group/${groupId}` which returned all.
+        // Let's return all for now, or maybe just active ones if the UI distinguishes.
+        // The DTO name in frontend is `sessions`, displayed in a list. 
+        
+        List<StudySession> sessions = sessionRepository.findByStudyGroupId(groupId);
+        // Filter?
+        // Let's stick to what the separate endpoint would have done.
+        
+        List<com.studyspace.dto.StudySessionDTO> sessionDTOs = sessions.stream()
+             .filter(s -> {
+                 if (com.studyspace.types.SessionVisibility.PUBLIC.equals(s.getVisibility())) {
+                     return true;
+                 }
+                 if (com.studyspace.types.SessionVisibility.PRIVATE.equals(s.getVisibility())) {
+                     return requestingUserId != null && s.getCreator().getId().equals(requestingUserId);
+                 }
+                 return false;
+             })
+             .map(session -> {
+                 // We need a session mapper. StudySessionService has one.
+                 // To avoid duplication, ideally we use a Mapper class.
+                 // For now, I'll allow a little duplication or simple mapping to avoid large refactor.
+                 // Actually, StudySessionService is not injected here.
+                 // Let's manual map or refactor StudySessionDTO to have a static mapper?
+                 return convertSessionToDTO(session);
+             })
+             .collect(Collectors.toList());
+
+        // Map members
+        List<com.studyspace.dto.GroupMemberDTO> memberDTOs = group.getMembers().stream()
+            .map(member -> com.studyspace.dto.GroupMemberDTO.builder()
+                .id(member.getId())
+                .username(member.getUsername())
+                .fullName(member.getFullName())
+                .profilePictureUrl(member.getProfilePictureUrl())
+                .currentStatus(member.getCurrentStatus())
+                .isAdmin(member.getId().equals(group.getCreator().getId()))
+                .joinedAt(null) // joinedAt not in User-Group relation directly available here easily without join query
+                .totalStudyMinutesInGroup(0L) // Expensive to calc on the fly without dedicated query
+                .build())
+            .collect(Collectors.toList());
+
+        return com.studyspace.dto.StudyGroupDetailsDTO.builder()
+            .group(convertToDTO(group))
+            .sessions(sessionDTOs)
+            .members(memberDTOs)
+            .build();
+    }
+
+    private com.studyspace.dto.StudySessionDTO convertSessionToDTO(StudySession session) {
+        return com.studyspace.dto.StudySessionDTO.builder()
+            .id(session.getId())
+            .title(session.getTitle())
+            .description(session.getDescription())
+            .subject(session.getSubject())
+            .startTime(session.getStartTime())
+            .endTime(session.getEndTime())
+            .durationMinutes(session.getDurationMinutes())
+            .isGroupSession(session.getIsGroupSession())
+            .roomCode(session.getRoomCode())
+            .status(session.getStatus())
+            .visibility(session.getVisibility())
+            .createdAt(session.getCreatedAt())
+            .creatorId(session.getCreator().getId())
+            .creator(userMapper.toDTO(session.getCreator()))
+            .studyGroupId(session.getStudyGroup() != null ? session.getStudyGroup().getId() : null)
+            .participantCount(session.getParticipants().size())
+            .duration("60m") // Placeholder or calc
             .build();
     }
 }

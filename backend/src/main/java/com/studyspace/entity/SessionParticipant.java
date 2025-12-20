@@ -29,6 +29,11 @@ public class SessionParticipant {
     
     private Integer minutesParticipated;
     
+    private LocalDateTime lastPausedAt;
+    
+    @Builder.Default
+    private Long totalPausedSeconds = 0L;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_session_id", nullable = false)
     private StudySession studySession;

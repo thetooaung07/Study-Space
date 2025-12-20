@@ -8,33 +8,22 @@ VALUES
 ('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', 'https://api.example.com/avatars/charlie.jpg', 240, 'STUDYING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert Sample Study Groups
-INSERT INTO study_groups (name, description, invite_code, is_private, creator_id, created_at, updated_at)
+INSERT INTO study_groups (name, description, invite_code, group_type, creator_id, created_at, updated_at)
 VALUES
-('Advanced Mathematics', 'A group for students tackling advanced calculus and linear algebra problems', 'MATH2024', false, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Programming Masters', 'Java, Python, and C++ programming enthusiasts', 'PROG5678', false, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Biology Study Circle', 'Focused on cellular biology and genetics', 'BIO1234', true, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('History Nerds United', 'Medieval and modern history discussion group', 'HIST9999', false, 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('Language Learning Crew', 'Spanish, French, and German language practice', 'LANG5555', false, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('Advanced Mathematics', 'A group for students tackling advanced calculus and linear algebra problems', 'MATH2024', 'PUBLIC', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Programming Masters', 'Java, Python, and C++ programming enthusiasts', 'PROG5678', 'PUBLIC', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Biology Study Circle', 'Focused on cellular biology and genetics', 'BIO1234', 'INVITE_ONLY', 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('History Nerds United', 'Medieval and modern history discussion group', 'HIST9999', 'PUBLIC', 4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Language Learning Crew', 'Spanish, French, and German language practice', 'LANG5555', 'PUBLIC', 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Insert Group Members (Many-to-Many)
-INSERT INTO group_members (user_id, group_id, joined_at, role)
+INSERT INTO group_members (user_id, group_id)
 VALUES
-(1, 1, CURRENT_TIMESTAMP, 'ADMIN'),
-(2, 1, DATEADD('HOUR', -168, CURRENT_TIMESTAMP), 'MEMBER'),
-(3, 1, DATEADD('HOUR', -336, CURRENT_TIMESTAMP), 'MEMBER'),
-(4, 1, DATEADD('HOUR', -72, CURRENT_TIMESTAMP), 'MEMBER'),
-(2, 2, CURRENT_TIMESTAMP, 'ADMIN'),
-(1, 2, DATEADD('HOUR', -120, CURRENT_TIMESTAMP), 'MEMBER'),
-(5, 2, DATEADD('HOUR', -240, CURRENT_TIMESTAMP), 'MEMBER'),
-(3, 3, CURRENT_TIMESTAMP, 'ADMIN'),
-(4, 3, DATEADD('HOUR', -48, CURRENT_TIMESTAMP), 'MEMBER'),
-(5, 3, DATEADD('HOUR', -192, CURRENT_TIMESTAMP), 'MEMBER'),
-(4, 4, CURRENT_TIMESTAMP, 'ADMIN'),
-(1, 4, DATEADD('HOUR', -144, CURRENT_TIMESTAMP), 'MEMBER'),
-(2, 4, DATEADD('HOUR', -24, CURRENT_TIMESTAMP), 'MEMBER'),
-(5, 5, CURRENT_TIMESTAMP, 'ADMIN'),
-(1, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP), 'MEMBER'),
-(3, 5, DATEADD('HOUR', -216, CURRENT_TIMESTAMP), 'MEMBER');
+(1, 1), (2, 1), (3, 1), (4, 1),
+(2, 2), (1, 2), (5, 2),
+(3, 3), (4, 3), (5, 3),
+(4, 4), (1, 4), (2, 4),
+(5, 5), (1, 5), (3, 5);
 
 -- Insert Sample Study Sessions
 INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, is_group_session, room_code, status, user_id, study_group_id, created_at)
@@ -45,7 +34,7 @@ VALUES
 ('World War II Overview', 'Comprehensive review of major events and figures', 'HISTORY', DATEADD('HOUR', -120, CURRENT_TIMESTAMP), DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 150, true, 'ROOM-1700755200000', 'COMPLETED', 4, 4, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)),
 ('Spanish Conversation Practice', 'Informal Spanish speaking session', 'LANGUAGE', DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45, true, 'ROOM-1700841600000', 'COMPLETED', 5, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)),
 ('Linear Algebra Problem Set', 'Working through chapter 5 exercises', 'MATH', DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90, false, 'ROOM-1701270000000', 'COMPLETED', 1, NULL, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)),
-('Python Data Structures', 'Lists, dictionaries, and sets deep dive', 'PROGRAMMING', DATEADD('HOUR', 1, CURRENT_TIMESTAMP), NULL, NULL, false, 'ROOM-1701360000000', 'SCHEDULED', 2, NULL, CURRENT_TIMESTAMP),
+('Python Data Structures', 'Lists, dictionaries, and sets deep dive', 'PROGRAMMING', DATEADD('HOUR', 1, CURRENT_TIMESTAMP), NULL, NULL, false, 'ROOM-1701360000000', 'ACTIVE', 2, NULL, CURRENT_TIMESTAMP),
 ('Genetics Quiz Prep', 'Final preparation for midterm exam', 'SCIENCE', DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 120, false, 'ROOM-1701316800000', 'COMPLETED', 3, NULL, DATEADD('HOUR', -8, CURRENT_TIMESTAMP));
 
 -- Insert Session Participants

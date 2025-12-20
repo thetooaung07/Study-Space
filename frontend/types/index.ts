@@ -3,7 +3,6 @@ export type ActivityType = 'SESSION_JOIN' | 'SESSION_LEAVE' | 'GROUP_JOIN' | 'AC
 export type SessionStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 export type Subject = 'MATH' | 'SCIENCE' | 'HISTORY' | 'LITERATURE' | 'PROGRAMMING' | 'ART' | 'MUSIC' | 'OTHER';
 export type UserStatus = 'ONLINE' | 'OFFLINE' | 'STUDYING' | 'AWAY';
-export type FocusLevel = 'LOW' | 'MEDIUM' | 'HIGH';
 
 // DTOs
 export interface ActivityDTO {
@@ -22,11 +21,11 @@ export interface StudyGroupDTO {
     name: string;
     description: string;
     inviteCode: string;
-    isPrivate: boolean;
     createdAt: string;
     updatedAt: string;
     creatorId: number;
     memberCount: number;
+    groupType: 'PUBLIC' | 'PERSONAL' | 'INVITE_ONLY';
 }
 
 export interface StudySessionDTO {
@@ -40,7 +39,7 @@ export interface StudySessionDTO {
     isGroupSession: boolean;
     roomCode: string;
     status: SessionStatus;
-    focusLevel?: FocusLevel;
+    visibility: 'PUBLIC' | 'PRIVATE';
     createdAt: string;
     creatorId: number;
     creator?: UserDTO;
@@ -61,7 +60,10 @@ export interface UserDTO {
     currentStatus: UserStatus;
     createdAt: string;
     updatedAt: string;
-    authProvider: 'LOCAL' | 'GOOGLE' | 'GITHUB'; 
+    authProvider: 'LOCAL' | 'GOOGLE' | 'GITHUB';
+    joinedAt?: string; // Session context 
+    lastPausedAt?: string;
+    totalPausedSeconds?: number; 
 }
 
 
@@ -72,12 +74,14 @@ export interface CreateSessionRequest {
     subject: Subject;
     startTime?: string;
     groupId?: number;
+    visibility?: 'PUBLIC' | 'PRIVATE';
+    isGroupSession?: boolean;
 }
 
 export interface CreateGroupRequest {
     name: string;
     description?: string;
-    isPrivate?: boolean;
+    groupType: 'PUBLIC' | 'PERSONAL' | 'INVITE_ONLY';
 }
 
 export interface GroupStatsDTO {
@@ -94,6 +98,23 @@ export interface AnalyticsOverviewDTO {
     totalStudyMinutes: number;
     hotSessionsCount: number;
     newGroupsToday: number;
+}
+
+export interface GroupMemberDTO {
+    id: number;
+    username: string;
+    fullName: string;
+    profilePictureUrl?: string;
+    currentStatus: UserStatus;
+    isAdmin: boolean;
+    totalStudyMinutesInGroup?: number;
+    joinedAt?: string;
+}
+
+export interface StudyGroupDetailsDTO {
+    group: StudyGroupDTO;
+    activeSessions: StudySessionDTO[];
+    members: GroupMemberDTO[];
 }
 
 // DTO for complex JPQL query results (group member leaderboard)

@@ -5,6 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import com.studyspace.types.GroupType;
 
 @Entity
 @Table(name = "study_groups", uniqueConstraints = {
@@ -32,8 +33,9 @@ public class StudyGroup {
     @Column(nullable = false, unique = true)
     private String inviteCode;
     
-    @Column(columnDefinition = "BOOLEAN DEFAULT false")
-    private Boolean isPrivate;
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'PUBLIC'")
+    private com.studyspace.types.GroupType groupType;
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -60,8 +62,8 @@ public class StudyGroup {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (isPrivate == null) {
-            isPrivate = false;
+        if (groupType == null) {
+            groupType = GroupType.PUBLIC;
         }
     }
     

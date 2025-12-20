@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { StudyGroupDTO } from "@/types"
+import { useRouter } from "next/navigation"
 
 interface GroupCardProps {
   group: StudyGroupDTO
@@ -15,14 +16,21 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, isOwned = false, onJoin, onEdit, onDelete }: GroupCardProps) {
+ 
+  const router = useRouter();
+ 
   // Mock/Derived data for visual flair since DTO is simple
   const avatars = ["👨‍💻", "🌅", "🧙", "⚛️", "🌍", "💻", "📚", "🎓", "🚀", "🏆"]
   const avatar = avatars[group.id % avatars.length]
   const activeMembers = Math.round(group.memberCount * 0.6) // Mock active count
   const sessionsCount = Math.round(group.id * 3.5) % 50 // Mock session count
 
+  const handleOnClick = () => {
+    router.push(`/groups/${group.id}`)
+  }
+
   return (
-    <Card className="p-5 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group flex flex-col h-full">
+    <Card className="p-5 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group flex flex-col h-full" onClick={handleOnClick}>
       <div className="flex items-start justify-between mb-4">
         <div className="text-4xl">{avatar}</div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

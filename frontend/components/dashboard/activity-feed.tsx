@@ -42,13 +42,9 @@ export function ActivityFeed() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        console.log("Fetching recent activities...");
         const data = await api.get<ActivityDTO[]>('/activities/recent')
-          console.log("Fetching recent activities", data);
-        console.log("Recent Activity", data) 
         setActivities(data)
       } catch (error) {
-        console.error("Failed to fetch activities:", error)
       } finally {
         setLoading(false)
       }

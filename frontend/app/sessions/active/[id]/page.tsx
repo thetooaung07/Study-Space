@@ -88,12 +88,70 @@ export default function ActiveSessionPage() {
       return () => clearInterval(pollInterval)
   }, [sessionId, router])
 
-  // Initialize user's personal timer when component mounts
+  // Initialize user's timer based on server data
   useEffect(() => {
-    if (!userStartTime) {
-      setUserStartTime(new Date().getTime())
+    if (session && user) {
+        // Find current user in participants to get true join time
+        // Use loose equality (==) to handle potential string/number mismatches
+        const currentUserParticipant = session.participants?.find(p => p.id == user.id)
+        
+        if (currentUserParticipant) {
+             // 1. Join Time
+            if (currentUserParticipant.joinedAt) {
+                const joinedTime = new Date(currentUserParticipant.joinedAt).getTime()
+                if (!isNaN(joinedTime)) {
+                    setUserStartTime(joinedTime)
+                }
+            }
+
+            // 2. Pause Logic
+            let historicalPausedSeconds = currentUserParticipant.totalPausedSeconds || 0
+            let currentActivePauseCals = 0
+
+            // If currently paused (has lastPausedAt timestamp), calculate duration until NOW
+            if (currentUserParticipant.lastPausedAt) {
+                const lastPausedTime = new Date(currentUserParticipant.lastPausedAt).getTime()
+                if (!isNaN(lastPausedTime)) {
+                     // Timer is currently PAUSED
+                     setIsPlaying(false)
+                     // Add the duration from last pause until now to total
+                     currentActivePauseCals = (new Date().getTime() - lastPausedTime) / 1000
+                }
+            } else {
+                // If no lastPausedAt, user is actively studying
+                setIsPlaying(true)
+            }
+
+            // Set total paused time (converting seconds to ms)
+            // SMOOTHING FIX: Only update if significant difference (>2s) to avoid jitter from network latency
+            const serverTotalPausedMs = (historicalPausedSeconds + currentActivePauseCals) * 1000
+            
+            setTotalPausedTime(prev => {
+                const diff = Math.abs(serverTotalPausedMs - prev)
+                // If difference is small (< 2000ms), prefer local state to prevent UI jumps
+                // But ALWAYS update if we are initializing (prev === 0)
+                if (prev === 0 || diff > 2000) {
+                    return serverTotalPausedMs
+                }
+                return prev
+            })
+            
+            // Calculate initial elapsed time immediately if not yet set
+            const startTime = currentUserParticipant.joinedAt 
+                ? new Date(currentUserParticipant.joinedAt).getTime() 
+                : new Date().getTime()
+            
+            if (!isNaN(startTime) && elapsedTime === 0) {
+                 const now = new Date().getTime()
+                 const elapsed = Math.floor((now - startTime - serverTotalPausedMs) / 1000)
+                 setElapsedTime(elapsed > 0 ? elapsed : 0)
+            }
+
+        } else if (!userStartTime) {
+             setUserStartTime(new Date().getTime())
+        }
     }
-  }, [userStartTime])
+  }, [session, user])
 
   // User's personal stopwatch timer - runs independently every second
   useEffect(() => {
@@ -102,8 +160,10 @@ export default function ActiveSessionPage() {
     // Calculate elapsed time every second
     const timerInterval = setInterval(() => {
       const now = new Date().getTime()
+      // totalPausedTime needs to stay static here while playing? 
+      // Actually, standard stopwatch logic: elapsed = (Now - Start) - TotalPaused
       const elapsed = Math.floor((now - userStartTime - totalPausedTime) / 1000)
-      setElapsedTime(elapsed)
+      setElapsedTime(elapsed > 0 ? elapsed : 0)
     }, 1000)
 
     return () => clearInterval(timerInterval)
@@ -127,93 +187,79 @@ export default function ActiveSessionPage() {
     
     const isCreator = session.creatorId === user.id
     
-    const confirmMessage = isCreator 
-      ? "As the creator, leaving will END the session for ALL participants. Are you sure?"
-      : "Are you sure you want to leave this session?"
+    const confirmMessage = "Are you sure you want to leave this session?"
     
     if (!confirm(confirmMessage)) return
-    
+  
     try {
-      if (isCreator) {
-        // Creator leaving: End the entire session for everyone
-        // This will update stats for ALL participants automatically
-        await api.put(`/sessions/${sessionId}/end`, {})
-        toast.success("Session ended for all participants")
-      } else {
-        // Regular participant leaving: Just remove themselves
-        // Calculate their personal study time in minutes
         if (userStartTime) {
           const now = new Date().getTime()
           const totalElapsed = now - userStartTime - totalPausedTime
           const studyMinutes = Math.floor(totalElapsed / 60000)
           
-          // Call API to record study time and leave
           await api.delete(`/sessions/${sessionId}/participants/${user.id}?studyMinutes=${studyMinutes}`)
           toast.success("Left session")
         }
-      }
       
-      // Reset user status to ONLINE when leaving
       await api.put(`/users/${user.id}/status?status=ONLINE`, {})
       
-      router.push("/dashboard")
+      router.push(`/groups/${session.studyGroupId}`)
     } catch (error) {
       console.error("Failed to leave session:", error)
       toast.error("Failed to leave session")
     }
   }
+  
 
   const handlePauseToggle = async () => {
+    const newIsPlaying = !isPlaying
+    setIsPlaying(newIsPlaying)
     const now = new Date().getTime()
-    
-    if (isPlaying) {
-      // Pausing: Going on break
-      setPauseStartTime(now)
-      if (user && sessionId) {
-        try {
-          await api.put(`/users/${user.id}/status?status=AWAY`, {})
-          
-          // Announce to activity feed
-          const params = new URLSearchParams({
-            sessionId: sessionId as string,
-            userId: user.id.toString(),
-            type: "COFFEE_BREAK",
-            message: `${user.fullName} is taking a break`
-          })
-          await api.post(`/activities?${params.toString()}`, {})
-        } catch (error) {
-          console.error("Failed to update status to AWAY:", error)
-        }
-      }
-    } else {
-      // Resuming: Returning from break
-      if (pauseStartTime) {
-        const pauseDuration = now - pauseStartTime
-        setTotalPausedTime(prev => prev + pauseDuration)
-        setPauseStartTime(null)
-      }
-      if (user && sessionId) {
-        try {
-          await api.put(`/users/${user.id}/status?status=STUDYING`, {})
-          
-          // Announce return from break
-          const params = new URLSearchParams({
-            sessionId: sessionId as string,
-            userId: user.id.toString(),
-            type: "MESSAGE",
-            message: `${user.fullName} returned from break`
-          })
-          await api.post(`/activities?${params.toString()}`, {})
-        } catch (error) {
-          console.error("Failed to update status to STUDYING:", error)
-        }
-      }
-    }
-    
-    setIsPlaying(!isPlaying)
-  }
 
-  // handleTakeBreak removed - now combined with pause/play functionality
+    if (user && sessionId) {
+        try {
+            if (!newIsPlaying) {
+                // User is pausing (going on break)
+                setPauseStartTime(now)
+                
+                await api.put(`/sessions/${sessionId}/participants/${user.id}/pause`, {})
+                await api.put(`/users/${user.id}/status?status=AWAY`, {})
+            } else {
+               
+                let currentPauseStart = pauseStartTime
+                
+             
+                const currentUserParticipant = session?.participants?.find(p => p.id == user.id)
+                if (currentUserParticipant?.lastPausedAt) {
+                     const serverPauseStart = new Date(currentUserParticipant.lastPausedAt).getTime()
+                     if (!isNaN(serverPauseStart)) {
+                         currentPauseStart = serverPauseStart
+                     }
+                }
+                
+                if (currentPauseStart) {
+                    const pauseDuration = now - currentPauseStart
+                
+                    const historicalSeconds = currentUserParticipant?.totalPausedSeconds || 0
+                    const newTotalMs = (historicalSeconds * 1000) + pauseDuration
+                    
+                    setTotalPausedTime(prev => Math.max(prev, newTotalMs))
+                }
+                
+                setPauseStartTime(null)
+
+                await api.put(`/sessions/${sessionId}/participants/${user.id}/resume`, {})
+                await api.put(`/users/${user.id}/status?status=STUDYING`, {})
+                
+              
+            }
+        } catch (error) {
+            console.error("Failed to sync pause state:", error)
+            setIsPlaying(!newIsPlaying)
+            toast.error("Failed to update status")
+        }
+    }
+  }
 
   const handleRaiseHand = async () => {
     if (!user || !sessionId) return
@@ -257,12 +303,7 @@ export default function ActiveSessionPage() {
 
   if (!session) return null
 
-  // Participants list from session DTO
-  // We need to map it to display format or use directly
   const participantsList = session.participants || []
-
-  // If current user is not in participants (e.g. host just created it but backend update lag), manually add?
-  // Usually backend handles this.
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--pale-blue)] via-[var(--pale-purple)] to-[var(--pale-green)] p-4 lg:p-6">
@@ -298,7 +339,7 @@ export default function ActiveSessionPage() {
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden lg:inline">
-                  {session.creatorId === user?.id ? 'End Session' : 'Leave'}
+                  Leave Session
                 </span>
               </Button>
             </div>

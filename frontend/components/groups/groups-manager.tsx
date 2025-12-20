@@ -177,13 +177,12 @@ export function GroupsManager() {
         )}
       </div>
 
-      {isCreateModalOpen && (
-        <CreateGroupModal 
-          onClose={handleCloseModal} 
-          onSuccess={handleGroupSaved}
-          groupToEdit={editingGroup}
-        />
-      )}
+      <CreateGroupModal 
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSuccess={handleGroupSaved}
+        groupToEdit={editingGroup}
+      />
     </div>
   )
 }

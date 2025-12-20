@@ -1,7 +1,8 @@
 package com.studyspace.dto;
 
 import com.studyspace.types.Subject;
-import com.studyspace.types.FocusLevel;
+import com.studyspace.types.SessionVisibility;
+
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -21,6 +22,6 @@ public class CreateSessionRequest {
     
     private Long studyGroupId;
     
-    private FocusLevel focusLevel;
+    private SessionVisibility visibility;
 }
 

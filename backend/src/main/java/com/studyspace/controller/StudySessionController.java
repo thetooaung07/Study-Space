@@ -47,24 +47,31 @@ public class StudySessionController {
     }
     
     @GetMapping("/group/{groupId}")
-    public ResponseEntity<List<StudySessionDTO>> getGroupSessions(@PathVariable Long groupId) {
-        return ResponseEntity.ok(sessionService.getGroupSessions(groupId));
+    public ResponseEntity<List<StudySessionDTO>> getGroupSessions(
+        @PathVariable Long groupId,
+        @RequestParam(required = false) Long userId
+    ) {
+        return ResponseEntity.ok(sessionService.getGroupSessions(groupId, userId));
     }
     
-    @PutMapping("/{id}/start")
-    public ResponseEntity<StudySessionDTO> startSession(@PathVariable Long id) {
-        return ResponseEntity.ok(sessionService.startSession(id));
-    }
-    
-    @PutMapping("/{id}/end")
-    public ResponseEntity<StudySessionDTO> endSession(@PathVariable Long id) {
-        return ResponseEntity.ok(sessionService.endSession(id));
-    }
+    // startSession and endSession endpoints removed as logic is handled via creation and participant removal
     
     @PostMapping("/{id}/participants/{userId}")
     public ResponseEntity<Void> addParticipant(@PathVariable Long id, @PathVariable Long userId) {
         sessionService.addParticipant(id, userId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+    
+    @PutMapping("/{id}/participants/{userId}/pause")
+    public ResponseEntity<Void> pauseParticipant(@PathVariable Long id, @PathVariable Long userId) {
+        sessionService.pauseParticipant(id, userId);
+        return ResponseEntity.ok().build();
+    }
+    
+    @PutMapping("/{id}/participants/{userId}/resume")
+    public ResponseEntity<Void> resumeParticipant(@PathVariable Long id, @PathVariable Long userId) {
+        sessionService.resumeParticipant(id, userId);
+        return ResponseEntity.ok().build();
     }
     
     @DeleteMapping("/{id}/participants/{userId}")
