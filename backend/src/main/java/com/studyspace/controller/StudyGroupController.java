@@ -92,8 +92,12 @@ public class StudyGroupController {
     }
     
     @DeleteMapping("/{id}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable Long id, @PathVariable Long userId) {
-        groupService.removeMember(id, userId);
+    public ResponseEntity<Void> removeMember(
+        @PathVariable Long id, 
+        @PathVariable Long userId,
+        @RequestParam(required = false) Long requesterId
+    ) {
+        groupService.removeMember(id, userId, requesterId);
         return ResponseEntity.noContent().build();
     }
     

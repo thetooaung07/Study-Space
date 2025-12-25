@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Settings, MessageSquare, Share2, Bell, BarChart3, Plus, Globe, Lock, Clock, Users, Play, CloudCog } from "lucide-react"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { TransferOwnershipDialog } from "@/components/groups/transfer-ownership-modal"
+import { Settings, MessageSquare, Share2, Bell, BarChart3, Plus, Globe, Lock, Clock, Users, Play, CloudCog, UserPlus, Trash2, LogOut } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -14,6 +16,7 @@ import { useAuth } from "@/context/auth-context"
 import { StudyGroupDTO, StudySessionDTO } from "@/types"
 import { CreateGroupSessionModal } from "@/components/groups/create-group-session-modal"
 import { useParams, useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 
 export default function GroupDetailPage() {
@@ -31,6 +34,15 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
+  // Confirmation States
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [kickMemberId, setKickMemberId] = useState<number | null>(null)
+  
+  const [transferDialogData, setTransferDialogData] = useState<{open: boolean, groupId: string, groupName: string, members: any[]} >({
+    open: false, groupId: "", groupName: "", members: []
+  })
+
   // Fetch data
   useEffect(() => {
     if (!groupId) return
@@ -39,12 +51,18 @@ export default function GroupDetailPage() {
       setLoading(true)
       try {
         const details = await api.get<any>(`/groups/${groupId}/details${user ? `?requestingUserId=${user.id}` : ''}`)
+      
+      console.log(details)
         setGroup(details.group)
         setSessions(details.sessions)
         setMembers(details.members)
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch group data:", error)
+        if (error?.status === 400 || error?.status === 404) {
+             toast.error("Group not found")
+             router.push('/groups')
+        }
       } finally {
         setLoading(false)
       }
@@ -52,6 +70,99 @@ export default function GroupDetailPage() {
 
     fetchData()
   }, [groupId, user])
+
+  const handleCopyInvite = async () => {
+    if (!group?.inviteCode) return
+    
+    try {
+      await navigator.clipboard.writeText(group.inviteCode)
+      toast.success("Invite code copied to clipboard!")
+    } catch (error) {
+      console.error("Failed to copy invite code:", error)
+      toast.error("Failed to copy invite code")
+    }
+  }
+
+  const handleDeleteGroup = async () => {
+    try {
+      await api.delete(`/groups/${groupId}`)
+      toast.success("Group deleted successfully")
+      router.push('/groups')
+    } catch (error: any) {
+      console.error("Failed to delete group:", error)
+       if (error?.status === 400 || error?.response?.status === 400) {
+        // Map current members for transfer
+        const transferMembers = members.filter(m => m.id !== user?.id).map(m => ({
+             id: m.id,
+             name: m.fullName,
+             avatar: m.profilePictureUrl,
+             studyTime: (m.totalStudyMinutesInGroup || 0),
+             sessionsCount: 0, 
+             joinedDate: new Date(m.joinedAt).toLocaleDateString()
+        }))
+
+        if (transferMembers.length > 0) {
+            setTransferDialogData({
+                open: true,
+                groupId: groupId,
+                groupName: group?.name || "Group",
+                members: transferMembers
+            })
+            setShowDeleteConfirm(false)
+            return
+        }
+      }
+      toast.error("Failed to delete group")
+    }
+  }
+
+  const handleTransferAndLeave = async (newOwnerId: number) => {
+    if (!user) return
+    try {
+      // 1. Transfer
+      await api.put(`/groups/${groupId}/transfer?newOwnerId=${newOwnerId}`, {})
+      // 2. Leave
+      await api.delete(`/groups/${groupId}/members/${user.id}`)
+      
+      toast.success("Ownership transferred and left group.")
+      router.push('/groups')
+    } catch (error) {
+       console.error("Failed to transfer:", error)
+       toast.error("Failed to transfer ownership")
+    }
+  }
+
+  const handleLeaveGroup = async () => {
+    if (!user) return
+    try {
+      await api.delete(`/groups/${groupId}/members/${user.id}`)
+      toast.success("Left group successfully")
+      // Refresh to show "Join" button
+      const details = await api.get<any>(`/groups/${groupId}/details?requestingUserId=${user.id}`)
+      setGroup(details.group)
+      setSessions(details.sessions)
+      setMembers(details.members)
+    } catch (error) {
+       console.error("Failed to leave group:", error)
+       toast.error("Failed to leave group")
+    }
+  }
+  
+  const handleKickMember = async () => {
+    if (!kickMemberId || !user) return
+    try {
+        await api.delete(`/groups/${groupId}/members/${kickMemberId}?requesterId=${user.id}`)
+        toast.success("Member removed successfully")
+        
+        // Refresh members
+        const details = await api.get<any>(`/groups/${groupId}/details?requestingUserId=${user.id}`)
+        setMembers(details.members)
+        setKickMemberId(null)
+    } catch (error) {
+        console.error("Failed to kick member:", error)
+        toast.error("Failed to remove member")
+    }
+  }
 
   const formatStudyTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60)
@@ -85,11 +196,13 @@ export default function GroupDetailPage() {
         <Header />
         <main className="flex-1 overflow-auto p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            {/* Group Header */}
+
             <Card className="p-8 bg-gradient-to-r from-[rgb(from_var(--pale-blue)_r_g_b)]/40 to-[rgb(from_var(--pale-purple)_r_g_b)]/40 backdrop-blur-md border-white/40">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-6">
-                  <div className="text-6xl">👨‍💻</div>
+                  <div className="text-3xl mb-3 bg-secondary w-20 h-20 flex justify-center items-center text-foreground rounded-full">
+                    {group.name.charAt(0).toUpperCase()}
+                  </div>
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h1 className="text-3xl font-bold text-foreground">{group.name}</h1>
@@ -107,17 +220,82 @@ export default function GroupDetailPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Link href={`/groups/${groupId}/analytics`}>
+                  {/* Join Button (if not member) */}
+                  {!members.some(m => m.id === user?.id) && (
+                     <Button 
+                       className="gap-2"
+                       onClick={async () => {
+                         if (!user) return
+                         try {
+                           await api.post(`/groups/${groupId}/members/${user.id}`, {})
+                           toast.success("Joined group successfully!")
+                           // Refresh data
+                           const details = await api.get<any>(`/groups/${groupId}/details${user ? `?requestingUserId=${user.id}` : ''}`)
+                           setGroup(details.group)
+                           setSessions(details.sessions)
+                           setMembers(details.members)
+                         } catch (error) {
+                           console.error("Failed to join group:", error)
+                           toast.error("Failed to join group")
+                         }
+                       }}
+                     >
+                       <UserPlus className="h-4 w-4" />
+                       Join Group
+                     </Button>
+                  )}
+
+                  {/* Member only actions */}
+                  {members.some(m => m.id === user?.id) && (
+                    <>
+                      <Link href={`/groups/${groupId}/analytics`}>
+                        <Button variant="outline" size="icon" className=" bg-white/40 backdrop-blur-sm border-white/50" title="Analytics">
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="gap-2 bg-white/40 backdrop-blur-sm border-white/50 h-9"
+                        onClick={handleCopyInvite}
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share Invite
+                      </Button>
+                      
+                      {/* Delete Group (Creator only) */}
+                      {group.creatorId === user?.id && (
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          className="gap-2 h-9"
+                          onClick={() => setShowDeleteConfirm(true)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      )}
+
+                      {/* Leave Group (Member but NOT Creator) */}
+                      {group.creatorId !== user?.id && members.some(m => m.id === user?.id) && (
+                         <Button 
+                           variant="outline" 
+                           size="sm"
+                           className="gap-2 bg-white/40 backdrop-blur-sm border-white/50 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 h-9"
+                           onClick={() => setShowLeaveConfirm(true)}
+                         >
+                           <LogOut className="h-4 w-4" />
+                           Leave
+                         </Button>
+                      )}
+                    </>
+                  )}
+                  
+                  {members.some(m => m.id === user?.id) && (
                     <Button variant="outline" size="icon" className="bg-white/40 backdrop-blur-sm border-white/50">
-                      <BarChart3 className="h-4 w-4" />
+                      <Bell className="h-4 w-4" />
                     </Button>
-                  </Link>
-                  <Button variant="outline" size="icon" className="bg-white/40 backdrop-blur-sm border-white/50">
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="bg-white/40 backdrop-blur-sm border-white/50">
-                    <Bell className="h-4 w-4" />
-                  </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -154,10 +332,12 @@ export default function GroupDetailPage() {
                   <Card className="p-6 bg-white/60 backdrop-blur-md border-white/40">
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-semibold text-foreground">Group Sessions</h3>
-                      <Button size="sm" className="gap-2" onClick={() => setIsCreateSessionModalOpen(true)}>
-                        <Plus className="h-4 w-4" />
-                        New Session
-                      </Button>
+                      {members.some(m => m.id === user?.id) && (
+                        <Button size="sm" className="gap-2" onClick={() => setIsCreateSessionModalOpen(true)}>
+                          <Plus className="h-4 w-4" />
+                          New Session
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-4">
                       {sessions.length === 0 ? (
@@ -261,6 +441,18 @@ export default function GroupDetailPage() {
                               {/* Study time not currently available in simple member list, would need calling stats endpoint */}
                             </div>
                           </div>
+                          {/* Admin Kick Action */}
+                          {group.creatorId === user?.id && member.id !== user?.id && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setKickMemberId(member.id)}
+                                title="Remove Member"
+                              >
+                                <LogOut className="h-4 w-4" />
+                              </Button>
+                          )}
                           {/* TODO: View Profile */}
                           {/* <Button variant="outline" size="sm" className="bg-white/40 backdrop-blur-sm border-white/50">
                             View Profile
@@ -290,7 +482,7 @@ export default function GroupDetailPage() {
                 </Card> */}
 
                 {/* Group Actions */}
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Button className="w-full gap-2 bg-transparent" variant="outline">
                     <Share2 className="h-4 w-4" />
                     Share Invite
@@ -299,7 +491,7 @@ export default function GroupDetailPage() {
                     <MessageSquare className="h-4 w-4" />
                     Message Group
                   </Button>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -326,6 +518,70 @@ export default function GroupDetailPage() {
            }
         }}
       />
+
+       {/* Delete Confirmation Dialog */}
+       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the group and remove all data associated with it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteGroup} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Leave Confirmation Dialog */}
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Group?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to leave this group? You can join again later if it is public.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLeaveGroup}>
+              Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Transfer Ownership Dialog */}
+      <TransferOwnershipDialog 
+        open={transferDialogData.open}
+        onOpenChange={(open) => setTransferDialogData(prev => ({ ...prev, open }))}
+        groupId={transferDialogData.groupId}
+        groupName={transferDialogData.groupName}
+        members={transferDialogData.members}
+        onTransferAndLeave={handleTransferAndLeave}
+      />
+
+       {/* Kick Member Confirmation Dialog */}
+       <AlertDialog open={!!kickMemberId} onOpenChange={(open) => !open && setKickMemberId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this member from the group?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleKickMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -100,14 +100,26 @@ public class StudyGroupService {
         }
     }
     
-    public void removeMember(Long groupId, Long userId) {
+    public void removeMember(Long groupId, Long userId, Long requesterId) {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
-        User user = userRepository.findById(userId)
+        User userToRemove = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
         
-        group.getMembers().remove(user);
-        user.getGroups().remove(group);
+        if (requesterId != null) {
+             boolean isSelfRemoval = requesterId.equals(userId);
+             boolean isAdminRemoval = group.getCreator().getId().equals(requesterId);
+        
+             if (!isSelfRemoval && !isAdminRemoval) {
+                 throw new RuntimeException("Not authorized to remove this member");
+             }
+             if (isAdminRemoval && group.getCreator().getId().equals(userId)) {
+                 throw new RuntimeException("Cannot kick the group creator");
+             }
+        }
+        
+        group.getMembers().remove(userToRemove);
+        userToRemove.getGroups().remove(group);
         groupRepository.save(group);
     }
     
@@ -242,6 +254,22 @@ public class StudyGroupService {
     }
     
     private StudyGroupDTO convertToDTO(StudyGroup group) {
+        // Calculate active members (members with sessions in the last 7 days)
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
+        int activeMemberCount = (int) group.getMembers().stream()
+            .filter(member -> {
+                // Check if member has participated in any session in the last 7 days
+                return participantRepository.findByUserId(member.getId()).stream()
+                    .anyMatch(participant -> 
+                        participant.getJoinedAt() != null && 
+                        participant.getJoinedAt().isAfter(oneWeekAgo)
+                    );
+            })
+            .count();
+        
+        // Calculate total sessions count for this group
+        int totalSessionsCount = sessionRepository.findByStudyGroupId(group.getId()).size();
+        
         return StudyGroupDTO.builder()
             .id(group.getId())
             .name(group.getName())
@@ -252,6 +280,8 @@ public class StudyGroupService {
             .updatedAt(group.getUpdatedAt())
             .creatorId(group.getCreator().getId())
             .memberCount(group.getMembers().size())
+            .activeMemberCount(activeMemberCount)
+            .totalSessionsCount(totalSessionsCount)
             .build();
     }
     @Transactional(readOnly = true)

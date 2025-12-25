@@ -19,4 +19,6 @@ public class StudyGroupDTO {
     private LocalDateTime updatedAt;
     private Long creatorId;
     private Integer memberCount;
+    private Integer activeMemberCount;
+    private Integer totalSessionsCount;
 }

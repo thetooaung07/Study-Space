@@ -39,9 +39,23 @@ export default function GroupAnalyticsPage({ params }: { params: Promise<{ group
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!user || !groupId) return
+
     const fetchData = async () => {
       setLoading(true)
       try {
+        // Check membership first
+        const details = await api.get<any>(`/groups/${groupId}/details?requestingUserId=${user.id}`)
+        
+        const isMember = details.members.some((m: any) => m.id === user.id)
+        if (!isMember) {
+          // specific error or just redirect
+          window.location.href = `/groups/${groupId}`
+          return
+        }
+
+        setGroup(details.group)
+
         // Get date range based on selection
         let sinceDate: string
         switch (dateRange) {
@@ -55,10 +69,6 @@ export default function GroupAnalyticsPage({ params }: { params: Promise<{ group
             sinceDate = getDaysAgo(365 * 5) // 5 years ago
             break
         }
-
-        // Fetch group details
-        const groupData = await api.get<StudyGroupDTO>(`/groups/${groupId}`)
-        setGroup(groupData)
 
         // Fetch group stats
         const statsData = await api.get<GroupStatsDTO>(`/groups/${groupId}/stats?cutoffDate=${sinceDate}`)
@@ -77,7 +87,7 @@ export default function GroupAnalyticsPage({ params }: { params: Promise<{ group
     }
 
     fetchData()
-  }, [groupId, dateRange])
+  }, [groupId, dateRange, user])
 
   const maxMinutes = members.length > 0 ? Math.max(...members.map((m) => m.totalMinutes)) : 1
 

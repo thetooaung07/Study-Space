@@ -30,7 +30,6 @@ export function Dashboard() {
       if (!user) return
       
       try {
-        // Fetch user's groups
         const groups = await api.get<StudyGroupDTO[]>(`/groups/user/${user.id}`)
         setGroupCount(groups.length)
       } catch (error) {
@@ -43,7 +42,6 @@ export function Dashboard() {
     fetchStats()
   }, [user])
 
-  // Calculate stats from user data
   const totalStudyMinutes = user?.totalStudyMinutes || 0
   const streak = user?.currentStreak || 0
 

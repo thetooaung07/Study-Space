@@ -26,6 +26,8 @@ export interface StudyGroupDTO {
     creatorId: number;
     memberCount: number;
     groupType: 'PUBLIC' | 'PERSONAL' | 'INVITE_ONLY';
+    activeMemberCount: number;
+    totalSessionsCount: number;
 }
 
 export interface StudySessionDTO {
