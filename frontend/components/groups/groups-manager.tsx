@@ -16,7 +16,6 @@ import { TransferOwnershipDialog } from "./transfer-ownership-modal"
 
 export function GroupsManager() {
   const { user } = useAuth()
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [myGroups, setMyGroups] = useState<StudyGroupDTO[]>([])
   const [allGroups, setAllGroups] = useState<StudyGroupDTO[]>([])
@@ -83,9 +82,7 @@ export function GroupsManager() {
       setDeleteGroupData(null)
     } catch (error: any) {
       console.error("Failed to delete group:", error)
-      // Check for 400 error indicating active members
       if (error?.status === 400 || error?.response?.status === 400) {
-          // Fetch members for transfer dialog
           try {
              const details = await api.get<any>(`/groups/${deleteGroupData}/details`)
              const members = details.members.filter((m: any) => m.id !== user?.id).map((m: any) => ({
@@ -120,10 +117,8 @@ export function GroupsManager() {
     if (!user) return
     const groupId = transferDialogData.groupId
     try {
-      // 1. Transfer Ownership
       await api.put(`/groups/${groupId}/transfer?newOwnerId=${newOwnerId}`, {})
       
-      // 2. Leave Group
       await api.delete(`/groups/${groupId}/members/${user.id}`)
       
       fetchGroups()
@@ -182,10 +177,10 @@ export function GroupsManager() {
           />
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <Button variant="outline" className="flex-1 md:flex-none gap-2">
+          {/* <Button variant="outline" className="flex-1 md:flex-none gap-2">
             <Filter className="h-4 w-4" />
             Filter
-          </Button>
+          </Button> */}
           <Button className="flex-1 md:flex-none gap-2" onClick={() => {
             setEditingGroup(undefined)
             setIsCreateModalOpen(true)

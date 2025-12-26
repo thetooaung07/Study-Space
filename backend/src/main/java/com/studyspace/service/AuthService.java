@@ -26,10 +26,13 @@ public class AuthService {
     private final UserMapper userMapper;
 
     public AuthResponse register(RegisterRequest request) {
+        log.info("Registration attempt for email: {}", request.getEmail());
         if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("Registration failed - email already exists: {}", request.getEmail());
             throw new RuntimeException("Email already exists");
         }
         if (userRepository.existsByUsername(request.getUsername())) {
+            log.warn("Registration failed - username already exists: {}", request.getUsername());
             throw new RuntimeException("Username already exists");
         }
 
@@ -43,6 +46,7 @@ public class AuthService {
         
 
         var savedUser = userRepository.save(user);
+        log.info("User registered successfully: {} (ID: {})", savedUser.getEmail(), savedUser.getId());
         var jwtToken = jwtUtil.generateToken(new org.springframework.security.core.userdetails.User(
                 savedUser.getEmail(), savedUser.getPassword(), java.util.Collections.emptyList()));
         
@@ -53,11 +57,13 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
+        log.info("Login attempt for: {}", request.getEmail());
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
             );
         } catch (Exception e) {
+            log.warn("Login failed for {}: {}", request.getEmail(), e.getMessage());
             throw e;
         }
         
@@ -70,6 +76,7 @@ public class AuthService {
         var jwtToken = jwtUtil.generateToken(new org.springframework.security.core.userdetails.User(
                 user.getEmail(), user.getPassword(), java.util.Collections.emptyList()));
         
+        log.info("Login successful for user: {} (ID: {})", user.getEmail(), user.getId());
         return AuthResponse.builder()
                 .token(jwtToken)
                 .user(userMapper.toDTO(user))
@@ -77,9 +84,13 @@ public class AuthService {
     }
 
     public com.studyspace.dto.UserDTO getCurrentUser(String email) {
+        log.debug("Fetching current user for: {}", email);
         User user = userRepository.findByEmail(email)
                 .or(() -> userRepository.findByUsername(email))
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found for email/username: {}", email);
+                    return new RuntimeException("User not found");
+                });
         return userMapper.toDTO(user);
     }
 }

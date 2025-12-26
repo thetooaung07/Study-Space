@@ -22,9 +22,9 @@ public class AnalyticsService {
 
     public AnalyticsOverviewDTO getOverview() {
         long activeUsers = userRepository.countByCurrentStatus(UserStatus.STUDYING);
-        long totalStudyMinutes = userRepository.sumTotalStudyMinutes(); // Needs Repo method
-        long hotSessions = sessionRepository.countByStartTimeAfter(LocalDateTime.now().minusHours(24)); // Approximation for now
-        long newGroups = groupRepository.countByCreatedAtAfter(LocalDateTime.now().minusHours(24)); // Needs Repo method
+        long totalStudyMinutes = userRepository.sumTotalStudyMinutes(); 
+        long hotSessions = sessionRepository.countByStartTimeAfter(LocalDateTime.now().minusHours(24)); 
+        long newGroups = groupRepository.countByCreatedAtAfter(LocalDateTime.now().minusHours(24)); 
 
         return AnalyticsOverviewDTO.builder()
                 .activeUsersNow(activeUsers)

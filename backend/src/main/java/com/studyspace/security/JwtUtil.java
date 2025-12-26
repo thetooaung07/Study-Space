@@ -63,14 +63,6 @@ public class JwtUtil {
     }
 
     private Key getSignInKey() {
-        // byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        // Ensure key is long enough for HS256 if strict, but our string is just raw characters.
-        // For simplicity with this raw string, we can just use Keys.hmacShaKeyFor
-        // But proper Base64 decoding expects a Base64 encoded string.
-        // Let's use a simple generation for now if the key isn't actually Base64.
-        // Actually, let's just use a dedicated key generation for consistency or ensure SECRET_KEY is valid Base64.
-        // For this demo, let's just generate a key from bytes if the above decoder fails or just encode it.
-        // Better yet, let's hardcode a proper Base64 key to avoid runtime errors.
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes()); // Using raw bytes is safer for arbitrary strings
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 }

@@ -33,10 +33,6 @@ export function ActiveSessions() {
       const userSessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
       const allSessions = await api.get<StudySessionDTO[]>(`/sessions`)
 
-
-      console.log("User Sessions:", userSessions)
-      console.log("All Sessions:", allSessions) 
-
       const publicGroupSessions = allSessions.filter(s => 
         s.isGroupSession && s.visibility === 'PUBLIC' &&
         !userSessions.some(us => us.id === s.id) 

@@ -14,6 +14,7 @@ import com.studyspace.repository.UserRepository;
 import com.studyspace.types.GroupType;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class StudyGroupService {
     
     private final StudyGroupRepository groupRepository;
@@ -32,8 +34,12 @@ public class StudyGroupService {
     private final com.studyspace.mapper.UserMapper userMapper;
     
     public StudyGroupDTO createGroup(Long creatorId, CreateGroupRequest request) {
+        log.info("Creating group '{}' for user ID: {}", request.getName(), creatorId);
         User creator = userRepository.findById(creatorId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("Failed to create group - user not found: {}", creatorId);
+                return new RuntimeException("User not found");
+            });
         
         StudyGroup group = StudyGroup.builder()
             .name(request.getName())
@@ -48,6 +54,7 @@ public class StudyGroupService {
         creator.getGroups().add(group);
         
         StudyGroup savedGroup = groupRepository.save(group);
+        log.info("Group created successfully - ID: {}, Name: '{}', Creator: {}", savedGroup.getId(), savedGroup.getName(), creator.getEmail());
         return convertToDTO(savedGroup);
     }
     
@@ -288,27 +295,9 @@ public class StudyGroupService {
     public com.studyspace.dto.StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
-            
-        // Fetch active sessions
-        // Logic similar to getGroupSessions in StudySessionService but we can reuse or replicate query
-        // For simplicity, let's inject StudySessionService if possible, or just use sessionRepository
-        // We really should use StudySessionService to ensure consistency (like hiding private sessions)
-        // But circular dependency risk if StudySessionService depends on StudyGroupService.
-        // Let's use sessionRepository directly for now, replicating the visibility logic or simpler:
-        // "Active sessions for this group"
-        // If we want to support PRIVATE sessions logic properly, we need to check visibility.
-        // Let's assume for now we return ALL Group sessions that are ACTIVE.
-        
-        // Filter out completed/cancelled? The UI shows "Sessions". 
-        // Typically we want ACTIVE sessions for the "Live" view, and maybe recent for list.
-        // Current frontend implementation fetched `/sessions/group/${groupId}` which returned all.
-        // Let's return all for now, or maybe just active ones if the UI distinguishes.
-        // The DTO name in frontend is `sessions`, displayed in a list. 
         
         List<StudySession> sessions = sessionRepository.findByStudyGroupId(groupId);
-        // Filter?
-        // Let's stick to what the separate endpoint would have done.
-        
+   
         List<com.studyspace.dto.StudySessionDTO> sessionDTOs = sessions.stream()
              .filter(s -> {
                  if (com.studyspace.types.SessionVisibility.PUBLIC.equals(s.getVisibility())) {
@@ -320,11 +309,6 @@ public class StudyGroupService {
                  return false;
              })
              .map(session -> {
-                 // We need a session mapper. StudySessionService has one.
-                 // To avoid duplication, ideally we use a Mapper class.
-                 // For now, I'll allow a little duplication or simple mapping to avoid large refactor.
-                 // Actually, StudySessionService is not injected here.
-                 // Let's manual map or refactor StudySessionDTO to have a static mapper?
                  return convertSessionToDTO(session);
              })
              .collect(Collectors.toList());

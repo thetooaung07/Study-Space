@@ -28,11 +28,6 @@ public class UserController {
     public ResponseEntity<UserDTO> createUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserDTO> getCurrentUser(java.security.Principal principal) {
-        return ResponseEntity.ok(userService.getUserByEmail(principal.getName()));
-    }
     
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {

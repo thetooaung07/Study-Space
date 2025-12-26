@@ -9,6 +9,7 @@ import com.studyspace.types.SessionStatus;
 import com.studyspace.types.SessionVisibility;
 import com.studyspace.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class StudySessionService {
     
     private final StudySessionRepository sessionRepository;
@@ -29,8 +31,12 @@ public class StudySessionService {
     private final GamificationService gamificationService;
     
     public StudySessionDTO createSession(Long userId, CreateSessionRequest request) {
+        log.info("Creating session for user ID: {} with title: {}", userId, request.getTitle());
         User creator = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("Failed to create session - user not found: {}", userId);
+                return new RuntimeException("User not found");
+            });
         
         StudySession session = StudySession.builder()
             .title(request.getTitle())
@@ -81,13 +87,18 @@ public class StudySessionService {
             .build();
         activityRepository.save(activity);
         
+        log.info("Session created successfully - ID: {}, Title: {}, Creator: {}", savedSession.getId(), savedSession.getTitle(), creator.getEmail());
         return convertToDTO(savedSession);
     }
     
     @Transactional(readOnly = true)
     public StudySessionDTO getSessionById(Long id) {
+        log.debug("Fetching session by ID: {}", id);
         StudySession session = sessionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> {
+                log.warn("Session not found: {}", id);
+                return new RuntimeException("Session not found");
+            });
         return convertToDTO(session);
     }
     
@@ -186,23 +197,26 @@ public class StudySessionService {
     }
     
     public void addParticipant(Long sessionId, Long userId) {
+      
         StudySession session = sessionRepository.findById(sessionId)
             .orElseThrow(() -> new RuntimeException("Session not found"));
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Check if participant record already exists
+        // log.info("Adding participant - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
+
+     
         var existingParticipant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId);
         
         if (existingParticipant.isPresent()) {
             SessionParticipant participant = existingParticipant.get();
-            
-            // If they've left before, allow them to rejoin
+
             if (participant.getLeftAt() != null) {
                 participant.setLeftAt(null);  // Reset left time
                 participant.setJoinedAt(LocalDateTime.now());  // Update join time
                 participant.setMinutesParticipated(null);  // Reset minutes for new session
                 participantRepository.save(participant);
+                log.info("Participant rejoined - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
                 
                 // Log rejoin activity
                 Activity activity = Activity.builder()
@@ -214,8 +228,7 @@ public class StudySessionService {
                 activityRepository.save(activity);
                 return;
             } else {
-                // They're currently in the session
-                return; // Idempotent success if already in
+                return;
             }
         }
         
@@ -227,6 +240,7 @@ public class StudySessionService {
             .build();
         
         participantRepository.save(participant);
+        log.info("Participant joined - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
         
         // Log activity
         Activity activity = Activity.builder()
@@ -238,11 +252,13 @@ public class StudySessionService {
     }
     
     public void removeParticipant(Long sessionId, Long userId, Integer studyMinutes) {
+        // log.info("Removing participant - Session: {}, User ID: {}", sessionId, userId);
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
             .orElseThrow(() -> new RuntimeException("Participant not found"));
         
         // If already left, do nothing
         if (participant.getLeftAt() != null) {
+            log.debug("Participant already left session - Session: {}, User ID: {}", sessionId, userId);
             return;
         }
 
@@ -276,17 +292,14 @@ public class StudySessionService {
             .build();
         activityRepository.save(activity);
         
-        // Check if session is empty (no active participants)
+        log.info("Participant left - Session: {}, User: {} (ID: {}), Minutes studied: {}", sessionId, user.getUsername(), userId, minutesToRecord);
+        
         StudySession session = participant.getStudySession();
         long activeCount = session.getParticipants().stream()
                 .filter(p -> p.getLeftAt() == null)
                 .count();
                 
         if (activeCount == 0) {
-            // Last person left, end the session
-            // We can reuse endSession but distinct logic: endSession updates participants again?
-            // endSession logic checks for active participants. Since we just marked this one as left,
-            // endSession will just close the session entity and calc duration. perfect.
             endSession(sessionId);
         }
     }
@@ -375,15 +388,6 @@ public class StudySessionService {
         
         // Update user status
         User user = participant.getUser();
-        // We don't directly set status here as frontend does it via separate call, 
-        // but for consistency we could. Let's let frontend handle status to keep it decoupled
-        // or we can enforce it here. Requirement says "update the accumulatedSeconds... needed to add additional fields"
-        // Let's assume frontend also calls status update or we do it here. 
-        // Plan said: "Update User Status to AWAY".
-        // To avoid circular dependency or complexity, let's just log activity.
-        // Frontend explicitly calls /status endpoint too in current code. 
-        // We will just do the timer logic here.
-        
         participantRepository.save(participant);
         
         Activity activity = Activity.builder()
@@ -450,13 +454,11 @@ public class StudySessionService {
         User newHost = userRepository.findById(newHostId)
             .orElseThrow(() -> new RuntimeException("User not found"));
             
-        // Validations could be added: is newHost a participant?
-        // For simplicity, we assume frontend passed a valid participant ID
-        
+      
         session.setCreator(newHost);
         sessionRepository.save(session);
         
-        // Log activity
+     
         Activity activity = Activity.builder()
             .type(ActivityType.MILESTONE_REACHED) // Or generic update
             .studySession(session)

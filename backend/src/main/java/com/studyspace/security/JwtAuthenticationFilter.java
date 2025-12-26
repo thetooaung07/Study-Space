@@ -44,7 +44,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         jwt = authHeader.substring(7);
         try {
             userEmail = jwtUtil.extractUsername(jwt);
+            log.debug("JWT token extracted for user: {}", userEmail);
         } catch (Exception e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
@@ -61,7 +63,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                log.debug("User authenticated: {}", userEmail);
             } else {
+                log.warn("JWT token validation failed for user: {}", userEmail);
             }
         }
         filterChain.doFilter(request, response);

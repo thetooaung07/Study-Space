@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -18,6 +19,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtUtil;
@@ -26,9 +28,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        log.info("OAuth2 authentication success, processing user...");
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
+        log.debug("OAuth2 user attributes - email: {}, name: {}", email, name);
         
         // Avatar Logic
         Object avatarUrlObj = oAuth2User.getAttribute("avatar_url"); // GitHub
@@ -67,7 +71,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
         User user = userRepository.findByEmail(finalEmail)
                 .orElseGet(() -> {
-                    // Register new user
+                    log.info("Creating new OAuth user: {}", finalEmail);
                     User newUser = new User();
                     newUser.setEmail(finalEmail);
                     newUser.setUsername(finalUsername); 
@@ -78,12 +82,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     // Determine provider
                     if (oAuth2User.getAttribute("gravatar_id") != null || oAuth2User.getAttribute("login") != null) {
                          newUser.setAuthProvider(com.studyspace.types.AuthProvider.GITHUB);
+                         log.debug("OAuth provider detected: GITHUB");
                     } else {
                          newUser.setAuthProvider(com.studyspace.types.AuthProvider.GOOGLE);
+                         log.debug("OAuth provider detected: GOOGLE");
                     }
                     
                     newUser.setPassword(""); 
-                    return userRepository.save(newUser);
+                    User saved = userRepository.save(newUser);
+                    log.info("New OAuth user created with ID: {}", saved.getId());
+                    return saved;
                 });
 
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(
@@ -93,10 +101,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         );
 
         String token = jwtUtil.generateToken(userDetails);
+        log.info("OAuth login successful for user: {} (ID: {})", user.getEmail(), user.getId());
 
         String targetUrl = UriComponentsBuilder.fromUriString(FRONTEND_URL)
                 .queryParam("token", token)
                 .build().toUriString();
+        log.debug("Redirecting to: {}", FRONTEND_URL);
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

@@ -6,6 +6,7 @@ import com.studyspace.entity.User;
 import com.studyspace.types.UserStatus;
 import com.studyspace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -14,16 +15,20 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserService {
     
     private final UserRepository userRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     
     public UserDTO createUser(CreateUserRequest request) {
+        log.info("Creating user with email: {}", request.getEmail());
         if (userRepository.existsByUsername(request.getUsername())) {
+            log.warn("User creation failed - username already exists: {}", request.getUsername());
             throw new RuntimeException("Username already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
+            log.warn("User creation failed - email already exists: {}", request.getEmail());
             throw new RuntimeException("Email already exists");
         }
         
@@ -38,12 +43,17 @@ public class UserService {
             .build();
         
         User savedUser = userRepository.save(user);
+        log.info("User created successfully with ID: {}", savedUser.getId());
         return convertToDTO(savedUser);
     }
     
     public UserDTO updateUser(Long userId, com.studyspace.dto.UpdateUserRequest request) {
+        log.info("Updating user ID: {}", userId);
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("User not found with ID: {}", userId);
+                return new RuntimeException("User not found");
+            });
             
         if (request.getUsername() != null) {
              String newUsername = request.getUsername().trim();

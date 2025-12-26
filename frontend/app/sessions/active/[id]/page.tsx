@@ -6,6 +6,16 @@ import { Users, MessageSquare, Pause, Play, Coffee, LogOut, Volume2, VolumeX, Ha
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { StudySessionDTO, ActivityDTO, UserDTO } from "@/types"
@@ -35,6 +45,9 @@ export default function ActiveSessionPage() {
 
   // Transfer Host Dialog State
   const [showTransferDialog, setShowTransferDialog] = useState(false)
+  
+  // Leave Session Dialog State
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false)
 
   // Auto-join session when entering (if not creator)
   useEffect(() => {
@@ -229,11 +242,13 @@ export default function ActiveSessionPage() {
       return
     }
     
-    const confirmMessage = isCreator
-        ? "Are you sure you want to end this session? Since you are the only one here, it will be closed."
-        : "Are you sure you want to leave this session?"
-    
-    if (!confirm(confirmMessage)) return
+    // Show leave confirmation dialog
+    setShowLeaveDialog(true)
+  }
+  
+  const confirmLeaveSession = async () => {
+    if (!user || !session) return
+    setShowLeaveDialog(false)
   
     try {
         if (userStartTime) {
@@ -387,7 +402,7 @@ export default function ActiveSessionPage() {
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden lg:inline">
-                  {session.creatorId === user?.id && participantsList.length > 1 ? "End / Leave" : "Leave Session"}
+                  { participantsList.length == 1 ? "End Session" : "Leave Session"}
                 </span>
               </Button>
             </div>
@@ -571,6 +586,31 @@ export default function ActiveSessionPage() {
             participants={(session?.participants || []).filter(p => p.id !== user?.id && !p.leftAt)}
             onTransferAndLeave={handleTransferAndLeave}
         />
+
+        {/* Leave Session Confirmation Dialog */}
+        <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {session?.participants?.length === 1 ? "End Session?" : "Leave Session?"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {session?.participants?.length === 1
+                  ? "Are you sure you want to end this session? Since you are the only one here, it will be closed."
+                  : "Are you sure you want to leave this session? Your study time will be saved."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmLeaveSession} 
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {session?.participants?.length === 1 ? "End Session" : "Leave"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )
