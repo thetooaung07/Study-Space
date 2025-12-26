@@ -190,12 +190,7 @@ public class StudyGroupService {
     public GroupStatsDTO getGroupStats(Long groupId, LocalDateTime cutoffDate, Integer minimumMinutes) {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
-        
-        // Get all sessions for group members since cutoff date
-        Set<Long> memberIds = group.getMembers().stream()
-            .map(User::getId)
-            .collect(Collectors.toSet());
-        
+
         long sessionCount = 0;
         long totalStudyMinutes = 0;
         Set<Long> activeMemberIds = new HashSet<>();

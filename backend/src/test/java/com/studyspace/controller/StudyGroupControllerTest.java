@@ -1,6 +1,4 @@
 package com.studyspace.controller;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyspace.dto.StudyGroupDTO;
 import com.studyspace.service.StudyGroupService;
 import org.junit.jupiter.api.Test;
