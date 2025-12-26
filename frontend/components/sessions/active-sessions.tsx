@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Clock, Users, Play, RefreshCcw } from "lucide-react"
+import { Clock, Users, Play, RefreshCcw, CloudCog } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
@@ -32,9 +32,13 @@ export function ActiveSessions() {
       
       const userSessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`)
       const allSessions = await api.get<StudySessionDTO[]>(`/sessions`)
-      
+
+
+      console.log("User Sessions:", userSessions)
+      console.log("All Sessions:", allSessions) 
+
       const publicGroupSessions = allSessions.filter(s => 
-        s.isGroupSession && 
+        s.isGroupSession && s.visibility === 'PUBLIC' &&
         !userSessions.some(us => us.id === s.id) 
       )
       const combinedSessions = [...userSessions, ...publicGroupSessions]
@@ -149,7 +153,7 @@ export function ActiveSessions() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Hosted by User #{session.creatorId}
+                    Hosted by {session.creator?.fullName ?? "User #" + session.creatorId}
                   </p>
                 </div>
                 

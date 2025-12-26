@@ -10,6 +10,7 @@ import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { StudySessionDTO, ActivityDTO, UserDTO } from "@/types"
 import { useAuth } from "@/context/auth-context"
+import { TransferSessionHostDialog } from "@/components/sessions/transfer-session-host-modal"
 
 export default function ActiveSessionPage() {
   const params = useParams()
@@ -31,6 +32,9 @@ export default function ActiveSessionPage() {
   const [totalPausedTime, setTotalPausedTime] = useState(0)
   const [pauseStartTime, setPauseStartTime] = useState<number | null>(null)
   const [hasJoined, setHasJoined] = useState(false)
+
+  // Transfer Host Dialog State
+  const [showTransferDialog, setShowTransferDialog] = useState(false)
 
   // Auto-join session when entering (if not creator)
   useEffect(() => {
@@ -182,12 +186,52 @@ export default function ActiveSessionPage() {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
+  const handleTransferAndLeave = async (newHostId: number) => {
+    if (!user || !sessionId) return
+    try {
+      // 1. Transfer Host
+      await api.put(`/sessions/${sessionId}/transfer?newHostId=${newHostId}`, {})
+      
+      // 2. Perform Leave Logic
+      if (userStartTime) {
+          const now = new Date().getTime()
+          const totalElapsed = now - userStartTime - totalPausedTime
+          const studyMinutes = Math.floor(totalElapsed / 60000)
+          
+          await api.delete(`/sessions/${sessionId}/participants/${user.id}?studyMinutes=${studyMinutes}`)
+          toast.success("Host transferred and left session")
+      }
+      
+      await api.put(`/users/${user.id}/status?status=ONLINE`, {})
+      
+      if (session?.studyGroupId) {
+        router.push(`/groups/${session.studyGroupId}`)
+      } else {
+        router.push('/dashboard')
+      }
+
+    } catch (error) {
+      console.error("Failed to transfer and leave:", error)
+      toast.error("Failed to transfer host")
+    }
+  }
+
   const handleLeaveSession = async () => {
     if (!user || !session) return
     
     const isCreator = session.creatorId === user.id
+    // Active participants excluding self
+    const otherParticipants = (session.participants || []).filter(p => !p.leftAt && p.id !== user.id)
+
+    if (isCreator && otherParticipants.length > 0) {
+      // Prompt Transfer
+      setShowTransferDialog(true)
+      return
+    }
     
-    const confirmMessage = "Are you sure you want to leave this session?"
+    const confirmMessage = isCreator
+        ? "Are you sure you want to end this session? Since you are the only one here, it will be closed."
+        : "Are you sure you want to leave this session?"
     
     if (!confirm(confirmMessage)) return
   
@@ -203,7 +247,11 @@ export default function ActiveSessionPage() {
       
       await api.put(`/users/${user.id}/status?status=ONLINE`, {})
       
-      router.push(`/groups/${session.studyGroupId}`)
+      if (session.studyGroupId) {
+        router.push(`/groups/${session.studyGroupId}`)
+      } else {
+        router.push('/dashboard')
+      }
     } catch (error) {
       console.error("Failed to leave session:", error)
       toast.error("Failed to leave session")
@@ -339,7 +387,7 @@ export default function ActiveSessionPage() {
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden lg:inline">
-                  Leave Session
+                  {session.creatorId === user?.id && participantsList.length > 1 ? "End / Leave" : "Leave Session"}
                 </span>
               </Button>
             </div>
@@ -515,6 +563,14 @@ export default function ActiveSessionPage() {
             </div>
           </Card>
         </div>
+
+        <TransferSessionHostDialog 
+            open={showTransferDialog} 
+            onOpenChange={setShowTransferDialog}
+            sessionTitle={session?.title || "Session"}
+            participants={(session?.participants || []).filter(p => p.id !== user?.id && !p.leftAt)}
+            onTransferAndLeave={handleTransferAndLeave}
+        />
       </div>
     </div>
   )

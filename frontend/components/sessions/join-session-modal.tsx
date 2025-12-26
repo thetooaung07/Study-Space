@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Clock, Users, BookOpen, Zap, Play } from "lucide-react"
+import { Clock, Users, BookOpen, Zap, Play, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { StudySessionDTO } from "@/types"
+import { computeDuration, formatDate, formatTime } from "@/lib/utils"
 
 interface JoinSessionModalProps {
   sessionId: string | number
@@ -18,10 +29,7 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   
-  // Real session state
-  // We use a partial or full DTO here. Initial state is null.
-  // We can use a type assertion or just check content availability.
-  const [session, setSession] = useState<any>(null) 
+  const [session, setSession] = useState<StudySessionDTO| null>(null) 
   const [fetching, setFetching] = useState(true)
 
   useEffect(() => {
@@ -29,7 +37,7 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
          const fetchSession = async () => {
              try {
                  setFetching(true)
-                 const data = await api.get(`/sessions/${sessionId}`)
+                 const data = await api.get<StudySessionDTO>(`/sessions/${sessionId}`)
                  setSession(data)
              } catch (e) {
                  console.error("Failed to fetch session details", e)
@@ -61,11 +69,24 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
   
   if (!session && fetching) {
       return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <div className="p-8 text-center text-muted-foreground">Loading session details...</div>
-            </DialogContent>
-        </Dialog>
+       <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <VisuallyHidden>
+            <DialogTitle>Loading session details</DialogTitle>
+          </VisuallyHidden>
+          <VisuallyHidden>
+            <DialogDescription>
+              Fetching session information, please wait.
+            </DialogDescription>
+          </VisuallyHidden>
+        </DialogHeader>
+
+        <div className="p-8 text-center text-muted-foreground">
+          Loading session details...
+        </div>
+      </DialogContent>
+    </Dialog>
       )
   }
   
@@ -95,7 +116,9 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
                 </span>
               </div>
               <DialogTitle className="text-2xl font-bold text-gray-900 mb-2">{session.title}</DialogTitle>
-              <p className="text-gray-600 text-sm leading-relaxed">{session.description || "No description provided."}</p>
+              <DialogDescription className="text-gray-600 text-sm leading-relaxed">
+                {session.description || "No description provided."}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -103,12 +126,28 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
         <div className="space-y-4 mt-4">
           {/* Session Stats Grid */}
           <div className="grid grid-cols-4 gap-3">
+             <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
+              <div className="flex items-center gap-2 text-gray-600 mb-1">
+                <CalendarDays className="h-4 w-4" />
+                <span className="text-xs font-medium">Date</span>
+              </div>
+              <p className="text-base font-semibold text-gray-900">{formatDate(session.startTime)}</p>
+            </div>
+
+            <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
+              <div className="flex items-center gap-2 text-gray-600 mb-1">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs font-medium">Time</span>
+              </div>
+              <p className="text-base font-semibold text-gray-900">{formatTime(session.startTime)}</p>
+            </div>
+
             <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
               <div className="flex items-center gap-2 text-gray-600 mb-1">
                 <Clock className="h-4 w-4" />
                 <span className="text-xs font-medium">Duration</span>
               </div>
-              <p className="text-base font-semibold text-gray-900">{session.duration}</p>
+              <p className="text-base font-semibold text-gray-900">{computeDuration(session.startTime, session.endTime)}</p>
             </div>
 
             <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
@@ -118,22 +157,6 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
               </div>
               <p className="text-base font-semibold text-gray-900">{session.participantCount}</p>
             </div>
-
-            <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
-              <div className="flex items-center gap-2 text-gray-600 mb-1">
-                <Zap className="h-4 w-4" />
-                <span className="text-xs font-medium">Focus Level</span>
-              </div>
-              <p className="text-base font-semibold text-gray-900">Medium</p>
-            </div>
-
-            <div className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
-              <div className="flex items-center gap-2 text-gray-600 mb-1">
-                <BookOpen className="h-4 w-4" />
-                <span className="text-xs font-medium">Type</span>
-              </div>
-              <p className="text-base font-semibold text-gray-900">{session.isGroupSession ? "Group" : "Solo"}</p>
-            </div>
           </div>
 
           {/* Host Info */}
@@ -141,13 +164,14 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
               <div className="p-4 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30">
                 <p className="text-sm font-medium text-gray-600 mb-3">Hosted by</p>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
-                    {session.creator.profilePictureUrl ? (
-                         <img src={session.creator.profilePictureUrl} alt={session.creator.fullName} className="w-full h-full object-cover" />
-                    ) : (
-                        session.creator.fullName.charAt(0).toUpperCase()
-                    )}
-                  </div>
+                  <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                    <AvatarImage src={session.creator.profilePictureUrl || "/placeholder.svg"} className="object-cover" />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-400 text-white font-semibold text-sm">
+                      {session.creator.fullName
+                        ? session.creator.fullName.charAt(0).toUpperCase()
+                        : session.creator.fullName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <p className="font-semibold text-gray-900">{session.creator.fullName}</p>
                     <p className="text-sm text-gray-600">
@@ -167,20 +191,18 @@ export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionM
                 <div className="grid grid-cols-2 gap-3">
                   {participants.map((participant: any) => (
                     <div key={participant.id} className="flex items-center gap-3 p-2 rounded-lg bg-white/30">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-green-400 to-teal-400 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
-                        {participant.profilePictureUrl ? (
-                             <img src={participant.profilePictureUrl} alt={participant.fullName} className="w-full h-full object-cover" />
-                        ) : (
-                            participant.fullName.charAt(0).toUpperCase()
-                        )}
-                      </div>
+                      <Avatar className="h-9 w-9 border-2 border-white/50">
+                        <AvatarImage src={participant.profilePictureUrl} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-green-400 to-teal-400 text-white text-xs font-semibold">
+                             {participant.fullName
+                                ? participant.fullName.charAt(0).toUpperCase()
+                                : participant.fullName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div className="flex-1">
                         <p className="font-medium text-gray-900 text-sm">{participant.fullName}</p>
                         <p className="text-xs text-gray-600 capitalize">{participant.currentStatus?.toLowerCase() || 'offline'}</p>
                       </div>
-                      <div
-                        className={`h-2 w-2 rounded-full ${participant.currentStatus === "STUDYING" ? "bg-green-500" : "bg-gray-400"}`}
-                      />
                     </div>
                   ))}
                 </div>

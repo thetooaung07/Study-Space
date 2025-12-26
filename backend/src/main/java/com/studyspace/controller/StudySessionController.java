@@ -89,4 +89,10 @@ public class StudySessionController {
         sessionService.deleteSession(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/transfer")
+    public ResponseEntity<Void> transferSession(@PathVariable Long id, @RequestParam Long newHostId) {
+        sessionService.transferHost(id, newHostId);
+        return ResponseEntity.ok().build();
+    }
 }

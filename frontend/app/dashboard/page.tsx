@@ -10,7 +10,6 @@ export default function Home() {
 			<div className="flex flex-col flex-1 overflow-hidden">
 				<Header />
 				<main className="flex-1 overflow-auto">
-					{/* <BentoDashboard /> */}
 					<Dashboard />
 				</main>
 			</div>

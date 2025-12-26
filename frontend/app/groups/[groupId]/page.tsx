@@ -45,7 +45,7 @@ export default function GroupDetailPage() {
 
   // Fetch data
   useEffect(() => {
-    if (!groupId) return
+    if (!groupId || groupId === 'null' || groupId === 'undefined') return
 
     const fetchData = async () => {
       setLoading(true)

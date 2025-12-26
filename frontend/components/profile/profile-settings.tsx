@@ -3,12 +3,12 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Mail, Lock, Camera, Save, CloudCog, Eye, EyeOff, AlertTriangle, Trash2 } from "lucide-react"
+import { User, Mail, Lock, Camera, Save, Eye, EyeOff, AlertTriangle, Trash2, Clock, CalendarDays, Activity, Flame } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -46,13 +46,25 @@ export function ProfileSettings() {
     }
   }, [user])
 
+  const getStatusStyles = (status: string) => {
+      switch (status) {
+          case 'ONLINE':
+              return 'bg-green-500/10 text-green-600'
+          case 'STUDYING':
+              return 'bg-blue-500/10 text-blue-600'
+          case 'AWAY':
+              return 'bg-yellow-500/10 text-yellow-600'
+          case 'OFFLINE':
+          default:
+              return 'bg-secondary text-secondary-foreground'
+      }
+  }
+
   const handleUpdateAccount = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     
     if (!user) return
-
-
 
     try {
       const response = await api.put<any>(`/users/${user.id}`, {
@@ -62,8 +74,6 @@ export function ProfileSettings() {
         profilePictureUrl: user.profilePictureUrl
       })
 
-      
-   
       if (response.token) {
           api.setToken(response.token)
           updateUser(response.user)
@@ -126,280 +136,276 @@ export function ProfileSettings() {
   }
 
   if (!user) {
-      return <div>Loading profile...</div>
+      return (
+        <div className="flex items-center justify-center p-12">
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )
   }
 
+  const joinDate = new Date(user.createdAt).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+  })
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="p-6 space-y-8 max-w-[1600px]">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
-        <p className="text-muted-foreground">Manage your account information and preferences</p>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Profile Settings</h1>
+        <p className="text-muted-foreground mt-2">Manage your account information and preferences</p>
       </div>
 
-      {/* Profile Picture Card */}
-      <Card className="p-6 bg-card/60 backdrop-blur-md border border-border/40 hover:bg-card/70 transition-all">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Avatar className="w-24 h-24">
-              <AvatarImage src={user.profilePictureUrl || "/placeholder.svg"} />
-              <AvatarFallback className="bg-pale-blue/60 text-2xl text-foreground">
-                {user.fullName
-                  ? user.fullName
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
-                  : user.username.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <button className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary/90 flex items-center justify-center transition-colors">
-              <Camera className="w-4 h-4 text-white" />
-            </button>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-foreground">{user.fullName || user.username}</h3>
-            <p className="text-muted-foreground text-sm">@{user.username}</p>
-            <p className="text-muted-foreground text-xs mt-1">Member since {new Date(user.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: Avatar & Stats */}
+        <div className="lg:col-span-4 flex flex-col gap-6 h-full">
+            {/* Profile Card */}
+            <Card className="overflow-hidden border-border/50 shadow-sm pt-0 shrink-0">
+                <div className="h-36 bg-gradient-to-r from-primary/10 to-primary/5"></div>
+                <div className="px-6 pb-6">
+                    <div className="relative -mt-16 mb-4 flex justify-between items-end">
+                         <div className="relative">
+                            <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
+                                <AvatarImage src={user.profilePictureUrl || "/placeholder.svg"} className="object-cover" />
+                                <AvatarFallback className="text-4xl bg-secondary text-primary font-semibold">
+                                {user.fullName
+                                    ? user.fullName
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                    : user.username.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <Button size="icon" variant="secondary" className="absolute bottom-0 right-0 rounded-full shadow-md h-8 w-8 border-2 border-background">
+                                <Camera className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+                   
+                    <div className="space-y-1">
+                        <h2 className="text-2xl font-bold">{user.fullName || user.username}</h2>
+                        <p className="text-muted-foreground">@{user.username}</p>
+                    </div>
 
-      {/* Account Information Card */}
-      <Card className="p-6 bg-pale-blue/60 backdrop-blur-md border border-border/40 hover:bg-pale-blue/70 transition-all">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-background/30 backdrop-blur-sm flex items-center justify-center">
-            <User className="w-5 h-5 text-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground">Account Information</h2>
-        </div>
+                    <div className="mt-6 flex flex-col gap-2">
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <CalendarDays className="w-4 h-4 mr-2 opacity-70" />
+                            Joined {joinDate}
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                            <Mail className="w-4 h-4 mr-2 opacity-70" />
+                            {user.email}
+                        </div>
+                    </div>
+                </div>
+            </Card>
 
-        <form onSubmit={handleUpdateAccount} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="username" className="text-foreground">
-              Username
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="pl-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
-                placeholder="Enter username"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-foreground">
-              Email Address
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
-                placeholder="Enter email"
-                  disabled={user.authProvider !== 'LOCAL'}
-              />
-            </div>
-            {user.authProvider !== 'LOCAL' && (
-                <p className="text-xs text-muted-foreground mt-1">
-                    Email cannot be changed because you are logged in via {user.authProvider}.
-                </p>
-            )}
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gradient-to-r from-primary/90 to-secondary/90 hover:from-primary hover:to-secondary text-primary-foreground backdrop-blur-sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {loading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-
-      {/* Password Update Card - Only for LOCAL users */}
-      {user.authProvider === 'LOCAL' && (
-      <Card className="p-6 bg-pale-purple/60 backdrop-blur-md border border-border/40 hover:bg-pale-purple/70 transition-all">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-background/30 backdrop-blur-sm flex items-center justify-center">
-            <Lock className="w-5 h-5 text-foreground" />
-          </div>
-          <h2 className="text-xl font-semibold text-foreground">Update Password</h2>
+             {/* Account Stats */}
+            <Card className="border-border/50 shadow-sm flex flex-col flex-1">
+                <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-primary" />
+                        Statistics
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 flex-1">
+                     <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                         <div className="flex items-center gap-3">
+                             <div className="p-2 bg-blue-500/10 text-blue-500 rounded-md">
+                                 <Clock className="w-4 h-4" />
+                             </div>
+                             <span className="text-sm font-medium">Study Time</span>
+                         </div>
+                         <span className="font-bold">
+                             {Math.floor((user.totalStudyMinutes || 0) / 60)}h {(user.totalStudyMinutes || 0) % 60}m
+                         </span>
+                     </div>
+                     <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                         <div className="flex items-center gap-3">
+                             <div className="p-2 bg-orange-500/10 text-orange-500 rounded-md">
+                                 <Flame className="w-4 h-4" />
+                             </div>
+                             <span className="text-sm font-medium">Current Streak</span>
+                         </div>
+                         <span className="font-bold">
+                             {user.currentStreak || 0} days
+                         </span>
+                     </div>
+                     <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                         <div className="flex items-center gap-3">
+                             <div className="p-2 bg-green-500/10 text-green-500 rounded-md">
+                                 <Activity className="w-4 h-4" />
+                             </div>
+                             <span className="text-sm font-medium">Status</span>
+                         </div>
+                         <span className={`font-bold text-xs uppercase tracking-wide ${getStatusStyles(user.currentStatus || "OFFLINE")} px-2 py-1 rounded`}>
+                             {user.currentStatus || "OFFLINE"}
+                         </span>
+                     </div>
+                </CardContent>
+            </Card>
         </div>
 
-        <form onSubmit={handleUpdatePassword} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-password" className="text-foreground">
-              Current Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="current-password"
-                type={showCurrentPassword ? "text" : "password"}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="pl-10 pr-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
-                placeholder="Enter current password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-              >
-                {showCurrentPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
+        {/* Right Column: Forms */}
+        <div className="lg:col-span-8 flex flex-col gap-6 h-full">
+             {/* General Settings */}
+             <Card className="border-border/50 shadow-sm">
+                 <CardHeader>
+                     <CardTitle>Account Information</CardTitle>
+                     <CardDescription>Update your profile details</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                    <form onSubmit={handleUpdateAccount} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="username">Username</Label>
+                                <Input
+                                    id="username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Username"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Email address"
+                                    disabled={user.authProvider !== 'LOCAL'}
+                                />
+                                {user.authProvider !== 'LOCAL' && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Managed by {user.authProvider}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-4">
+                             <Button type="submit" disabled={loading}>
+                                {loading && <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-white" />}
+                                Save Changes
+                             </Button>
+                        </div>
+                    </form>
+                 </CardContent>
+             </Card>
 
-          <div className="space-y-2">
-            <Label htmlFor="new-password" className="text-foreground">
-              New Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="new-password"
-                type={showNewPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="pl-10 pr-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
-                placeholder="Enter new password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-              >
-                {showNewPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
+             {/* Password Settings */}
+             {user.authProvider === 'LOCAL' && (
+                 <Card className="border-border/50 shadow-sm">
+                     <CardHeader>
+                         <CardTitle>Security</CardTitle>
+                         <CardDescription>Update your password</CardDescription>
+                     </CardHeader>
+                     <CardContent>
+                        <form onSubmit={handleUpdatePassword} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="current-password">Current Password</Label>
+                                <div className="relative">
+                                    <Input
+                                        id="current-password"
+                                        type={showCurrentPassword ? "text" : "password"}
+                                        value={currentPassword}
+                                        onChange={(e) => setCurrentPassword(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    >
+                                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="new-password"
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="confirm-password"
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex justify-end pt-4">
+                                <Button type="submit" disabled={loading} variant="outline">
+                                    {loading ? "Updating..." : "Update Password"}
+                                </Button>
+                            </div>
+                        </form>
+                     </CardContent>
+                 </Card>
+             )}
 
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password" className="text-foreground">
-              Confirm New Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="confirm-password"
-                type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10 pr-10 bg-background/80 backdrop-blur-sm border-border/50 focus:border-primary/60 transition-all"
-                placeholder="Confirm new password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-            </div>
-          </div>
+            {/* Danger Zone */}
+            <Card className="border-red-500/20 bg-red-500/5 shadow-sm mt-auto">
+                 <CardHeader>
+                     <div className="flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="w-5 h-5" />
+                        <CardTitle className="text-lg">Danger Zone</CardTitle>
+                     </div>
+                     <CardDescription className="text-red-600/80">Irreversible account actions</CardDescription>
+                 </CardHeader>
+                 <CardContent className="flex items-center justify-between">
+                     <div className="space-y-1">
+                         <p className="font-medium text-foreground">Delete Account</p>
+                         <p className="text-sm text-muted-foreground">Permanently delete your account and all data.</p>
+                     </div>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive">Delete Account</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete Account
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                 </CardContent>
+            </Card>
 
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gradient-to-r from-secondary/90 to-primary/90 hover:from-secondary hover:to-primary backdrop-blur-sm"
-            >
-              <Lock className="w-4 h-4 mr-2" />
-              {loading ? "Updating..." : "Update Password"}
-            </Button>
-          </div>
-        </form>
-      </Card>
-      )}
-
-      {/* Account Stats Card */}
-      <Card className="p-6 bg-pale-green/60 backdrop-blur-md border border-border/40 hover:bg-pale-green/70 transition-all">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Account Statistics</h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-4 rounded-lg bg-background/30 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-foreground">
-              {Math.floor((user.totalStudyMinutes || 0) / 60)}h {(user.totalStudyMinutes || 0) % 60}m
-            </p>
-            <p className="text-sm text-muted-foreground">Total Study Time</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-background/30 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-foreground capitalize">{user.currentStatus || "OFFLINE"}</p>
-            <p className="text-sm text-muted-foreground">Current Status</p>
-          </div>
-          <div className="text-center p-4 rounded-lg bg-background/30 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-foreground">
-              {Math.floor((new Date().getTime() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days
-            </p>
-            <p className="text-sm text-muted-foreground">Member Duration</p>
-          </div>
         </div>
-      </Card>
-
-      {/* Danger Zone */}
-      <Card className="p-6 bg-red-500/5 backdrop-blur-md border border-red-500/20 hover:bg-red-500/10 transition-all">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-          </div>
-          <h2 className="text-xl font-semibold text-red-500">Danger Zone</h2>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-foreground">Delete Account</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Permanently delete your account and all associated data. This action cannot be undone.
-            </p>
-          </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="bg-red-500 hover:bg-red-600">
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Account
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your account and remove your
-                  data from our servers.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-500 hover:bg-red-600 text-white">
-                  Delete Account
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </Card>
+      </div>
     </div>
   )
 }

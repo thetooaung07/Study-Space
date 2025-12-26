@@ -65,7 +65,8 @@ export interface UserDTO {
     authProvider: 'LOCAL' | 'GOOGLE' | 'GITHUB';
     joinedAt?: string; // Session context 
     lastPausedAt?: string;
-    totalPausedSeconds?: number; 
+    totalPausedSeconds?: number;
+    leftAt?: string;
 }
 
 

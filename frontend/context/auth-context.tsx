@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { UserDTO } from "@/types";
 import { api } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
+import {FullPageLoader} from "@/components/auth/full-page-loader";
 
 interface AuthContextType {
   user: UserDTO | null;
@@ -17,10 +18,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+
   const [user, setUser] = useState<UserDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const isAuthRoute = pathname.startsWith("/auth");
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -44,29 +47,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
   }, [pathname]); 
 
-  const login = (token: string, userData: UserDTO) => {
+  const login = useCallback((token: string, userData: UserDTO) => {
     api.setToken(token);
     setUser(userData);
     router.push("/dashboard");
-  };
+  }, [router]);
 
-  const updateUser = (userData: UserDTO) => {
+  const updateUser = useCallback((userData: UserDTO) => {
     setUser(userData);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     api.removeToken();
     setUser(null);
     router.push("/auth/login");
-  };
+  }, [router]);
 
   const isAuthenticated = !!user;
 
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateUser }}>
-      {children}
-    </AuthContext.Provider>
+     <AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateUser }}>
+    {isLoading ? (
+      <FullPageLoader />
+    ) : !isAuthenticated && !isAuthRoute ? (
+      null
+    ) : (
+      children
+    )}
+  </AuthContext.Provider>
   );
 }
 

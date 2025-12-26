@@ -441,4 +441,28 @@ public class StudySessionService {
         
         sessionRepository.delete(session);
     }
+
+    @Transactional
+    public void transferHost(Long sessionId, Long newHostId) {
+        StudySession session = sessionRepository.findById(sessionId)
+            .orElseThrow(() -> new RuntimeException("Session not found"));
+        
+        User newHost = userRepository.findById(newHostId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+            
+        // Validations could be added: is newHost a participant?
+        // For simplicity, we assume frontend passed a valid participant ID
+        
+        session.setCreator(newHost);
+        sessionRepository.save(session);
+        
+        // Log activity
+        Activity activity = Activity.builder()
+            .type(ActivityType.MILESTONE_REACHED) // Or generic update
+            .studySession(session)
+            .user(newHost)
+            .message("Session host transferred to " + newHost.getFullName())
+            .build();
+        activityRepository.save(activity);
+    }
 }
