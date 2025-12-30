@@ -28,7 +28,7 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
   })
 
   const subjects = ["MATH", "SCIENCE", "LANGUAGE", "HISTORY", "PROGRAMMING", "OTHER"]
-  const sessionTypes = ["Solo", "Group", "With Friends"]
+  const sessionTypes = ["Solo", "Group"]
 
   const handleSubmit = async () => {
     if (!user) return
@@ -81,7 +81,7 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium text-foreground block mb-2">Subject</label>
             <select 
@@ -89,7 +89,6 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="">Select subject...</option>
               {subjects.map((subject) => (
                 <option key={subject} value={subject}>
                   {subject}
@@ -104,7 +103,6 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
               onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
               className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              <option value="">Select type...</option>
               {sessionTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
@@ -112,6 +110,17 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
               ))}
             </select>
           </div>
+           <div>
+          <label className="text-sm font-medium text-foreground block mb-2">Visibility</label>
+          <select 
+            value={formData.visibility}
+            onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+            className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="PUBLIC">Public</option>
+            <option value="PRIVATE">Private</option>
+          </select>
+        </div>
         </div>
 
         <div>
@@ -125,27 +134,13 @@ export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
           />
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-foreground block mb-3">Visibility</label>
-          <div className="flex gap-2">
-            {(["PUBLIC", "PRIVATE"] as const).map((visibility) => (
-              <Button 
-                key={visibility} 
-                variant={formData.visibility === visibility ? "default" : "outline"}
-                onClick={() => setFormData({ ...formData, visibility })}
-                className={`flex-1 ${formData.visibility !== visibility ? "bg-transparent" : ""}`}
-              >
-                {visibility.charAt(0) + visibility.slice(1).toLowerCase()}
-              </Button>
-            ))}
-          </div>
-        </div>
+       
 
-        <div className="flex gap-3 pt-4">
-          <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
+        <div className="flex gap-3  pt-4">
+          <Button size="lg" variant="outline" onClick={onClose} className="flex-1 bg-transparent">
             Cancel
           </Button>
-          <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
+          <Button size="lg" className="flex-1 " onClick={handleSubmit} disabled={loading}>
             {loading ? "Starting..." : "Start Session"}
           </Button>
         </div>

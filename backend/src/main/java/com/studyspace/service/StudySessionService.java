@@ -83,7 +83,7 @@ public class StudySessionService {
             .type(ActivityType.SESSION_CREATED)
             .studySession(savedSession)
             .user(creator)
-            .message(creator.getFullName() + " created the session")
+            .message("created the session")
             .build();
         activityRepository.save(activity);
         
@@ -223,7 +223,7 @@ public class StudySessionService {
                     .type(ActivityType.JOINED)
                     .studySession(session)
                     .user(user)
-                    .message(user.getFullName() + " rejoined the session")
+                    .message("rejoined the session")
                     .build();
                 activityRepository.save(activity);
                 return;
@@ -289,6 +289,7 @@ public class StudySessionService {
             .type(ActivityType.LEFT)
             .studySession(participant.getStudySession())
             .user(participant.getUser())
+            .message("left the session")
             .build();
         activityRepository.save(activity);
         
@@ -394,7 +395,7 @@ public class StudySessionService {
                 .type(ActivityType.JOINED) // Using JOINED as generic status update for now
                 .studySession(participant.getStudySession())
                 .user(user)
-                .message(user.getFullName() + " took a break")
+                .message("took a break")
                 .build();
         activityRepository.save(activity);
     }
@@ -422,7 +423,7 @@ public class StudySessionService {
                 .type(ActivityType.JOINED)
                 .studySession(participant.getStudySession())
                 .user(participant.getUser())
-                .message(participant.getUser().getFullName() + " resumed studying")
+                .message("resumed studying")
                 .build();
         activityRepository.save(activity);
     }
@@ -463,7 +464,7 @@ public class StudySessionService {
             .type(ActivityType.MILESTONE_REACHED) // Or generic update
             .studySession(session)
             .user(newHost)
-            .message("Session host transferred to " + newHost.getFullName())
+            .message("is now the session host")
             .build();
         activityRepository.save(activity);
     }

@@ -25,7 +25,6 @@ export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName
   const [formData, setFormData] = useState({
     title: "",
     subject: "",
-    duration: "60",
     description: "",
     isGroupSession: true,
     visibility: "PUBLIC" as "PUBLIC" | "PRIVATE"
@@ -46,7 +45,6 @@ export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName
         studyGroupId: parseInt(groupId),
         isGroupSession: true,
         visibility: formData.visibility,
-        // duration is not directly in DTO but might be implied or added later, ignoring for now or mapping if needed
       })
       
       toast.success("Session created successfully!")
@@ -125,7 +123,7 @@ export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName
             </div>
 
             {/* Subject & Duration */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground block mb-2">Subject</label>
                 <select
@@ -140,20 +138,6 @@ export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName
                       {subject}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground block mb-2">Duration</label>
-                <select 
-                  value={formData.duration}
-                  onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  <option value="30">30 min</option>
-                  <option value="45">45 min</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
                 </select>
               </div>
             </div>

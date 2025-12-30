@@ -12,6 +12,7 @@ import Link from "next/link"
 import { Sidebar } from "@/components/common/sidebar"
 import { Header } from "@/components/common/header"
 import { api } from "@/lib/api"
+import { computeDuration } from "@/lib/utils"
 import { useAuth } from "@/context/auth-context"
 import { StudyGroupDTO, StudySessionDTO } from "@/types"
 import { CreateGroupSessionModal } from "@/components/groups/create-group-session-modal"
@@ -394,11 +395,11 @@ export default function GroupDetailPage() {
                           <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              <span>{session.duration || "0m"}</span>
+                              <span>{computeDuration(session.startTime, session.endTime)}</span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Users className="h-4 w-4" />
-                              <span>{session.participantCount} participants</span>
+                              <span>{session.participantCount == 1 ? "1 participant" : session.participantCount + " participants"}</span>
                             </div>
                           </div>
                         </div>

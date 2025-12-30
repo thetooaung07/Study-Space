@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback((token: string, userData: UserDTO) => {
     api.setToken(token);
     setUser(userData);
-    router.push("/dashboard");
+    router.push("/");
   }, [router]);
 
   const updateUser = useCallback((userData: UserDTO) => {

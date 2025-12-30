@@ -21,14 +21,14 @@ export function Header() {
     <header className="border-b border-border bg-card">
       <div className="flex items-center justify-end px-6 py-4">
         <div className="flex items-center gap-4">
-          <div className="relative w-80">
+          {/* <div className="relative w-80">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search sessions, groups, users..."
               className="w-full pl-10 pr-4 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
+          </div> */}
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
@@ -53,9 +53,9 @@ export function Header() {
                 Profile
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => router.push("/settings")}>
+              {/* <DropdownMenuItem onClick={() => router.push("/settings")}>
                 Settings
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
                 Log out

@@ -8,17 +8,30 @@ export class ApiError extends Error {
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ApiError(response.status, errorText || response.statusText);
+  const text = await response.text();
+  
+  // Check if response is HTML (backend not running or returned error page)
+  if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+    throw new ApiError(
+      response.status || 503, 
+      'Backend server unavailable or returned HTML instead of JSON'
+    );
   }
+  
+  if (!response.ok) {
+    throw new ApiError(response.status, text || response.statusText);
+  }
+  
   // Handle 204 No Content
-  if (response.status === 204) {
+  if (response.status === 204 || !text) {
     return {} as T;
   }
   
-  const text = await response.text();
-  return text ? JSON.parse(text) : ({} as T);
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new ApiError(500, `Invalid JSON response: ${text.substring(0, 100)}`);
+  }
 }
 
 export const api = {

@@ -9,6 +9,8 @@ import { StudySessionDTO } from "@/types"
 import { JoinSessionModal } from "@/components/sessions/join-session-modal"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { computeDuration } from "@/lib/utils"
 
 export function ActiveSessions() {
   const [sessions, setSessions] = useState<StudySessionDTO[]>([])
@@ -98,10 +100,9 @@ export function ActiveSessions() {
         <h3 className="text-lg font-semibold text-foreground">Active Sessions</h3>
         <div className="flex gap-2">
              <div className="flex items-center gap-2">
-                <input 
-                    type="number" 
+                <Input 
                     placeholder="Session ID" 
-                    className="h-8 w-28 px-2 rounded-md border border-input bg-background text-sm"
+                    className="h-8 w-28 px-2 rounded-md ring-0 bg-background text-sm"
                     value={joinId}
                     onChange={(e) => setJoinId(e.target.value)}
                 />
@@ -175,11 +176,11 @@ export function ActiveSessions() {
                <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{session.duration}</span>
+                  <span> {computeDuration(session.startTime, session.endTime)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4" />
-                  <span>{session.participantCount} studying</span>
+                  <span>{session.participantCount == 1 ? "1 participant" : session.participantCount + " participants"}</span>
                 </div>
               </div>
             </div>

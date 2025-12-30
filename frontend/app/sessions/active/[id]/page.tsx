@@ -491,14 +491,14 @@ export default function ActiveSessionPage() {
                   Participants ({participantsList.length})
                 </h3>
               </div>
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsMuted(!isMuted)}
                 className="h-8 w-8 p-0 hover:bg-white/40"
               >
                 {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
+              </Button> */}
             </div>
 
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -565,6 +565,12 @@ export default function ActiveSessionPage() {
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendMessage()
+                  }
+                }}
                 placeholder="Send a message..."
                 className="flex-1 px-3 py-2 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
               />

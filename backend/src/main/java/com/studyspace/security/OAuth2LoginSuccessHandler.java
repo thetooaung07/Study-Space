@@ -52,9 +52,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         } else {
             String login = oAuth2User.getAttribute("login"); // GitHub username
             if (login != null) {
-                finalEmail = login + "@github.no-email.com";
+                finalEmail = login + "@github.com";
             } else {
-                 finalEmail = "user_" + oAuth2User.getName() + "@no-email.com";
+                 finalEmail = oAuth2User.getName() + "@google.com";
             }
         }
         
@@ -77,7 +77,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     newUser.setUsername(finalUsername); 
                     newUser.setFullName(name != null ? name : finalUsername);
                     newUser.setProfilePictureUrl(avatarUrl);
-                    newUser.setCurrentStatus(com.studyspace.types.UserStatus.OFFLINE);
+                    newUser.setCurrentStatus(com.studyspace.types.UserStatus.ONLINE);
                     
                     // Determine provider
                     if (oAuth2User.getAttribute("gravatar_id") != null || oAuth2User.getAttribute("login") != null) {

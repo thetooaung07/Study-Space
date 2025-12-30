@@ -9,7 +9,6 @@ import { GroupCard } from "@/components/groups/group-card"
 import { api } from "@/lib/api"
 import { useAuth } from "@/context/auth-context"
 import { StudyGroupDTO } from "@/types"
-import { Filter } from "lucide-react" // Added import for Filter icon
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { TransferOwnershipDialog } from "./transfer-ownership-modal"
@@ -167,14 +166,14 @@ export function GroupsManager() {
     <div className="space-y-8 p-6">
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="relative flex-1 w-full md:max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          {/* <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search groups..."
             className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          /> */}
         </div>
         <div className="flex gap-2 w-full md:w-auto">
           {/* <Button variant="outline" className="flex-1 md:flex-none gap-2">

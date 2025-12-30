@@ -4,13 +4,13 @@ import { useState, useEffect } from "react"
 import { Plus, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { SessionForm } from "@/components/sessions/session-form"
 import { SessionHistory } from "@/components/sessions/session-history"
 import { TimerCard } from "@/components/sessions/timer-card"
 import { useAuth } from "@/context/auth-context"
 import { api } from "@/lib/api"
 import { StudySessionDTO } from "@/types"
 import { cn } from "@/lib/utils"
+import { SessionForm } from "@/components/sessions/session-form"
 
 /** Format minutes to human-readable time */
 function formatStudyTime(minutes: number): string {

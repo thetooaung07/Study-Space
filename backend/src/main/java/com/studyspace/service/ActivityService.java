@@ -58,6 +58,12 @@ public class ActivityService {
     @Transactional(readOnly = true)
     public List<ActivityDTO> getRecentGlobalActivities() {
         return activityRepository.findTop20ByOrderByTimestampDesc().stream()
+                .filter(activity -> {
+                    // Exclude activities from private sessions
+                    StudySession session = activity.getStudySession();
+                    return session == null || 
+                           session.getVisibility() == com.studyspace.types.SessionVisibility.PUBLIC;
+                })
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }

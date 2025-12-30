@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/card"
 import { Hand, Coffee, Trophy, LogIn, MessageSquare, Loader2, Activity } from "lucide-react"
 import { api } from "@/lib/api"
 import { ActivityDTO } from "@/types"
+import { formatRelativeTime } from "@/lib/utils"
 
-// Map activity types to icons
 const activityIcons: Record<string, typeof Hand> = {
   HAND_RAISE: Hand,
   QUESTION: Hand,
@@ -18,22 +18,6 @@ const activityIcons: Record<string, typeof Hand> = {
   MESSAGE: MessageSquare,
 }
 
-// Format relative time
-function formatRelativeTime(timestamp: string): string {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMins / 60)
-  const diffDays = Math.floor(diffHours / 24)
-
-  if (diffMins < 1) return "Just now"
-  if (diffMins < 60) return `${diffMins} min ago`
-  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
-  if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
-  return date.toLocaleDateString()
-}
-
 export function ActivityFeed() {
   const [activities, setActivities] = useState<ActivityDTO[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,6 +27,7 @@ export function ActivityFeed() {
     const fetchActivities = async () => {
       try {
         const data = await api.get<ActivityDTO[]>('/activities/recent')
+        console.log(data)
         setActivities(data)
       } catch (error) {
       } finally {

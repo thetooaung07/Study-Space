@@ -86,57 +86,87 @@ public class UserService {
             user.setProfilePictureUrl(request.getProfilePictureUrl());
         }
         
+        log.info("User ID: {} updated successfully", userId);
         return convertToDTO(userRepository.save(user));
     }
     
     public void changePassword(Long userId, com.studyspace.dto.ChangePasswordRequest request) {
+        log.info("Changing password for user ID: {}", userId);
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("Password change failed - user not found: {}", userId);
+                return new RuntimeException("User not found");
+            });
             
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            log.warn("Password change failed - invalid current password for user ID: {}", userId);
             throw new RuntimeException("Invalid current password");
         }
         
         if (user.getAuthProvider() != com.studyspace.types.AuthProvider.LOCAL) {
+            log.warn("Password change failed - OAuth user cannot change password: {}", userId);
             throw new RuntimeException("You cannot change your password as you are logged in via " + user.getAuthProvider());
         }
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+        log.info("Password changed successfully for user ID: {}", userId);
     }
     
     @Transactional(readOnly = true)
     public UserDTO getUserById(Long id) {
+        log.debug("Fetching user by ID: {}", id);
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.warn("User not found with ID: {}", id);
+                return new RuntimeException("User not found");
+            });
         return convertToDTO(user);
     }
     
     @Transactional(readOnly = true)
     public UserDTO getUserByUsername(String username) {
+        log.debug("Fetching user by username: {}", username);
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.warn("User not found with username: {}", username);
+                return new RuntimeException("User not found");
+            });
         return convertToDTO(user);
     }
     
     @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
-        return userRepository.findAll().stream()
+        log.debug("Fetching all users");
+        List<UserDTO> users = userRepository.findAll().stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
+        log.debug("Found {} users", users.size());
+        return users;
     }
     
     public UserDTO updateUserStatus(Long userId, UserStatus status) {
+        log.info("Updating status for user ID: {} to {}", userId, status);
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("Status update failed - user not found: {}", userId);
+                return new RuntimeException("User not found");
+            });
         user.setCurrentStatus(status);
+        log.debug("User ID: {} status updated to {}", userId, status);
         return convertToDTO(userRepository.save(user));
     }
     
     public UserDTO addStudyMinutes(Long userId, Integer minutes) {
+        log.info("Adding {} study minutes to user ID: {}", minutes, userId);
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setTotalStudyMinutes(user.getTotalStudyMinutes() + minutes);
+            .orElseThrow(() -> {
+                log.error("Add study minutes failed - user not found: {}", userId);
+                return new RuntimeException("User not found");
+            });
+        int newTotal = user.getTotalStudyMinutes() + minutes;
+        user.setTotalStudyMinutes(newTotal);
+        log.info("User ID: {} now has {} total study minutes", userId, newTotal);
         return convertToDTO(userRepository.save(user));
     }
     
@@ -156,8 +186,13 @@ public class UserService {
     }
     
     public void deleteUser(Long id) {
+        log.info("Deleting user ID: {}", id);
         User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> {
+                log.error("Delete user failed - user not found: {}", id);
+                return new RuntimeException("User not found");
+            });
         userRepository.delete(user);
+        log.info("User ID: {} deleted successfully", id);
     }
 }
