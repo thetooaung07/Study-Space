@@ -129,14 +129,14 @@ class StudySessionControllerIntegrationTest {
                 .title("Test Session")
                 .creator(testUser)
                 .status(SessionStatus.ACTIVE)
-                .startTime(LocalDateTime.now())
+                .startTime(com.studyspace.util.DateTimeUtil.nowUtc())
                 .build();
         testSession = sessionRepository.save(testSession);
 
         SessionParticipant participant = SessionParticipant.builder()
                 .studySession(testSession)
                 .user(testUser2)
-                .joinedAt(LocalDateTime.now().minusMinutes(30))
+                .joinedAt(com.studyspace.util.DateTimeUtil.nowUtc().minusMinutes(30))
                 .build();
         participantRepository.save(participant);
 

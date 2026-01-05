@@ -100,7 +100,7 @@ Once the backend is running, access the **Swagger UI** for interactive API testi
 - **Language**: Java 21
 - **Database**: PostgreSQL 17 (production), H2 (testing)
 - **ORM**: Hibernate/JPA
-- **Security**: Spring Security with JWT
+- **Security**: Spring Security with JWT, OAuth2
 - **API Documentation**: Springdoc OpenAPI (Swagger)
 - **Build Tool**: Maven
 - **Testing**: JUnit 5, Mockito, Spring Test
@@ -116,13 +116,11 @@ Once the backend is running, access the **Swagger UI** for interactive API testi
 ### DevOps
 - **Containerization**: Docker & Docker Compose
 - **Database**: PostgreSQL with persistent volumes
-- **Reverse Proxy**: Nginx (optional)
 
----
 
 ## Project Overview
 
-A study tracking platform where students can track their study sessions, form study groups with friends, see who's studying in real-time, and compete on leaderboards. The platform helps students stay motivated and accountable by providing social features and detailed study analytics.
+A study tracking platform where students can track their study sessions, form study groups with friends, see who's studying in (almost) real-time, and compete on leaderboards. The platform helps students stay motivated and accountable by providing social features and detailed study analytics.
 
 ## 1. Data Models
 
@@ -339,7 +337,6 @@ When a user ends a study session, the system must:
 **Business Value:**
 Ensures consistent user and group statistics, keeps leaderboards accurate, and automates progress tracking after each session.
 
----
 
 ## ✨ Key Features
 
@@ -348,20 +345,15 @@ Ensures consistent user and group statistics, keeps leaderboards accurate, and a
 - 👥 **Study Groups** - Create or join study groups with invite codes
 - 🏆 **LeaderBoard** - Earn achievements and maintain study streaks
 - 📈 **Analytics** - View detailed study statistics and progress
-- 🎯 **Live Status** - See who's studying in real-time
 - 💬 **Activity Feed** - Chat and interact during study sessions
 - ⏸️ **Break Management** - Pause timer for breaks without losing progress
 
 ### Technical Highlights
-- 🔐 **Secure Authentication** - JWT-based auth with Spring Security
-- 🔄 **Real-time Updates** - Live session participant tracking
-- 📱 **Responsive Design** - Works on desktop and mobile
+- 🔐 **Secure Authentication** - JWT-based auth with Spring Security and OAuth2
 - 🐳 **Docker Ready** - Easy deployment with Docker Compose
 - 📚 **Complete API Docs** - Interactive Swagger UI
-- ✅ **Well Tested** - 45+ automated tests (unit, integration, repository)
-- 🗃️ **Production Database** - PostgreSQL with proper schema design
+- 🗃️ **Database** - PostgreSQL with proper schema design
 
----
 
 ## 🧪 Testing
 
@@ -393,14 +385,7 @@ mvn test
 
 # Run specific test class
 mvn test -Dtest=UserServiceTest
-
-# Run with coverage
-mvn test jacoco:report
 ```
-
-**Test Results**: ✅ All 45 tests passing
-
----
 
 ## 📁 Project Structure
 
@@ -420,58 +405,18 @@ StudySpace/
 │   │   │   └── resources/
 │   │   │       ├── application.yml
 │   │   │       └── data-postgres.sql
-│   │   └── test/               # Automated tests
-│   └── pom.xml                 # Maven dependencies
+│   │   └── test/                   # Automated tests
+│   └── pom.xml                     # Maven dependencies
 │
-├── frontend/                   # Next.js frontend
-│   ├── app/                    # App router pages
-│   ├── components/             # React components
-│   ├── lib/                    # Utilities and API client
+├── frontend/                       # Next.js frontend
+│   ├── app/                        # App router pages
+│   ├── components/                 # React components
+│   ├── context/                    # Global Context (eg. for Auth)
+│   ├── lib/                        # Utilities and API client
 │   └── package.json
 │
-└── docker-compose.yml          # Docker orchestration
+└── docker-compose.yml              # Docker orchestration
 ```
-
----
-
-## 🔌 Database Schema
-
-The application uses **PostgreSQL** in production with the following key tables:
-
-- `users` - User accounts and profiles
-- `study_sessions` - Study session records
-- `study_groups` - Study group information
-- `group_members` - **Many-to-Many** join table (User ↔ Group)
-- `session_participants` - Session participation tracking
-- `activities` - Session activity feed
-
-### Complex Query Example
-
-The application includes a sophisticated JPQL query that joins **4 tables** to calculate group member statistics:
-
-```java
-// SessionParticipantRepository.java
-@Query("""
-    SELECT NEW com.studyspace.dto.GroupMemberStatsDTO(
-        u.id, u.fullName, u.profilePictureUrl,
-        COALESCE(SUM(sp.minutesParticipated), 0L),
-        COUNT(DISTINCT s.id)
-    )
-    FROM User u
-    JOIN SessionParticipant sp ON sp.user = u
-    JOIN StudySession s ON sp.studySession = s
-    JOIN StudyGroup g ON s.studyGroup = g
-    WHERE g.id = :groupId
-      AND s.startTime >= :since
-      AND sp.leftAt IS NOT NULL
-    GROUP BY u.id, u.fullName, u.profilePictureUrl
-    HAVING COALESCE(SUM(sp.minutesParticipated), 0) >= :minMinutes
-    ORDER BY SUM(sp.minutesParticipated) DESC
-""")
-List<GroupMemberStatsDTO> findGroupMemberStatsByGroupId(...);
-```
-
----
 
 ## 📝 Development Notes
 
@@ -487,8 +432,8 @@ The application uses **JWT tokens** for authentication:
 
 When running with Docker, seed data is loaded with default users:
 
-- Email: `john.doe@example.com` / Password: `password`
-- Email: `jane.smith@example.com` / Password: `password`
+- Email: `john.doe@example.com` / Password: `password123`
+- Email: `jane.smith@example.com` / Password: `password123`
 
 ### Environment Variables
 
@@ -502,16 +447,8 @@ spring:
       ddl-auto: create-drop  # Use 'update' for production
 ```
 
----
-
 ## 👨‍💻 Author
 
 **Thet Oo Aung**  
 FIT CTU, Prague  
 Course: TJV (Web Applications in Java)
-
----
-
-## 📄 License
-
-This project is created for educational purposes as part of the TJV course at FIT CTU.

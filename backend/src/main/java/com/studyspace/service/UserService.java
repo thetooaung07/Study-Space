@@ -2,6 +2,7 @@ package com.studyspace.service;
 
 import com.studyspace.dto.CreateUserRequest;
 import com.studyspace.dto.UserDTO;
+import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.User;
 import com.studyspace.types.UserStatus;
 import com.studyspace.repository.UserRepository;
@@ -9,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -192,6 +195,24 @@ public class UserService {
                 log.error("Delete user failed - user not found: {}", id);
                 return new RuntimeException("User not found");
             });
+        
+        Set<StudyGroup> groupsToUpdate = new HashSet<>(user.getGroups());
+        for (StudyGroup group : groupsToUpdate) {
+            group.getMembers().remove(user);
+            user.getGroups().remove(group);
+        }
+        
+        Set<StudyGroup> createdGroups = new HashSet<>(user.getCreatedGroups());
+        for (StudyGroup group : createdGroups) {
+            // Remove all members from the group
+            Set<User> membersToRemove = new HashSet<>(group.getMembers());
+            for (User member : membersToRemove) {
+                member.getGroups().remove(group);
+                group.getMembers().remove(member);
+            }
+            group.getMembers().clear();
+        }
+        
         userRepository.delete(user);
         log.info("User ID: {} deleted successfully", id);
     }
