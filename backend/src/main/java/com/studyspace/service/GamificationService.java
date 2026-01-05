@@ -6,6 +6,7 @@ import com.studyspace.entity.User;
 import com.studyspace.repository.ActivityRepository;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.types.ActivityType;
+import com.studyspace.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,7 @@ public class GamificationService {
             log.info("User {} broke streak (last studied: {}), reset to 1", user.getUsername(), lastStudyDate);
         }
         
-        user.setLastStudyDate(LocalDateTime.now());
+        user.setLastStudyDate(DateTimeUtil.nowUtc());
     }
 
     private void checkAchievements(User user, int sessionMinutes, StudySession session) {
@@ -90,7 +91,7 @@ public class GamificationService {
                 .type(ActivityType.MILESTONE_REACHED)
                 .message(message)
                 .studySession(session)
-                .timestamp(LocalDateTime.now())
+                .timestamp(DateTimeUtil.nowUtc())
                 .build();
             activityRepository.save(milestone);
             

@@ -1,5 +1,6 @@
 package com.studyspace.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -15,7 +16,11 @@ public class StudyGroupDTO {
     private String description;
     private String inviteCode;
     private GroupType groupType;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", timezone = "UTC")
     private LocalDateTime createdAt;
+    
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", timezone = "UTC")
     private LocalDateTime updatedAt;
     private Long creatorId;
     private Integer memberCount;

@@ -43,24 +43,15 @@ export function GroupCard({ group, isOwned = false, onJoin, onEdit, onDelete, on
             {group.name.charAt(0).toUpperCase()}
         </div>
         <div className="flex items-center gap-1 opacity-100">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
+          {/* <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
             e.stopPropagation();
-            // Star functionality to be implemented
           }}>
             <Star className="h-4 w-4" />
-          </Button>
+          </Button> */}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
-                // Prevent card click specifically on trigger if needed, though usually handled by portal
-               // e.stopPropagation(); 
-               /* 
-                  Note: standard Shadcn dropdown trigger might propagate click if not prevented. 
-                  However, `asChild` merging props usually handles it. 
-                  Safest to stop propagation here just in case.
-               */
-              }}>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -125,11 +116,11 @@ export function GroupCard({ group, isOwned = false, onJoin, onEdit, onDelete, on
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4" />
           <span>{group.memberCount} members</span>
-          {group.activeMemberCount !== undefined && group.activeMemberCount > 0 && (
-            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
+          {/* {group.activeMemberCount !== undefined && group.activeMemberCount > 0 && (
+            <span className="text-xs bg-status-live-fg text-white px-2 py-0.5 rounded">
               {group.activeMemberCount} active
             </span>
-          )}
+          )} */}
         </div>
         {group.totalSessionsCount !== undefined && group.totalSessionsCount > 0 && (
           <div className="text-xs">{group.totalSessionsCount} study sessions</div>

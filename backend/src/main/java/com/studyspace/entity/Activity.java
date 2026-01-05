@@ -3,7 +3,9 @@ package com.studyspace.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import com.studyspace.types.ActivityType;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "activity")
@@ -37,7 +39,7 @@ public class Activity {
     @PrePersist
     protected void onCreate() {
         if (timestamp == null) {
-            timestamp = LocalDateTime.now();
+            timestamp = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         }
     }
 }

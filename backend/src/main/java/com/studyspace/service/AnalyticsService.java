@@ -5,6 +5,7 @@ import com.studyspace.repository.StudyGroupRepository;
 import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.types.UserStatus;
+import com.studyspace.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,8 @@ public class AnalyticsService {
     public AnalyticsOverviewDTO getOverview() {
         long activeUsers = userRepository.countByCurrentStatus(UserStatus.STUDYING);
         long totalStudyMinutes = userRepository.sumTotalStudyMinutes(); 
-        long hotSessions = sessionRepository.countByStartTimeAfter(LocalDateTime.now().minusHours(24)); 
-        long newGroups = groupRepository.countByCreatedAtAfter(LocalDateTime.now().minusHours(24)); 
+        long hotSessions = sessionRepository.countByStartTimeAfter(DateTimeUtil.nowUtc().minusHours(24)); 
+        long newGroups = groupRepository.countByCreatedAtAfter(DateTimeUtil.nowUtc().minusHours(24)); 
 
         return AnalyticsOverviewDTO.builder()
                 .activeUsersNow(activeUsers)

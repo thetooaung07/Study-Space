@@ -4,6 +4,7 @@ import com.studyspace.dto.CreateGroupRequest;
 import com.studyspace.dto.GroupMemberStatsDTO;
 import com.studyspace.dto.GroupStatsDTO;
 import com.studyspace.dto.StudyGroupDTO;
+import com.studyspace.entity.SessionParticipant;
 import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.StudySession;
 import com.studyspace.entity.User;
@@ -12,6 +13,7 @@ import com.studyspace.repository.StudyGroupRepository;
 import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.types.GroupType;
+import com.studyspace.util.DateTimeUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -191,20 +193,25 @@ public class StudyGroupService {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        long sessionCount = 0;
+        // Get all sessions that belong to THIS group (not all member sessions)
+        List<StudySession> groupSessions = sessionRepository
+            .findByStudyGroupIdAndStartTimeAfter(groupId, cutoffDate);
+        
+        long sessionCount = groupSessions.size();
         long totalStudyMinutes = 0;
         Set<Long> activeMemberIds = new HashSet<>();
         
-        for (User member : group.getMembers()) {
-            List<StudySession> userSessions = sessionRepository
-                .findByCreatorIdAndStartTimeAfter(member.getId(), cutoffDate);
-            sessionCount += userSessions.size();
+        // Calculate total study minutes from actual session participants
+        for (StudySession session : groupSessions) {
+            // Get all participants for this session
+            List<SessionParticipant> participants = participantRepository
+                .findByStudySessionId(session.getId());
             
-            for (StudySession session : userSessions) {
-                Integer durationMinutes = session.getDurationMinutes();
-                if (durationMinutes != null) {
-                    totalStudyMinutes += durationMinutes;
-                    activeMemberIds.add(member.getId());
+            for (SessionParticipant participant : participants) {
+                Integer minutesParticipated = participant.getMinutesParticipated();
+                if (minutesParticipated != null && minutesParticipated > 0) {
+                    totalStudyMinutes += minutesParticipated;
+                    activeMemberIds.add(participant.getUser().getId());
                 }
             }
         }
@@ -223,7 +230,7 @@ public class StudyGroupService {
 
     @Transactional(readOnly = true)
     public List<GroupStatsDTO> getGroupLeaderboard() {
-        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(30);
+        LocalDateTime cutoffDate = DateTimeUtil.nowUtc().minusDays(30);
         return groupRepository.findAll().stream()
             .map(group -> getGroupStats(group.getId(), cutoffDate, 0))
             .sorted((g1, g2) -> Long.compare(g2.getTotalStudyMinutes(), g1.getTotalStudyMinutes()))
@@ -257,7 +264,7 @@ public class StudyGroupService {
     
     private StudyGroupDTO convertToDTO(StudyGroup group) {
         // Calculate active members (members with sessions in the last 7 days)
-        LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
+        LocalDateTime oneWeekAgo = DateTimeUtil.nowUtc().minusDays(7);
         int activeMemberCount = (int) group.getMembers().stream()
             .filter(member -> {
                 // Check if member has participated in any session in the last 7 days

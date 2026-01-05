@@ -6,7 +6,9 @@ import lombok.*;
 import com.studyspace.types.SessionStatus;
 import com.studyspace.types.SessionVisibility;
 import com.studyspace.types.Subject;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -78,8 +80,8 @@ public class StudySession {
     
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        startTime = LocalDateTime.now();
+        createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
+        startTime = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         if (status == null) {
             status = SessionStatus.ACTIVE;
         }

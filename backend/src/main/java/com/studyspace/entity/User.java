@@ -3,7 +3,9 @@ package com.studyspace.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import com.studyspace.types.UserStatus;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -96,8 +98,8 @@ public class User {
     
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
+        updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         if (currentStatus == null) {
             currentStatus = UserStatus.OFFLINE;
         }
@@ -111,6 +113,6 @@ public class User {
     
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 }

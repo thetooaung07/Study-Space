@@ -1,5 +1,6 @@
 package com.studyspace.exception;
 
+import com.studyspace.util.DateTimeUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -7,7 +8,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Validation error: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
+        body.put("timestamp", DateTimeUtil.nowUtc());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("message", "Validation failed");
         body.put("errors", ex.getBindingResult().getFieldErrors()
@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Runtime exception occurred: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
+        body.put("timestamp", DateTimeUtil.nowUtc());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("message", ex.getMessage());
         
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Unexpected error occurred: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
+        body.put("timestamp", DateTimeUtil.nowUtc());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         body.put("message", "An unexpected error occurred");
         

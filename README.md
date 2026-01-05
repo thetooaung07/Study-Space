@@ -1,9 +1,124 @@
-# StudySpace – Project Specification (Checkpoint 1)
+# StudySpace – Study Session Tracker & Social Platform
 
-**Project Name:** Study Session Tracker & Social Platform  
-**Student:** Thet Oo Aung  
-**Username:** aungthet  
-**Date:** 2 Oct, 2025
+[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue.svg)](https://www.postgresql.org/)
+
+> A modern study tracking platform where students can track their study sessions, form study groups with friends, see who's studying in real-time, and compete on leaderboards.
+
+**Project by:** Thet Oo Aung (`aungthet`)  
+**Course:** TJV (Web Applications in Java)  
+**Submission:** January 2026
+
+
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Java 21** or higher
+- **Node.js 18+** and npm
+- **Docker** and Docker Compose (recommended)
+- **Maven** (or use the included `mvnw` wrapper)
+
+### Running with Docker (Recommended)
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd StudySpace
+
+# Start all services (backend, frontend, database)
+docker-compose up --build
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8080
+# Swagger UI: http://localhost:8080/swagger-ui/index.html
+# Adminer: http://localhost:8081
+```
+
+### Running Locally
+
+#### Backend
+
+```bash
+cd backend
+
+# Build the project
+mvn clean install
+
+# Run tests
+mvn test
+
+# Start the application
+mvn spring-boot:run
+
+# Or using Maven wrapper
+./mvnw spring-boot:run
+```
+
+The backend will start on `http://localhost:8080`
+
+#### Frontend
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+The frontend will start on `http://localhost:3000`
+
+
+
+## 📚 API Documentation
+
+The API is fully documented using **OpenAPI 3.0** (Swagger).
+
+### Interactive API Documentation
+
+Once the backend is running, access the **Swagger UI** for interactive API testing:
+
+- **Swagger UI**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- **OpenAPI Spec**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+
+
+## 🏗️ Technology Stack
+
+### Backend
+- **Framework**: Spring Boot 3.5.6
+- **Language**: Java 21
+- **Database**: PostgreSQL 17 (production), H2 (testing)
+- **ORM**: Hibernate/JPA
+- **Security**: Spring Security with JWT
+- **API Documentation**: Springdoc OpenAPI (Swagger)
+- **Build Tool**: Maven
+- **Testing**: JUnit 5, Mockito, Spring Test
+
+### Frontend
+- **Framework**: Next.js 15 (React 19)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui, Radix UI
+- **State Management**: React Context API
+- **HTTP Client**: Fetch API
+
+### DevOps
+- **Containerization**: Docker & Docker Compose
+- **Database**: PostgreSQL with persistent volumes
+- **Reverse Proxy**: Nginx (optional)
+
+---
 
 ## Project Overview
 
@@ -223,3 +338,180 @@ When a user ends a study session, the system must:
 
 **Business Value:**
 Ensures consistent user and group statistics, keeps leaderboards accurate, and automates progress tracking after each session.
+
+---
+
+## ✨ Key Features
+
+### For Students
+- 📊 **Study Session Tracking** - Track individual and group study sessions with real-time timers
+- 👥 **Study Groups** - Create or join study groups with invite codes
+- 🏆 **LeaderBoard** - Earn achievements and maintain study streaks
+- 📈 **Analytics** - View detailed study statistics and progress
+- 🎯 **Live Status** - See who's studying in real-time
+- 💬 **Activity Feed** - Chat and interact during study sessions
+- ⏸️ **Break Management** - Pause timer for breaks without losing progress
+
+### Technical Highlights
+- 🔐 **Secure Authentication** - JWT-based auth with Spring Security
+- 🔄 **Real-time Updates** - Live session participant tracking
+- 📱 **Responsive Design** - Works on desktop and mobile
+- 🐳 **Docker Ready** - Easy deployment with Docker Compose
+- 📚 **Complete API Docs** - Interactive Swagger UI
+- ✅ **Well Tested** - 45+ automated tests (unit, integration, repository)
+- 🗃️ **Production Database** - PostgreSQL with proper schema design
+
+---
+
+## 🧪 Testing
+
+The project includes comprehensive automated tests covering **three different test types**:
+
+### Test Coverage
+
+1. **Unit Tests** (Service Layer) - 28 tests
+   - `UserServiceTest` - User creation, deletion, validation
+   - `StudySessionServiceTest` - Session management, participant handling
+   - `StudyGroupServiceTest` - Group operations, member management
+   - `GamificationServiceTest` - Streak calculation, milestone detection
+
+2. **Repository Tests** (JPA Layer) - 2 tests
+   - `UserRepositoryTest` - Custom query methods, database operations
+
+3. **Integration Tests** (Full Stack) - 15 tests
+   - `StudyGroupControllerIntegrationTest` - End-to-end API testing
+   - `StudySessionControllerIntegrationTest` - Full request/response cycle
+   - `StudyGroupControllerTest` - Controller layer with mocked services
+
+### Running Tests
+
+```bash
+cd backend
+
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=UserServiceTest
+
+# Run with coverage
+mvn test jacoco:report
+```
+
+**Test Results**: ✅ All 45 tests passing
+
+---
+
+## 📁 Project Structure
+
+```
+StudySpace/
+├── backend/                    # Spring Boot backend
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── java/com/studyspace/
+│   │   │   │   ├── controller/     # REST API endpoints
+│   │   │   │   ├── service/        # Business logic
+│   │   │   │   ├── repository/     # Data access layer
+│   │   │   │   ├── entity/         # JPA entities
+│   │   │   │   ├── dto/            # Data transfer objects
+│   │   │   │   ├── security/       # Authentication & authorization
+│   │   │   │   └── config/         # Spring configuration
+│   │   │   └── resources/
+│   │   │       ├── application.yml
+│   │   │       └── data-postgres.sql
+│   │   └── test/               # Automated tests
+│   └── pom.xml                 # Maven dependencies
+│
+├── frontend/                   # Next.js frontend
+│   ├── app/                    # App router pages
+│   ├── components/             # React components
+│   ├── lib/                    # Utilities and API client
+│   └── package.json
+│
+└── docker-compose.yml          # Docker orchestration
+```
+
+---
+
+## 🔌 Database Schema
+
+The application uses **PostgreSQL** in production with the following key tables:
+
+- `users` - User accounts and profiles
+- `study_sessions` - Study session records
+- `study_groups` - Study group information
+- `group_members` - **Many-to-Many** join table (User ↔ Group)
+- `session_participants` - Session participation tracking
+- `activities` - Session activity feed
+
+### Complex Query Example
+
+The application includes a sophisticated JPQL query that joins **4 tables** to calculate group member statistics:
+
+```java
+// SessionParticipantRepository.java
+@Query("""
+    SELECT NEW com.studyspace.dto.GroupMemberStatsDTO(
+        u.id, u.fullName, u.profilePictureUrl,
+        COALESCE(SUM(sp.minutesParticipated), 0L),
+        COUNT(DISTINCT s.id)
+    )
+    FROM User u
+    JOIN SessionParticipant sp ON sp.user = u
+    JOIN StudySession s ON sp.studySession = s
+    JOIN StudyGroup g ON s.studyGroup = g
+    WHERE g.id = :groupId
+      AND s.startTime >= :since
+      AND sp.leftAt IS NOT NULL
+    GROUP BY u.id, u.fullName, u.profilePictureUrl
+    HAVING COALESCE(SUM(sp.minutesParticipated), 0) >= :minMinutes
+    ORDER BY SUM(sp.minutesParticipated) DESC
+""")
+List<GroupMemberStatsDTO> findGroupMemberStatsByGroupId(...);
+```
+
+---
+
+## 📝 Development Notes
+
+### Authentication
+
+The application uses **JWT tokens** for authentication:
+
+1. Register or login via `/api/auth/register` or `/api/auth/login`
+2. Receive JWT token in response
+3. Include token in `Authorization: Bearer <token>` header for protected endpoints
+
+### Default Credentials
+
+When running with Docker, seed data is loaded with default users:
+
+- Email: `john.doe@example.com` / Password: `password`
+- Email: `jane.smith@example.com` / Password: `password`
+
+### Environment Variables
+
+Backend (`application.yml`):
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/studyspace
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Use 'update' for production
+```
+
+---
+
+## 👨‍💻 Author
+
+**Thet Oo Aung**  
+FIT CTU, Prague  
+Course: TJV (Web Applications in Java)
+
+---
+
+## 📄 License
+
+This project is created for educational purposes as part of the TJV course at FIT CTU.

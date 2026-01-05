@@ -8,6 +8,7 @@ import com.studyspace.types.ActivityType;
 import com.studyspace.types.SessionStatus;
 import com.studyspace.types.SessionVisibility;
 import com.studyspace.repository.*;
+import com.studyspace.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ public class StudySessionService {
             .creator(creator)
             .isGroupSession(request.getIsGroupSession() != null ? request.getIsGroupSession() : false)
             .status(SessionStatus.ACTIVE)
-            .startTime(LocalDateTime.now())
+            .startTime(DateTimeUtil.nowUtc())
             .visibility(request.getVisibility() != null ? request.getVisibility() : com.studyspace.types.SessionVisibility.PUBLIC)
             .build();
             
@@ -74,7 +75,7 @@ public class StudySessionService {
         SessionParticipant creatorParticipant = SessionParticipant.builder()
             .studySession(savedSession)
             .user(creator)
-            .joinedAt(LocalDateTime.now())
+            .joinedAt(DateTimeUtil.nowUtc())
             .build();
         participantRepository.save(creatorParticipant);
         
@@ -155,7 +156,7 @@ public class StudySessionService {
             return convertToDTO(session);
         }
 
-        session.setEndTime(LocalDateTime.now());
+        session.setEndTime(DateTimeUtil.nowUtc());
         session.setStatus(SessionStatus.COMPLETED);
         
         // Calculate duration
@@ -166,7 +167,7 @@ public class StudySessionService {
         session.getParticipants().forEach(participant -> {
             // Only process participants who haven't left yet
             if (participant.getLeftAt() == null) {
-                LocalDateTime leftTime = LocalDateTime.now();
+                LocalDateTime leftTime = DateTimeUtil.nowUtc();
                 participant.setLeftAt(leftTime);
                 
                 long participationMinutes = ChronoUnit.MINUTES.between(participant.getJoinedAt(), leftTime);
@@ -213,7 +214,7 @@ public class StudySessionService {
 
             if (participant.getLeftAt() != null) {
                 participant.setLeftAt(null);  // Reset left time
-                participant.setJoinedAt(LocalDateTime.now());  // Update join time
+                participant.setJoinedAt(DateTimeUtil.nowUtc());  // Update join time
                 participant.setMinutesParticipated(null);  // Reset minutes for new session
                 participantRepository.save(participant);
                 log.info("Participant rejoined - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
@@ -236,7 +237,7 @@ public class StudySessionService {
         SessionParticipant participant = SessionParticipant.builder()
             .studySession(session)
             .user(user)
-            .joinedAt(LocalDateTime.now())
+            .joinedAt(DateTimeUtil.nowUtc())
             .build();
         
         participantRepository.save(participant);
@@ -262,7 +263,7 @@ public class StudySessionService {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtil.nowUtc();
         participant.setLeftAt(now);
         
         // Calculate study time (Backend source of truth preferred)
@@ -327,7 +328,7 @@ public class StudySessionService {
             if (session.getEndTime() != null) {
                 minutes = java.time.temporal.ChronoUnit.MINUTES.between(session.getStartTime(), session.getEndTime());
             } else if (session.getStatus() == com.studyspace.types.SessionStatus.ACTIVE) {
-                minutes = java.time.temporal.ChronoUnit.MINUTES.between(session.getStartTime(), java.time.LocalDateTime.now());
+                minutes = java.time.temporal.ChronoUnit.MINUTES.between(session.getStartTime(), DateTimeUtil.nowUtc());
             } else {
                 minutes = session.getDurationMinutes() != null ? session.getDurationMinutes() : 0;
             }
@@ -385,7 +386,7 @@ public class StudySessionService {
             return; // Already paused
         }
         
-        participant.setLastPausedAt(LocalDateTime.now());
+        participant.setLastPausedAt(DateTimeUtil.nowUtc());
         
         // Update user status
         User user = participant.getUser();
@@ -409,7 +410,7 @@ public class StudySessionService {
             return; // Not paused
         }
         
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = DateTimeUtil.nowUtc();
         long pausedSeconds = java.time.Duration.between(participant.getLastPausedAt(), now).getSeconds();
         
         participant.setTotalPausedSeconds(

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { Calendar, Clock, TrendingUp, Award, ArrowLeft, Filter, Loader2 } from "lucide-react"
+import { Calendar, Clock, TrendingUp, Award, ArrowLeft, Filter, Loader2, CloudCog } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -46,7 +46,7 @@ export default function GroupAnalyticsPage({ params }: { params: Promise<{ group
       try {
         // Check membership first
         const details = await api.get<any>(`/groups/${groupId}/details?requestingUserId=${user.id}`)
-        
+        console.log(details);
         const isMember = details.members.some((m: any) => m.id === user.id)
         if (!isMember) {
           // specific error or just redirect
@@ -74,6 +74,8 @@ export default function GroupAnalyticsPage({ params }: { params: Promise<{ group
         const statsData = await api.get<GroupStatsDTO>(`/groups/${groupId}/stats?cutoffDate=${sinceDate}`)
         setStats(statsData)
 
+
+          console.log(statsData);
         // Fetch member leaderboard using the complex JPQL query
         const membersData = await api.get<GroupMemberStatsDTO[]>(
           `/groups/${groupId}/members/leaderboard?since=${sinceDate}&minMinutes=0`

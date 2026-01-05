@@ -5,6 +5,7 @@ import com.studyspace.dto.GroupMemberStatsDTO;
 import com.studyspace.dto.GroupStatsDTO;
 import com.studyspace.dto.StudyGroupDTO;
 import com.studyspace.service.StudyGroupService;
+import com.studyspace.util.DateTimeUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -113,7 +114,7 @@ public class StudyGroupController {
         @RequestParam(defaultValue = "3000") Integer minimumMinutes
     ) {
         if (cutoffDate == null) {
-            cutoffDate = LocalDateTime.now().minusDays(30);
+            cutoffDate = DateTimeUtil.nowUtc().minusDays(30);
         }
         return ResponseEntity.ok(groupService.getGroupStats(id, cutoffDate, minimumMinutes));
     }
@@ -130,7 +131,7 @@ public class StudyGroupController {
         @RequestParam(defaultValue = "0") Integer minMinutes
     ) {
         if (since == null) {
-            since = LocalDateTime.now().minusDays(30);
+            since = DateTimeUtil.nowUtc().minusDays(30);
         }
         return ResponseEntity.ok(groupService.getGroupMemberLeaderboard(id, since, minMinutes));
     }

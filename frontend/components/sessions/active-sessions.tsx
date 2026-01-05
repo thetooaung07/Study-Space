@@ -100,7 +100,7 @@ export function ActiveSessions() {
         <h3 className="text-lg font-semibold text-foreground">Active Sessions</h3>
         <div className="flex gap-2">
              <div className="flex items-center gap-2">
-                <Input 
+                {/* <Input 
                     placeholder="Session ID" 
                     className="h-8 w-28 px-2 rounded-md ring-0 bg-background text-sm"
                     value={joinId}
@@ -108,7 +108,7 @@ export function ActiveSessions() {
                 />
                 <Button size="sm" variant="outline" onClick={handleJoinById}>
                   Join ID
-                </Button>
+                </Button> */}
             </div>
             <Button 
               size="sm" 

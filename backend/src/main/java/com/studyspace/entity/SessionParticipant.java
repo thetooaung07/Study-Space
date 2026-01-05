@@ -2,7 +2,9 @@ package com.studyspace.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "session_participants", uniqueConstraints = {
@@ -45,7 +47,7 @@ public class SessionParticipant {
     @PrePersist
     protected void onCreate() {
         if (joinedAt == null) {
-            joinedAt = LocalDateTime.now();
+            joinedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         }
     }
 }
