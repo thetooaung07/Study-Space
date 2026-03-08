@@ -252,6 +252,15 @@ public class StudySessionService {
         activityRepository.save(activity);
     }
     
+
+    /**
+     * Complex Business Logic Operation.
+     * Removes a participant from a study session.
+     * 
+     * @param sessionId The ID of the study session
+     * @param userId The ID of the user to remove
+     * @param studyMinutes The study minutes to record for the participant
+     */
     public void removeParticipant(Long sessionId, Long userId, Integer studyMinutes) {
         // log.info("Removing participant - Session: {}, User ID: {}", sessionId, userId);
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)

@@ -3,6 +3,7 @@ package com.studyspace.service;
 import com.studyspace.dto.AuthResponse;
 import com.studyspace.dto.LoginRequest;
 import com.studyspace.dto.RegisterRequest;
+import com.studyspace.dto.UserDTO;
 import com.studyspace.entity.User;
 import com.studyspace.mapper.UserMapper;
 import com.studyspace.repository.UserRepository;
@@ -67,8 +68,6 @@ public class AuthService {
             throw e;
         }
         
-        // Fix: Use the same lookup logic as UserDetailsService
-        // LoginRequest field says 'email' but we might be passing username or email
         var user = userRepository.findByEmail(request.getEmail())
                 .or(() -> userRepository.findByUsername(request.getEmail()))
                 .orElseThrow(() -> new RuntimeException("User not found after auth - this should not happen"));
@@ -83,7 +82,7 @@ public class AuthService {
                 .build();
     }
 
-    public com.studyspace.dto.UserDTO getCurrentUser(String email) {
+    public UserDTO getCurrentUser(String email) {
         log.debug("Fetching current user for: {}", email);
         User user = userRepository.findByEmail(email)
                 .or(() -> userRepository.findByUsername(email))

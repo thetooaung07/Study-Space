@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+// User profile CRUD operations
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

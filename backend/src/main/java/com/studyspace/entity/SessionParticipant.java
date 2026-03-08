@@ -44,6 +44,7 @@ public class SessionParticipant {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
+    // Before Insert to database
     @PrePersist
     protected void onCreate() {
         if (joinedAt == null) {

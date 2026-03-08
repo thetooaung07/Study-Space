@@ -60,6 +60,7 @@ public class StudyGroup {
     @Builder.Default
     private Set<StudySession> sessions = new HashSet<>();
     
+    // Before Insert to database
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
@@ -68,7 +69,8 @@ public class StudyGroup {
             groupType = GroupType.PUBLIC;
         }
     }
-    
+
+    // Before Update to database
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();

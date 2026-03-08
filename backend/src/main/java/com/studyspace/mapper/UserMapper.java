@@ -4,6 +4,7 @@ import com.studyspace.dto.UserDTO;
 import com.studyspace.entity.User;
 import org.springframework.stereotype.Component;
 
+// to convert the User entity to UserDTO
 @Component
 public class UserMapper {
 

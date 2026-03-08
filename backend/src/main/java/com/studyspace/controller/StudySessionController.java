@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+
+// Create, join, leave, and manage study sessions
 @RestController
 @RequestMapping("/api/sessions")
 @RequiredArgsConstructor

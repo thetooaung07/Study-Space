@@ -96,6 +96,8 @@ public class User {
     @Builder.Default
     private Set<Activity> activities = new HashSet<>();
     
+
+    // Before Insert to database
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
@@ -111,6 +113,8 @@ public class User {
         }
     }
     
+
+    // before Update to database
     @PreUpdate
     protected void onUpdate() {
         updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();

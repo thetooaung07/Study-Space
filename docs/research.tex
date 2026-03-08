@@ -1,0 +1,168 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{amssymb}
+\usepackage{hyperref}
+
+% --- Page Setup ---
+\geometry{margin=0.6in}
+
+% --- Custom Colors ---
+\definecolor{statusGreen}{RGB}{34,139,34}
+\definecolor{statusYellow}{RGB}{218,165,32}
+\definecolor{statusRed}{RGB}{178,34,34}
+
+% --- Status Dot Commands ---
+\newcommand{\statGreen}[1]{\raisebox{-0.45ex}{\textcolor{statusGreen}{\huge$\bullet$}}\ \textbf{#1}}
+\newcommand{\statYellow}[1]{\raisebox{-0.45ex}{\textcolor{statusYellow}{\huge$\bullet$}}\ \textbf{#1}}
+\newcommand{\statRed}[1]{\raisebox{-0.45ex}{\textcolor{statusRed}{\huge$\bullet$}}\ \textbf{#1}}
+
+% --- Header Formatting ---
+\titleformat{\section}{\large\bfseries\uppercase}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\bfseries}{}{0em}{}
+
+% --- Metadata ---
+\title{\textbf{StudySpace: Unified Academic Ecosystem \\ \& Social Learning Platform} \\ [2em]
+\large Bachelor Thesis Proposal (EdTech)}
+\author{Thet Oo Aung}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+
+% =========================================================
+\section{1. Introduction}
+
+\subsection{1.1 The Problem: Fragmentation in the Current Academic Ecosystem}
+Modern technical education relies heavily on digital tools, yet the student experience remains fragmented across multiple platforms. Using the Faculty of Information Technology (FIT) as a representative example, a typical student workflow involves frequent context switching:
+
+\begin{itemize}
+    \item \textbf{Course Management:} Moodle or faculty course pages for classification and lecture materials.
+    \item \textbf{Lecture Delivery:} MS Teams or SharePoint for live streams and recordings.
+    \item \textbf{Assessment:} Progtest, Moodle, or GitLab for assignments and grading.
+    \item \textbf{Communication:} Email for official notices; Discord, Teams, or Whatsapp for informal collaboration.
+\end{itemize}
+
+This fragmentation leads to \textit{digital clutter}: information silos, loss of peer-generated content, and increased cognitive load that detracts from effective learning.
+
+% ---------------------------------------------------------
+\subsection{1.2 The Solution: StudySpace}
+\textbf{StudySpace} is a unified, role-based platform designed specifically for higher education. It combines the core features of a Learning Management System (LMS), a collaborative workspace, and a social learning network into a single coherent environment.
+
+By prioritizing simplicity and leveraging \textbf{context-aware AI}, StudySpace streamlines interactions between students to make the study more fun while supporting structured, extensible models for long-term peer-to-peer contribution.
+
+% =========================================================
+\section{2. Core System Architecture}
+StudySpace is built around four foundational pillars addressing the academic lifecycle.
+
+% ---------------------------------------------------------
+\subsection{2.1 Synthesized Learning Model (SLM) for Study Materials}
+Study materials are inherently evolving and subjective. StudySpace introduces \textbf{SLM}, a collaborative system that enables academic materials to evolve through structured student contributions.\\ Formally, Synthesis follows a \textbf{Fork-Merge Model like Git}, allowing learners to diverge from core materials and propose integrations back to the core materials through academic review.
+
+\begin{description}
+    \item[Divergence:] Students create branches of core materials to add annotations, explanations, examples, or translations without modifying the original content.
+    \item[SLM Integration:] High-quality branches can be proposed for integration into the core material through an academic review process, ensuring accuracy and upgraded content value.
+\end{description}
+
+% ---------------------------------------------------------
+\subsection{2.2 Structured Communication Hub}
+To reduce noise and information loss, StudySpace enforces clearly scoped communication channels:
+
+\begin{itemize}
+    \item \textbf{The Bulletin (Static):} Read-only instructor announcements and official course updates.
+    \item \textbf{Delivery Channels (Real-Time):} Subject or topic-scoped collaboration spaces for focused discussion.
+\end{itemize}
+
+% ---------------------------------------------------------
+\subsection{2.3 Contextual Peer Collaboration}
+Discussion threads are directly linked to specific lecture topics or timestamps. Questions and explanations therefore remain permanently attached to relevant academic content, preventing loss of valuable context within generic chat histories.
+
+% ---------------------------------------------------------
+\subsection{2.4 Progress Tracking}
+An \textbf{Analytical Dashboard} visualizes deadlines, completed tasks, and learning streaks, supporting student motivation while reducing burnout and missing deadlines.
+
+% =========================================================
+\section{3. Analysis of Existing Solutions}
+The following table compares existing platforms with StudySpace.
+
+\begin{table}[h]
+    \centering
+    \footnotesize
+    \renewcommand{\arraystretch}{2.2}
+    \setlength{\tabcolsep}{4pt}
+    \caption{Comparative Feature Coverage Matrix}
+
+    \begin{tabularx}{\textwidth}{|p{3.2cm}|X|X|X|X|X|}
+    \hline
+    \textbf{Feature} & \textbf{Zoom / Teams} & \textbf{Discord} & \textbf{Moodle} & \textbf{Notion / Docs} & \textbf{StudySpace} \\
+    \hline
+
+    \textbf{Real-Time Comm.} &
+    \statGreen{Excellent} \newline Screen sharing &
+    \statGreen{Excellent} \newline Voice / chat &
+    \statRed{None} \newline External tools &
+    \statRed{None} \newline Comments &
+    \statGreen{High} \newline Channels \\ \hline
+
+    \textbf{Material Hosting} &
+    \statRed{Poor} \newline Lost in chat &
+    \statRed{Poor} \newline Chaotic &
+    \statGreen{High} \newline Structured &
+    \statGreen{Excellent} \newline Rich text &
+    \statGreen{High} \newline Workspaces \\ \hline
+
+    \textbf{Knowledge Collab.} &
+    \statRed{None} &
+    \statYellow{Basic} \newline Chat-only &
+    \statYellow{Low} \newline Wikis &
+    \statGreen{High} \newline Co-editing &
+    \statGreen{Excellent} \newline Synthesis \\ \hline
+
+    \textbf{AI Integration} &
+    \statYellow{Basic} \newline Transcripts &
+    \statRed{None} &
+    \statRed{None} &
+    \statYellow{Generic} &
+    \statGreen{Included} \newline Context Aware  \\ \hline
+
+    \textbf{Social Presence} &
+    \statYellow{Low} \newline Formal  &
+    \statGreen{High} &
+    \statRed{None} &
+    \statRed{None} &
+    \statGreen{High} \newline Gamified  \\ \hline
+
+    \textbf{Grading} &
+    \statRed{None} &
+    \statRed{None} &
+    \statGreen{Excellent} &
+    \statRed{None} &
+    \statYellow{Integrated} \newline  \\ \hline
+
+    \textbf{Progress Tracking} &
+    \statRed{None} &
+    \statRed{None} &
+    \statYellow{Medium} &
+    \statYellow{Manual} &
+    \statGreen{High}  \newline Sessions \\ \hline
+    \end{tabularx}
+\end{table}
+
+% ---------------------------------------------------------
+\subsection{3.1 Competitive Insight}
+While existing platforms excel in isolated domains, none provide a cohesive academic environment. \\ StudySpace addresses this \textbf{integration gap} by tightly linking materials, discussion, and progress tracking through Synthesis and context-aware AI Assistant.
+
+% =========================================================
+\section{4. Conclusion}
+StudySpace is not merely another LMS, but a \textbf{Social Learning Operating System}. By enabling structured material evolution through Synthesis and unifying communication within academic context, it proposes a scalable, student-centered alternative to fragmented university tooling.
+
+\end{document}

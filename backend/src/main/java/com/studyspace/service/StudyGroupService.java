@@ -1,9 +1,12 @@
 package com.studyspace.service;
 
 import com.studyspace.dto.CreateGroupRequest;
+import com.studyspace.dto.GroupMemberDTO;
 import com.studyspace.dto.GroupMemberStatsDTO;
 import com.studyspace.dto.GroupStatsDTO;
 import com.studyspace.dto.StudyGroupDTO;
+import com.studyspace.dto.StudyGroupDetailsDTO;
+import com.studyspace.dto.StudySessionDTO;
 import com.studyspace.entity.SessionParticipant;
 import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.StudySession;
@@ -294,13 +297,13 @@ public class StudyGroupService {
             .build();
     }
     @Transactional(readOnly = true)
-    public com.studyspace.dto.StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
+    public StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
         StudyGroup group = groupRepository.findById(groupId)
             .orElseThrow(() -> new RuntimeException("Group not found"));
         
         List<StudySession> sessions = sessionRepository.findByStudyGroupId(groupId);
    
-        List<com.studyspace.dto.StudySessionDTO> sessionDTOs = sessions.stream()
+        List<StudySessionDTO> sessionDTOs = sessions.stream()
              .filter(s -> {
                  if (com.studyspace.types.SessionVisibility.PUBLIC.equals(s.getVisibility())) {
                      return true;
@@ -316,8 +319,8 @@ public class StudyGroupService {
              .collect(Collectors.toList());
 
         // Map members
-        List<com.studyspace.dto.GroupMemberDTO> memberDTOs = group.getMembers().stream()
-            .map(member -> com.studyspace.dto.GroupMemberDTO.builder()
+        List<GroupMemberDTO> memberDTOs = group.getMembers().stream()
+            .map(member -> GroupMemberDTO.builder()
                 .id(member.getId())
                 .username(member.getUsername())
                 .fullName(member.getFullName())
@@ -329,15 +332,15 @@ public class StudyGroupService {
                 .build())
             .collect(Collectors.toList());
 
-        return com.studyspace.dto.StudyGroupDetailsDTO.builder()
+        return StudyGroupDetailsDTO.builder()
             .group(convertToDTO(group))
             .sessions(sessionDTOs)
             .members(memberDTOs)
             .build();
     }
 
-    private com.studyspace.dto.StudySessionDTO convertSessionToDTO(StudySession session) {
-        return com.studyspace.dto.StudySessionDTO.builder()
+    private StudySessionDTO convertSessionToDTO(StudySession session) {
+        return StudySessionDTO.builder()
             .id(session.getId())
             .title(session.getTitle())
             .description(session.getDescription())

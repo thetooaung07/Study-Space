@@ -46,7 +46,7 @@ public class GamificationService {
     }
 
     private void updateStreak(User user) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = DateTimeUtil.nowUtc().toLocalDate();
         LocalDate lastStudyDate = user.getLastStudyDate() != null ? user.getLastStudyDate().toLocalDate() : null;
         Integer previousStreak = user.getCurrentStreak();
         

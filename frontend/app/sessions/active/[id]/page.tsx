@@ -245,11 +245,12 @@ export default function ActiveSessionPage() {
     // Show leave confirmation dialog
     setShowLeaveDialog(true)
   }
-  
+
+  // Complex Business Operation.
   const confirmLeaveSession = async () => {
     if (!user || !session) return
     setShowLeaveDialog(false)
-  
+
     try {
         if (userStartTime) {
           const now = new Date().getTime()

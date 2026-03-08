@@ -17,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+// Filter that validates JWT on each request
 @Component
 @RequiredArgsConstructor
 @Slf4j

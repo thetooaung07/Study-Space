@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
+
+// Study group management (create, join, members, stats)
 @RestController
 @RequestMapping("/api/groups")
 @RequiredArgsConstructor

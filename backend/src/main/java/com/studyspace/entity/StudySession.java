@@ -78,6 +78,8 @@ public class StudySession {
     @Builder.Default
     private Set<Activity> activities = new HashSet<>();
     
+
+    // Before Insert to database
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();

@@ -14,4 +14,7 @@ build/
 # Environment
 *.env
 
-/check
+check/**
+
+
+replacements.txt

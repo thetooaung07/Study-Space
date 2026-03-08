@@ -17,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.UUID;
 
+// Handles successful Google/GitHub OAuth2 logins 
 @Component
 @RequiredArgsConstructor
 @Slf4j

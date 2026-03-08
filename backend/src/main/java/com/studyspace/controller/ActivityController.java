@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+
+// User activity feed and tracking
 @RestController
 @RequestMapping("/api/activities")
 @RequiredArgsConstructor
