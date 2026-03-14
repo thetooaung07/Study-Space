@@ -16,5 +16,4 @@ build/
 
 check/**
 
-
-replacements.txt
+cred.txt
