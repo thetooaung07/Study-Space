@@ -42,6 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll() // Allow only auth entry points
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // WebSocket handshake endpoint
                         
                         // Secured Endpoints
                         .anyRequest().authenticated()

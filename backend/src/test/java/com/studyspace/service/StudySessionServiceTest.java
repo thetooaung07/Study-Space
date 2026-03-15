@@ -8,6 +8,7 @@ import com.studyspace.repository.ActivityRepository;
 import com.studyspace.repository.SessionParticipantRepository;
 import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
+import com.studyspace.mapper.UserMapper;
 import com.studyspace.types.SessionStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,12 @@ class StudySessionServiceTest {
 
     @Mock
     private GamificationService gamificationService;
+
+    @Mock
+    private SessionNotificationService notificationService;
+
+    @Mock
+    private UserMapper userMapper;
 
     @InjectMocks
     private StudySessionService sessionService;
@@ -149,6 +156,8 @@ class StudySessionServiceTest {
 
         StudySession session = new StudySession();
         session.setId(10L);
+        session.setCreator(user);
+        session.setParticipants(new HashSet<>());
 
         when(sessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -224,6 +233,8 @@ class StudySessionServiceTest {
 
         StudySession session = new StudySession();
         session.setId(10L);
+        session.setCreator(user);
+        session.setParticipants(new HashSet<>());
 
         SessionParticipant participant = new SessionParticipant();
         participant.setUser(user);
@@ -246,6 +257,8 @@ class StudySessionServiceTest {
 
         StudySession session = new StudySession();
         session.setId(10L);
+        session.setCreator(user);
+        session.setParticipants(new HashSet<>());
 
         SessionParticipant participant = new SessionParticipant();
         participant.setUser(user);
