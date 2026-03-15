@@ -1,5 +1,6 @@
 package com.studyspace.service;
 
+import com.studyspace.dto.ActivityDTO;
 import com.studyspace.dto.CreateSessionRequest;
 import com.studyspace.dto.StudySessionDTO;
 import com.studyspace.entity.*;
@@ -30,6 +31,7 @@ public class StudySessionService {
     private final ActivityRepository activityRepository;
     private final StudyGroupRepository groupRepository;
     private final GamificationService gamificationService;
+    private final SessionNotificationService notificationService;
     
     public StudySessionDTO createSession(Long userId, CreateSessionRequest request) {
         log.info("Creating session for user ID: {} with title: {}", userId, request.getTitle());
@@ -193,8 +195,14 @@ public class StudySessionService {
             .user(session.getCreator())
             .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
         
-        return convertToDTO(sessionRepository.save(session));
+        StudySession savedSession = sessionRepository.save(session);
+        
+        // Broadcast session ended to all subscribers
+        notificationService.broadcastSessionEnded(sessionId);
+        
+        return convertToDTO(savedSession);
     }
     
     public void addParticipant(Long sessionId, Long userId) {
@@ -227,6 +235,8 @@ public class StudySessionService {
                     .message("rejoined the session")
                     .build();
                 activityRepository.save(activity);
+                notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
+                notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(session));
                 return;
             } else {
                 return;
@@ -250,6 +260,10 @@ public class StudySessionService {
             .user(user)
             .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
+        
+        // Broadcast real-time update
+        notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(session));
     }
     
 
@@ -312,6 +326,9 @@ public class StudySessionService {
                 
         if (activeCount == 0) {
             endSession(sessionId);
+        } else {
+            // Broadcast real-time update
+            notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(session));
         }
     }
     
@@ -397,8 +414,10 @@ public class StudySessionService {
         
         participant.setLastPausedAt(DateTimeUtil.nowUtc());
         
-        // Update user status
+        // Update user status to AWAY before broadcasting
         User user = participant.getUser();
+        user.setCurrentStatus(com.studyspace.types.UserStatus.AWAY);
+        userRepository.save(user);
         participantRepository.save(participant);
         
         Activity activity = Activity.builder()
@@ -408,6 +427,10 @@ public class StudySessionService {
                 .message("took a break")
                 .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
+        
+        // Broadcast real-time update
+        notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(participant.getStudySession()));
     }
 
     @Transactional
@@ -427,6 +450,10 @@ public class StudySessionService {
         );
         participant.setLastPausedAt(null);
         
+        // Update user status to STUDYING before broadcasting
+        User user = participant.getUser();
+        user.setCurrentStatus(com.studyspace.types.UserStatus.STUDYING);
+        userRepository.save(user);
         participantRepository.save(participant);
         
         Activity activity = Activity.builder()
@@ -436,6 +463,10 @@ public class StudySessionService {
                 .message("resumed studying")
                 .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
+        
+        // Broadcast real-time update
+        notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(participant.getStudySession()));
     }
     
     @Transactional
@@ -477,5 +508,22 @@ public class StudySessionService {
             .message("is now the session host")
             .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
+        
+        // Broadcast real-time update
+        notificationService.broadcastParticipantsUpdate(sessionId, convertToDTO(session));
+    }
+
+    private ActivityDTO convertActivityToDTO(Activity activity) {
+        return ActivityDTO.builder()
+                .id(activity.getId())
+                .type(activity.getType())
+                .message(activity.getMessage())
+                .timestamp(activity.getTimestamp())
+                .sessionId(activity.getStudySession() != null ? activity.getStudySession().getId() : null)
+                .userId(activity.getUser().getId())
+                .userName(activity.getUser().getFullName())
+                .userProfilePictureUrl(activity.getUser().getProfilePictureUrl())
+                .build();
     }
 }

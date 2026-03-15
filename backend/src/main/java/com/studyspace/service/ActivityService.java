@@ -23,6 +23,7 @@ public class ActivityService {
     private final ActivityRepository activityRepository;
     private final StudySessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final SessionNotificationService notificationService;
 
     public ActivityDTO createActivity(Long sessionId, Long userId, ActivityType type, String message) {
         StudySession session = sessionRepository.findById(sessionId)
@@ -38,7 +39,12 @@ public class ActivityService {
                 .build();
 
         Activity savedActivity = activityRepository.save(activity);
-        return convertToDTO(savedActivity);
+        ActivityDTO dto = convertToDTO(savedActivity);
+        
+        // Broadcast real-time activity to all session subscribers
+        notificationService.broadcastActivity(sessionId, dto);
+        
+        return dto;
     }
 
     @Transactional(readOnly = true)
