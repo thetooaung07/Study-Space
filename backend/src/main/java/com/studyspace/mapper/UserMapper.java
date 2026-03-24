@@ -21,6 +21,7 @@ public class UserMapper {
                 .totalStudyMinutes(user.getTotalStudyMinutes())
                 .currentStreak(user.getCurrentStreak())
                 .currentStatus(user.getCurrentStatus())
+                .role(user.getRole())
                 .authProvider(user.getAuthProvider())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())

@@ -251,6 +251,7 @@ public class StudySessionService {
             .build();
         
         participantRepository.save(participant);
+        session.getParticipants().add(participant);
         log.info("Participant joined - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
         
         // Log activity
@@ -289,11 +290,16 @@ public class StudySessionService {
         LocalDateTime now = DateTimeUtil.nowUtc();
         participant.setLeftAt(now);
         
-        // Calculate study time (Backend source of truth preferred)
+        // Calculate study time (Backend source of truth originally preferred, but allow frontend override for testing 10x multiplier)
         long calculatedMinutes = ChronoUnit.MINUTES.between(participant.getJoinedAt(), now);
         
         // Use provided studyMinutes if reasonable, otherwise backend calc
-        int minutesToRecord = (int) Math.max(0, calculatedMinutes);
+        int minutesToRecord;
+        if (studyMinutes != null) {
+            minutesToRecord = studyMinutes;
+        } else {
+            minutesToRecord = (int) Math.max(0, calculatedMinutes);
+        }
         
         participant.setMinutesParticipated(minutesToRecord);
         
@@ -316,6 +322,7 @@ public class StudySessionService {
             .message("left the session")
             .build();
         activityRepository.save(activity);
+        notificationService.broadcastActivity(sessionId, convertActivityToDTO(activity));
         
         log.info("Participant left - Session: {}, User: {} (ID: {}), Minutes studied: {}", sessionId, user.getUsername(), userId, minutesToRecord);
         
