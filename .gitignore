@@ -17,3 +17,6 @@ build/
 check/**
 
 cred.txt
+
+
+backend/uploads/**

@@ -40,12 +40,6 @@ export function ActiveSessions() {
 			);
 			const combinedSessions = [...userSessions, ...publicGroupSessions];
 			setSessions(combinedSessions.filter((s) => s.status === "ACTIVE"));
-
-			console.log("User sessions:", userSessions);
-			console.log("Public group sessions:", publicGroupSessions);
-			console.log("Combined sessions:", combinedSessions);
-
-			console.log("Active sessions:", sessions);
 		} catch (error) {
 			console.error("Failed to fetch sessions:", error);
 		} finally {

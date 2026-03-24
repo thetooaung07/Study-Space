@@ -3,13 +3,13 @@
 -- Seed data for development and testing
 
 -- Insert Sample Users (password: 'password' for all)
-INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, current_streak, last_study_date, created_at, updated_at)
+INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, current_streak, last_study_date, role, created_at, updated_at)
 VALUES
-('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', '', 495, 'ONLINE', 5, DATEADD('DAY', -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', '', 720, 'STUDYING', 12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', '', 330, 'AWAY', 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', '', 890, 'ONLINE', 21, DATEADD('DAY', -1, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', '', 240, 'ONLINE', 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', '', 495, 'ONLINE', 5, DATEADD('DAY', -1, CURRENT_TIMESTAMP), 'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', '', 720, 'STUDYING', 12, CURRENT_TIMESTAMP, 'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', '', 330, 'AWAY', 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP), 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', '', 890, 'ONLINE', 21, DATEADD('DAY', -1, CURRENT_TIMESTAMP), 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', '', 240, 'ONLINE', 7, CURRENT_TIMESTAMP, 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Insert Sample Study Groups
@@ -162,3 +162,69 @@ VALUES
 -- ('SESSION_CREATED', 'created the session', DATEADD('MINUTE', -20, CURRENT_TIMESTAMP), 9, 1),
 -- ('JOINED', 'joined the session', DATEADD('MINUTE', -15, CURRENT_TIMESTAMP), 9, 4),
 -- ('MESSAGE', 'Focus on homogeneous equations first', DATEADD('MINUTE', -5, CURRENT_TIMESTAMP), 9, 1);
+
+
+-- ============================================
+-- Course Administration Seed Data
+-- ============================================
+
+-- Insert Sample Courses (instructors: johndoe=1, janesmith=2)
+INSERT INTO courses (title, description, instructor_id, is_published, created_at, updated_at)
+VALUES
+('Introduction to Calculus', 'A foundational course covering limits, derivatives, and integrals. Perfect for first-year university students.', 1, true, DATEADD('DAY', -14, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Advanced Java Programming', 'Deep dive into Java: OOP, design patterns, concurrency, and Spring Boot fundamentals.', 1, true, DATEADD('DAY', -10, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Molecular Biology Essentials', 'From DNA replication to gene expression — core concepts for life science students.', 2, true, DATEADD('DAY', -7, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Modern World History', 'A survey of major historical events from 1800 to the present day.', 2, false, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+
+
+-- Insert Course Sections
+INSERT INTO course_sections (title, description, order_index, course_id, created_at)
+VALUES
+-- Course 1: Intro to Calculus
+('Chapter 1: Limits', 'Understanding the concept of a limit and continuity.', 0, 1, DATEADD('DAY', -14, CURRENT_TIMESTAMP)),
+('Chapter 2: Derivatives', 'Rules of differentiation — chain rule, product rule, and more.', 1, 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
+('Chapter 3: Integration', 'Introduction to Riemann sums, antiderivatives, and definite integrals.', 2, 1, DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
+
+-- Course 2: Advanced Java
+('Module 1: OOP Refresher', 'Revisiting classes, interfaces, polymorphism, and SOLID principles.', 0, 2, DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
+('Module 2: Design Patterns', 'Creational, structural, and behavioural patterns with real examples.', 1, 2, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+('Module 3: Spring Boot', 'Building RESTful APIs with Spring Boot, JPA, and security.', 2, 2, DATEADD('DAY', -8, CURRENT_TIMESTAMP)),
+
+-- Course 3: Molecular Biology
+('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 3, DATEADD('DAY', -7, CURRENT_TIMESTAMP)),
+('Unit 2: Gene Expression', 'Transcription, translation, and post-translational modifications.', 1, 3, DATEADD('DAY', -6, CURRENT_TIMESTAMP)),
+
+-- Course 4: Modern World History (draft)
+('Part 1: Industrial Revolution', 'Origins and global impact of industrialisation.', 0, 4, DATEADD('DAY', -3, CURRENT_TIMESTAMP));
+
+
+-- Insert Course Materials (files are placeholder URLs for local dev)
+INSERT INTO course_materials (title, file_url, file_type, original_file_name, section_id, uploaded_at)
+VALUES
+-- Calculus Section 1
+('Limits Lecture Notes', '/uploads/courses/limits-lecture-notes.pdf', 'PDF', 'limits-lecture-notes.pdf', 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
+('Limits Practice Problems', '/uploads/courses/limits-practice.pdf', 'PDF', 'limits-practice.pdf', 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
+-- Calculus Section 2
+('Derivatives Slides', '/uploads/courses/derivatives-slides.pdf', 'SLIDES', 'derivatives-slides.pdf', 2, DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
+-- Java Section 1
+('OOP Cheatsheet', '/uploads/courses/oop-cheatsheet.pdf', 'PDF', 'oop-cheatsheet.pdf', 4, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+-- Java Section 3
+('Spring Boot Getting Started', '/uploads/courses/spring-boot-intro.pdf', 'PDF', 'spring-boot-intro.pdf', 6, DATEADD('DAY', -7, CURRENT_TIMESTAMP)),
+-- Biology Section 1
+('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', 7, DATEADD('DAY', -6, CURRENT_TIMESTAMP));
+
+
+-- Insert Course Enrollments (students: bobwilson=3, alicejohnson=4, charliebrown=5)
+INSERT INTO course_enrollments (course_id, student_id, status, enrolled_at)
+VALUES
+-- Calculus enrollments
+(1, 3, 'ACTIVE', DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
+(1, 4, 'ACTIVE', DATEADD('DAY', -11, CURRENT_TIMESTAMP)),
+(1, 5, 'ACTIVE', DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
+-- Java enrollments
+(2, 3, 'ACTIVE', DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
+(2, 5, 'ACTIVE', DATEADD('DAY', -8, CURRENT_TIMESTAMP)),
+-- Biology enrollments
+(3, 4, 'ACTIVE', DATEADD('DAY', -6, CURRENT_TIMESTAMP)),
+(3, 5, 'ACTIVE', DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
+(3, 3, 'DROPPED', DATEADD('DAY', -4, CURRENT_TIMESTAMP));

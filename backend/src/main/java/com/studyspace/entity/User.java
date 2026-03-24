@@ -3,6 +3,7 @@ package com.studyspace.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import com.studyspace.types.UserStatus;
+import com.studyspace.types.UserRole;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -53,6 +54,11 @@ public class User {
     @Column(columnDefinition = "VARCHAR(20) DEFAULT 'LOCAL'")
     @Builder.Default
     private com.studyspace.types.AuthProvider authProvider = com.studyspace.types.AuthProvider.LOCAL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(20) DEFAULT 'STUDENT'")
+    @Builder.Default
+    private UserRole role = UserRole.STUDENT;
 
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     @Builder.Default

@@ -15,6 +15,11 @@ export type ActivityType =
 	| "GROUP_JOIN"
 	| "ACHIEVEMENT_UNLOCK"
 	| "STUDY_MILESTONE";
+export enum UserRole {
+	STUDENT = "STUDENT",
+	INSTRUCTOR = "INSTRUCTOR"
+}
+
 export type SessionStatus = "SCHEDULED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type Subject = "MATH" | "SCIENCE" | "HISTORY" | "LITERATURE" | "PROGRAMMING" | "ART" | "MUSIC" | "OTHER";
 export type UserStatus = "ONLINE" | "OFFLINE" | "STUDYING" | "AWAY";
@@ -75,6 +80,7 @@ export interface UserDTO {
 	totalStudyMinutes: number;
 	currentStreak?: number;
 	currentStatus: UserStatus;
+	role: UserRole;
 	createdAt: string;
 	updatedAt: string;
 	authProvider: "LOCAL" | "GOOGLE" | "GITHUB";

@@ -43,7 +43,10 @@ export const api = {
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    const res = await fetch(`${BASE_URL}${endpoint}`, { headers });
+    const res = await fetch(`${BASE_URL}${endpoint}`, { 
+      headers,
+      cache: "no-store"
+    });
     return handleResponse<T>(res);
   },
 
