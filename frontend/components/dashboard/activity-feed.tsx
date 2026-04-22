@@ -26,7 +26,6 @@ export function ActivityFeed() {
 		const fetchActivities = async () => {
 			try {
 				const data = await api.get<ActivityDTO[]>("/activities/recent");
-				console.log(data);
 				setActivities(data);
 			} catch (error) {
 			} finally {

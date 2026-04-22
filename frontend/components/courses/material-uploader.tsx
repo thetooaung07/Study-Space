@@ -92,7 +92,7 @@ export function MaterialUploader({
               <span className="flex-1 truncate text-card-foreground">{m.title}</span>
               <span className="text-xs text-muted-foreground">{m.fileType}</span>
               <a
-                href={`http://localhost:8080${m.fileUrl}`}
+                href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="opacity-0 group-hover:opacity-100 transition-opacity"

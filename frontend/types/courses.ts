@@ -9,6 +9,7 @@ export interface CourseMaterial {
   fileUrl: string;
   fileType: MaterialType;
   originalFileName: string;
+  contributorName?: string;
   uploadedAt: string;
 }
 

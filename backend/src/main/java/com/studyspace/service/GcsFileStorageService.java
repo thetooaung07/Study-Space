@@ -73,4 +73,31 @@ public class GcsFileStorageService implements FileStorageService {
         int idx = base.indexOf(prefix);
         return idx >= 0 ? base.substring(idx + prefix.length()) : base;
     }
+
+    @Override
+    public String copy(String sourceFileUrl, String targetFolder) {
+        try {
+            String sourceObjectName = extractObjectNameFromUrl(sourceFileUrl);
+            String extension = sourceObjectName.contains(".")
+                    ? sourceObjectName.substring(sourceObjectName.lastIndexOf('.'))
+                    : "";
+            String targetObjectName = targetFolder + "/" + UUID.randomUUID() + extension;
+
+            BlobId sourceBlobId = BlobId.of(bucketName, sourceObjectName);
+            BlobId targetBlobId = BlobId.of(bucketName, targetObjectName);
+
+            Storage.CopyRequest copyRequest = Storage.CopyRequest.newBuilder()
+                    .setSource(sourceBlobId)
+                    .setTarget(targetBlobId)
+                    .build();
+            gcsStorage.copy(copyRequest).getResult();
+
+            BlobInfo targetBlobInfo = BlobInfo.newBuilder(targetBlobId).build();
+            String signedUrl = gcsStorage.signUrl(targetBlobInfo, 7, java.util.concurrent.TimeUnit.DAYS).toString();
+            log.info("Copied GCS object from {} to {}", sourceObjectName, targetObjectName);
+            return signedUrl;
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to copy file in GCS: " + ex.getMessage(), ex);
+        }
+    }
 }

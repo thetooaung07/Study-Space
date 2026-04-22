@@ -1,117 +1,117 @@
 const BASE_URL = "http://localhost:8080/api";
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-    this.name = "ApiError";
-  }
+	constructor(
+		public status: number,
+		message: string,
+	) {
+		super(message);
+		this.name = "ApiError";
+	}
 }
 
 async function handleResponse<T>(response: Response): Promise<T> {
-  const text = await response.text();
-  
-  // Check if response is HTML (backend not running or returned error page)
-  if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
-    throw new ApiError(
-      response.status || 503, 
-      'Backend server unavailable or returned HTML instead of JSON'
-    );
-  }
-  
-  if (!response.ok) {
-    throw new ApiError(response.status, text || response.statusText);
-  }
-  
-  // Handle 204 No Content
-  if (response.status === 204 || !text) {
-    return {} as T;
-  }
-  
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new ApiError(500, `Invalid JSON response: ${text.substring(0, 100)}`);
-  }
+	const text = await response.text();
+
+	// Check if response is HTML (backend not running or returned error page)
+	if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) {
+		throw new ApiError(response.status || 503, "Backend server unavailable or returned HTML instead of JSON");
+	}
+
+	if (!response.ok) {
+		throw new ApiError(response.status, text || response.statusText);
+	}
+
+	// Handle 204 No Content
+	if (response.status === 204 || !text) {
+		return {} as T;
+	}
+
+	try {
+		return JSON.parse(text);
+	} catch {
+		throw new ApiError(500, `Invalid JSON response: ${text.substring(0, 100)}`);
+	}
 }
 
 export const api = {
-  get: async <T>(endpoint: string): Promise<T> => {
-    const token = localStorage.getItem("token");
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${BASE_URL}${endpoint}`, { 
-      headers,
-      cache: "no-store"
-    });
-    return handleResponse<T>(res);
-  },
+	get: async <T>(endpoint: string): Promise<T> => {
+		const token = localStorage.getItem("token");
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+		};
+		if (token) {
+			headers["Authorization"] = `Bearer ${token}`;
+		}
+		const res = await fetch(`${BASE_URL}${endpoint}`, {
+			headers,
+			cache: "no-store",
+		});
+		return handleResponse<T>(res);
+	},
 
-  post: async <T>(endpoint: string, body: any): Promise<T> => {
-    const token = localStorage.getItem("token");
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-    return handleResponse<T>(res);
-  },
+	post: async <T>(endpoint: string, body: any): Promise<T> => {
+		const token = localStorage.getItem("token");
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+		};
+		if (token) {
+			headers["Authorization"] = `Bearer ${token}`;
+		}
+		const res = await fetch(`${BASE_URL}${endpoint}`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify(body),
+		});
+		return handleResponse<T>(res);
+	},
 
-  put: async <T>(endpoint: string, body?: any): Promise<T> => {
-    const token = localStorage.getItem("token");
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    const options: RequestInit = {
-      method: "PUT",
-      headers,
-    };
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
-    const res = await fetch(`${BASE_URL}${endpoint}`, options);
-    return handleResponse<T>(res);
-  },
+	put: async <T>(endpoint: string, body?: any): Promise<T> => {
+		const token = localStorage.getItem("token");
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+		};
+		if (token) {
+			headers["Authorization"] = `Bearer ${token}`;
+		}
+		const options: RequestInit = {
+			method: "PUT",
+			headers,
+		};
+		if (body) {
+			options.body = JSON.stringify(body);
+		}
+		const res = await fetch(`${BASE_URL}${endpoint}`, options);
+		return handleResponse<T>(res);
+	},
 
-  delete: async <T>(endpoint: string): Promise<T> => {
-    const token = localStorage.getItem("token");
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-      method: "DELETE",
-      headers,
-    });
-    return handleResponse<T>(res);
-  },
+	delete: async <T>(endpoint: string): Promise<T> => {
+		const token = localStorage.getItem("token");
+		const headers: HeadersInit = {
+			"Content-Type": "application/json",
+		};
+		if (token) {
+			headers["Authorization"] = `Bearer ${token}`;
+		}
+		const res = await fetch(`${BASE_URL}${endpoint}`, {
+			method: "DELETE",
+			headers,
+		});
+		return handleResponse<T>(res);
+	},
 
-  setToken: (token: string) => {
-    localStorage.setItem("token", token);
-  },
+	setToken: (token: string) => {
+		localStorage.setItem("token", token);
+	},
 
-  removeToken: () => {
-    localStorage.removeItem("token");
-  },
+	removeToken: () => {
+		localStorage.removeItem("token");
+	},
 
-  getToken: () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token");
-    }
-    return null;
-  },
+	getToken: () => {
+		if (typeof window !== "undefined") {
+			return localStorage.getItem("token");
+		}
+		return null;
+	},
 };

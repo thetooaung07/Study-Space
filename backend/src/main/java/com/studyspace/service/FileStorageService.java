@@ -19,4 +19,14 @@ public interface FileStorageService {
      * @param fileUrl the URL returned by {@link #store}
      */
     void delete(String fileUrl);
+
+    /**
+     * Copy an existing stored file to a new location.
+     * Used for copy-on-write semantics when forking or approving contributions.
+     *
+     * @param sourceFileUrl the URL of the source file
+     * @param targetFolder  sub-folder path for the copy (e.g. "courses")
+     * @return the URL at which the copied file can be accessed
+     */
+    String copy(String sourceFileUrl, String targetFolder);
 }

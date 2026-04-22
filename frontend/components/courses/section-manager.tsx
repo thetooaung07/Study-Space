@@ -320,7 +320,7 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 									>
 										<MatIcon type={m.fileType} />
 										<a
-											href={`http://localhost:8080${m.fileUrl}`}
+											href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											title="Open file"

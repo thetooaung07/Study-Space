@@ -226,5 +226,32 @@ VALUES
 (2, 5, 'ACTIVE', DATEADD('DAY', -8, CURRENT_TIMESTAMP)),
 -- Biology enrollments
 (3, 4, 'ACTIVE', DATEADD('DAY', -6, CURRENT_TIMESTAMP)),
-(3, 5, 'ACTIVE', DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
 (3, 3, 'DROPPED', DATEADD('DAY', -4, CURRENT_TIMESTAMP));
+
+-- ============================================
+-- Workspace System Run Seed Data
+-- ============================================
+
+INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
+VALUES
+('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+
+INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
+VALUES
+('My Pre-Med Notes', 'Self-compiled notes and diagrams.', 1, NULL, false, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, DATEADD('DAY', -4, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+
+INSERT INTO workspace_sections (title, description, order_index, space_id, created_at)
+VALUES
+('General Biology Notes', 'Notes from textbook reading.', 0, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
+('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP));
+
+INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
+VALUES
+('Cells Diagram', '/uploads/workspaces/cells-diagram.pdf', 'PDF', 'cells-diagram.pdf', false, false, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
+('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', true, false, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP)),
+('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
+
+INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
+VALUES
+('PENDING', 'I created an extra summary for the DNA structure that might be helpful for others!', 3, 7, 3, 4, 'Alice Johnson', DATEADD('DAY', -1, CURRENT_TIMESTAMP));

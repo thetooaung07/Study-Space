@@ -65,4 +65,30 @@ public class LocalFileStorageService implements FileStorageService {
             log.warn("Could not delete local file {}: {}", fileUrl, ex.getMessage());
         }
     }
+
+    @Override
+    public String copy(String sourceFileUrl, String targetFolder) {
+        try {
+            String relativePath = sourceFileUrl.replace("/uploads/", "");
+            Path sourcePath = Paths.get(uploadDir, relativePath).toAbsolutePath().normalize();
+
+            // Determine extension from source
+            String sourceFileName = sourcePath.getFileName().toString();
+            String extension = sourceFileName.contains(".")
+                    ? sourceFileName.substring(sourceFileName.lastIndexOf('.'))
+                    : "";
+            String newFileName = UUID.randomUUID() + extension;
+
+            Path targetDir = Paths.get(uploadDir, targetFolder).toAbsolutePath().normalize();
+            Files.createDirectories(targetDir);
+
+            Path targetPath = targetDir.resolve(newFileName);
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            log.info("Copied file from {} to {}", sourcePath, targetPath);
+            return "/uploads/" + targetFolder + "/" + newFileName;
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to copy file: " + ex.getMessage(), ex);
+        }
+    }
 }

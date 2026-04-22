@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Settings, Users, BookOpen, Eye, EyeOff, Trash2, Loader2, Pencil } from "lucide-react";
+import { Settings, Users, BookOpen, Eye, EyeOff, Trash2, Loader2, Pencil, GitPullRequest } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { SectionManager } from "@/components/courses/section-manager";
 import { EnrollmentTable } from "@/components/courses/enrollment-table";
+import { ContributionReview } from "@/components/courses/contribution-review";
 import { coursesApi } from "@/lib/courses-api";
 import { useAuth } from "@/context/auth-context";
 import type { Course, CourseEnrollment } from "@/types/courses";
@@ -140,6 +141,10 @@ export default function CourseManagePage() {
                     </Badge>
                   )}
                 </TabsTrigger>
+                <TabsTrigger value="contributions" className="gap-1.5">
+                  <GitPullRequest className="h-4 w-4" />
+                  Contributions
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="content" className="mt-4">
@@ -164,6 +169,10 @@ export default function CourseManagePage() {
                     )
                   }
                 />
+              </TabsContent>
+
+              <TabsContent value="contributions" className="mt-4">
+                <ContributionReview courseId={course.id} userId={user.id} />
               </TabsContent>
             </Tabs>
           </div>

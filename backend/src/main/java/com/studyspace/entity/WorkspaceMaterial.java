@@ -8,14 +8,14 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 
 @Entity
-@Table(name = "course_materials")
+@Table(name = "workspace_materials")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class CourseMaterial {
+public class WorkspaceMaterial {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,12 +36,27 @@ public class CourseMaterial {
     @Column
     private String originalFileName;
 
-    @Column
-    private String contributorName;
+    /**
+     * Copy-on-Write flag.
+     * true  = this material references the original course file (don't delete file on remove).
+     * false = student's own uploaded copy (safe to delete file on remove).
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isReference = false;
+
+    /**
+     * Soft-delete flag for reference materials.
+     * When a student "deletes" a reference material we cannot remove the DB row
+     * (it may be referenced by contribution_proposals), so we just hide it instead.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isHidden = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
-    private CourseSection section;
+    private WorkspaceSection section;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime uploadedAt;

@@ -1,21 +1,22 @@
 package com.studyspace.entity;
 
-import com.studyspace.types.MaterialType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "course_materials")
+@Table(name = "workspace_sections")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class CourseMaterial {
+public class WorkspaceSection {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,29 +26,27 @@ public class CourseMaterial {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 1000)
-    private String fileUrl;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private MaterialType fileType = MaterialType.OTHER;
-
-    @Column
-    private String originalFileName;
-
-    @Column
-    private String contributorName;
+    private Integer orderIndex = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "section_id", nullable = false)
-    private CourseSection section;
+    @JoinColumn(name = "space_id", nullable = false)
+    private WorkspaceSpace space;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime uploadedAt;
+    private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
+    @Builder.Default
+    private List<WorkspaceMaterial> materials = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
-        uploadedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
+        createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 }

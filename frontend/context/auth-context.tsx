@@ -26,33 +26,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	useEffect(() => {
 		const initializeAuth = async () => {
+			// Already on an auth page — no need to verify the token at all
+			if (isAuthRoute) {
+				setIsLoading(false);
+				return;
+			}
+
 			const token = api.getToken();
-			if (token) {
-				try {
-					const fetchedUser = await api.get<UserDTO>("/auth/me");
-					setUser(fetchedUser);
-					
-					if (fetchedUser.role === UserRole.INSTRUCTOR) {
-						const restrictedRoutes = ["/dashboard", "/sessions", "/groups"];
-						if (restrictedRoutes.some(route => pathname.startsWith(route)) || pathname === "/") {
-							router.push("/courses");
-						}
-					}
-				} catch (error: any) {
-					console.error("Auth initialization error", error);
-					// If the response is 401, 403, or if the backend returned unexpected HTML (503 in api.ts), remove token
-					if (error?.status === 401 || error?.status === 403 || error?.status === 503) {
-						api.removeToken();
-						setUser(null);
-						router.push("/auth/login");
-					} else {
-						// For other critical failures, also kick back to login instead of hanging `null`
-						router.push("/auth/login");
+			if (!token) {
+				router.push("/auth/login");
+				setIsLoading(false);
+				return;
+			}
+
+			try {
+				const fetchedUser = await api.get<UserDTO>("/auth/me");
+				setUser(fetchedUser);
+
+				if (fetchedUser.role === UserRole.INSTRUCTOR) {
+					const restrictedRoutes = ["/dashboard", "/sessions", "/groups"];
+					if (restrictedRoutes.some(route => pathname.startsWith(route)) || pathname === "/") {
+						router.push("/courses");
 					}
 				}
-			} else if (!pathname.startsWith("/auth")) {
+			} catch (error: any) {
+				if (error?.status === 401 || error?.status === 403 || error?.status === 503) {
+					api.removeToken();
+					setUser(null);
+				} else {
+					console.error("Auth initialization error", error);
+				}
 				router.push("/auth/login");
 			}
+
 			setIsLoading(false);
 		};
 

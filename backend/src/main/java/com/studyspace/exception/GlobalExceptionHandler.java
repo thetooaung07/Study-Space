@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,20 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResourceFoundException(
+        NoResourceFoundException ex,
+        WebRequest request
+    ) {
+        log.warn("Resource not found: {}", ex.getResourcePath());
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", DateTimeUtil.nowUtc());
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("message", "Resource not found: " + ex.getResourcePath());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(Exception.class)

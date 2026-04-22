@@ -8,12 +8,13 @@ import java.time.LocalDateTime;
 
 @Data
 @Builder
-public class CourseMaterialDTO {
+public class WorkspaceMaterialDTO {
     private Long id;
     private String title;
     private String fileUrl;
     private MaterialType fileType;
     private String originalFileName;
-    private String contributorName;
+    private Boolean isReference;
+    private Boolean isHidden;
     private LocalDateTime uploadedAt;
 }

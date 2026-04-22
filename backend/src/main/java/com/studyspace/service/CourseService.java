@@ -272,6 +272,7 @@ public class CourseService {
                 .fileUrl(material.getFileUrl())
                 .fileType(material.getFileType())
                 .originalFileName(material.getOriginalFileName())
+                .contributorName(material.getContributorName())
                 .uploadedAt(material.getUploadedAt())
                 .build();
     }

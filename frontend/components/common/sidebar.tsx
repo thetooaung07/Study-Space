@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Users, BarChart3, Clock, Zap, PieChart, GraduationCap } from "lucide-react";
+import { BookOpen, Users, BarChart3, Clock, Zap, PieChart, GraduationCap, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -17,9 +17,10 @@ export function Sidebar() {
 		{ icon: Clock, label: "My Sessions", href: "/sessions", roles: [UserRole.STUDENT] },
 		{ icon: Users, label: "Groups", href: "/groups", roles: [UserRole.STUDENT] },
 		{ icon: GraduationCap, label: "Courses", href: "/courses", roles: [UserRole.STUDENT, UserRole.INSTRUCTOR] },
+		{ icon: FolderOpen, label: "My Workspaces", href: "/workspaces", roles: [UserRole.STUDENT] },
 	];
 
-	const filteredNavItems = navItems.filter(item => !item.roles || (user && item.roles.includes(user.role)));
+	const filteredNavItems = navItems.filter((item) => !item.roles || (user && item.roles.includes(user.role)));
 
 	const isActive = (href: any) => {
 		if (href === "/") {
@@ -31,13 +32,14 @@ export function Sidebar() {
 	return (
 		<aside className="w-64 border-r border-border bg-sidebar flex flex-col">
 			<div className="p-6">
-				<div className="flex items-center gap-2" onClick={(e) => {
-							e.preventDefault();
-							router.push(user?.role === UserRole.INSTRUCTOR ? "/courses" : "/dashboard");
-						}}>
-					<div
-						className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center cursor-pointer"
-					>
+				<div
+					className="flex items-center gap-2"
+					onClick={(e) => {
+						e.preventDefault();
+						router.push(user?.role === UserRole.INSTRUCTOR ? "/courses" : "/dashboard");
+					}}
+				>
+					<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center cursor-pointer">
 						<BookOpen className="h-5 w-5 text-primary-foreground" />
 					</div>
 					<h1 className="text-xl font-bold text-sidebar-foreground cursor-pointer">StudySpace</h1>

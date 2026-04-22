@@ -150,3 +150,85 @@ CREATE INDEX IF NOT EXISTS idx_course_section_course ON course_sections(course_i
 CREATE INDEX IF NOT EXISTS idx_course_material_section ON course_materials(section_id);
 CREATE INDEX IF NOT EXISTS idx_course_enrollment_course ON course_enrollments(course_id);
 CREATE INDEX IF NOT EXISTS idx_course_enrollment_student ON course_enrollments(student_id);
+
+-- ==========================================
+-- Workspace System Tables
+-- ==========================================
+
+-- Student Workspaces Table
+CREATE TABLE IF NOT EXISTS student_workspaces (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    owner_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+);
+
+-- Workspace Spaces Table
+CREATE TABLE IF NOT EXISTS workspace_spaces (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    workspace_id BIGINT NOT NULL,
+    forked_from_course_id BIGINT,
+    is_published BOOLEAN DEFAULT false NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (workspace_id) REFERENCES student_workspaces(id),
+    FOREIGN KEY (forked_from_course_id) REFERENCES courses(id)
+);
+
+-- Workspace Sections Table
+CREATE TABLE IF NOT EXISTS workspace_sections (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    order_index INTEGER DEFAULT 0 NOT NULL,
+    space_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (space_id) REFERENCES workspace_spaces(id)
+);
+
+-- Workspace Materials Table
+CREATE TABLE IF NOT EXISTS workspace_materials (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    file_url VARCHAR(1000) NOT NULL,
+    file_type VARCHAR(20) DEFAULT 'OTHER' NOT NULL,
+    original_file_name VARCHAR(500),
+    is_reference BOOLEAN DEFAULT false NOT NULL,
+    is_hidden BOOLEAN DEFAULT false NOT NULL,
+    section_id BIGINT NOT NULL,
+    uploaded_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (section_id) REFERENCES workspace_sections(id)
+);
+
+-- Contribution Proposals Table
+CREATE TABLE IF NOT EXISTS contribution_proposals (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    status VARCHAR(50) DEFAULT 'PENDING' NOT NULL,
+    message TEXT,
+    review_message TEXT,
+    student_id BIGINT NOT NULL,
+    target_course_id BIGINT NOT NULL,
+    target_section_id BIGINT,
+    source_material_id BIGINT,
+    contributor_display_name VARCHAR(255),
+    created_at TIMESTAMP NOT NULL,
+    reviewed_at TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id),
+    FOREIGN KEY (target_course_id) REFERENCES courses(id),
+    FOREIGN KEY (target_section_id) REFERENCES course_sections(id),
+    FOREIGN KEY (source_material_id) REFERENCES workspace_materials(id)
+);
+
+-- Workspace System Indexes
+CREATE INDEX IF NOT EXISTS idx_workspace_owner ON student_workspaces(owner_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_space_ws ON workspace_spaces(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_space_fork ON workspace_spaces(forked_from_course_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_req_space ON workspace_sections(space_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_mat_sec ON workspace_materials(section_id);
+CREATE INDEX IF NOT EXISTS idx_proposal_student ON contribution_proposals(student_id);
+CREATE INDEX IF NOT EXISTS idx_proposal_course ON contribution_proposals(target_course_id);
