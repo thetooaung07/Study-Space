@@ -234,23 +234,30 @@ VALUES
 
 INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
 VALUES
-('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Bob Math Workspace', 'Workspace for advanced mathematics.', 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
 
 INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
 VALUES
 ('My Pre-Med Notes', 'Self-compiled notes and diagrams.', 1, NULL, false, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, DATEADD('DAY', -4, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, DATEADD('DAY', -4, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
+('Advanced Mathematics', 'Cloned repository for advanced mathematics.', 2, 1, false, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
 
 INSERT INTO workspace_sections (title, description, order_index, space_id, created_at)
 VALUES
 ('General Biology Notes', 'Notes from textbook reading.', 0, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
-('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP));
+('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP)),
+('Advanced Math Concepts', 'Advanced formulas and proofs.', 0, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
+('Calculus Homework', 'Completed assignments.', 1, 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
 
 INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
 VALUES
 ('Cells Diagram', '/uploads/workspaces/cells-diagram.pdf', 'PDF', 'cells-diagram.pdf', false, false, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
 ('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', true, false, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP)),
-('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
+('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, DATEADD('DAY', -2, CURRENT_TIMESTAMP)),
+('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf', 'PDF', 'advanced-calculus-ref.pdf', false, false, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
+('Linear Algebra Cheatsheet', '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf', 'PDF', 'linear-algebra-cheatsheet.pdf', false, false, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
+('Assignment 1 Submission', '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf', 'PDF', 'assignment-1.pdf', false, false, 4, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
 
 INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
 VALUES

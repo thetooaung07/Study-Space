@@ -28,12 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 		const initializeAuth = async () => {
 			// Already on an auth page — no need to verify the token at all
 			if (isAuthRoute) {
+				console.log("Auth route", isAuthRoute);
 				setIsLoading(false);
 				return;
 			}
 
 			const token = api.getToken();
 			if (!token) {
+				console.log("No token");
 				router.push("/auth/login");
 				setIsLoading(false);
 				return;
@@ -45,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 				if (fetchedUser.role === UserRole.INSTRUCTOR) {
 					const restrictedRoutes = ["/dashboard", "/sessions", "/groups"];
-					if (restrictedRoutes.some(route => pathname.startsWith(route)) || pathname === "/") {
+					if (restrictedRoutes.some((route) => pathname.startsWith(route)) || pathname === "/") {
 						router.push("/courses");
 					}
 				}

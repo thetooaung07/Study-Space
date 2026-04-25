@@ -33,6 +33,7 @@ import type { WorkspaceSpace, WorkspaceSection, WorkspaceMaterial } from "@/type
 import type { MaterialType } from "@/types/courses";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
+import { ContextualChat } from "@/components/workspaces/contextual-chat";
 
 const MaterialIcon = ({ type }: { type: MaterialType }) => {
 	const cls = "h-4 w-4 shrink-0";
@@ -226,8 +227,8 @@ export default function SpaceManagePage() {
 			<Sidebar />
 			<div className="flex flex-col flex-1 overflow-hidden">
 				<Header />
-				<main className="flex-1 overflow-auto">
-					<div className="p-6 max-w-5xl mx-auto space-y-6">
+				<main className="flex-1 flex overflow-hidden">
+					<div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto space-y-6">
 						{/* Header */}
 						<div>
 							<Button variant="ghost" size="sm" className="mb-2" asChild>
@@ -535,6 +536,10 @@ export default function SpaceManagePage() {
 						error={deleteMaterialError}
 						variant="destructive"
 					/>
+
+					<div className="shrink-0 hidden md:flex flex-col">
+						<ContextualChat materials={space.sections.flatMap(s => s.materials)} />
+					</div>
 				</main>
 			</div>
 		</div>

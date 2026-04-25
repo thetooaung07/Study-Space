@@ -198,26 +198,33 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
 VALUES
-('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP)
+('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP),
+('Bob Math Workspace', 'Workspace for advanced mathematics.', 3, CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
 VALUES
 ('My Pre-Med Notes', 'Self-compiled notes and diagrams.', 1, NULL, false, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP),
-('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP)
+('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP),
+('Advanced Mathematics', 'Cloned repository for advanced mathematics.', 2, 1, false, CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP)
 ON CONFLICT DO NOTHING;
 
 INSERT INTO workspace_sections (title, description, order_index, space_id, created_at)
 VALUES
 ('General Biology Notes', 'Notes from textbook reading.', 0, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, CURRENT_TIMESTAMP - INTERVAL '4 days')
+('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+('Advanced Math Concepts', 'Advanced formulas and proofs.', 0, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Calculus Homework', 'Completed assignments.', 1, 3, CURRENT_TIMESTAMP - INTERVAL '2 days')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
 VALUES
 ('Cells Diagram', '/uploads/workspaces/cells-diagram.pdf', 'PDF', 'cells-diagram.pdf', false, false, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
 ('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', true, false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
-('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days')
+('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf', 'PDF', 'advanced-calculus-ref.pdf', false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Linear Algebra Cheatsheet', '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf', 'PDF', 'linear-algebra-cheatsheet.pdf', false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Assignment 1 Submission', '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf', 'PDF', 'assignment-1.pdf', false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
