@@ -121,6 +121,20 @@
 			<version>2.40.0</version>
 			<optional>true</optional>
 		</dependency>
+
+		<!-- Apache PDFBox – PDF text extraction -->
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>3.0.1</version>
+		</dependency>
+
+		<!-- Google GenAI Java SDK – official Gemini client -->
+		<dependency>
+			<groupId>com.google.genai</groupId>
+			<artifactId>google-genai</artifactId>
+			<version>1.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

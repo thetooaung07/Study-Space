@@ -35,6 +35,14 @@ public class WorkspaceController {
         return ResponseEntity.ok(workspaceService.getMyWorkspaces(userId));
     }
 
+    @GetMapping("/public")
+    public ResponseEntity<org.springframework.data.domain.Page<StudentWorkspaceDTO>> getPublicWorkspaces(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(pageable));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<StudentWorkspaceDTO> getWorkspace(@PathVariable Long id) {
         return ResponseEntity.ok(workspaceService.getWorkspaceById(id));

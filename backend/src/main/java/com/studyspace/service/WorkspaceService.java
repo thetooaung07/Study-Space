@@ -68,6 +68,14 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<StudentWorkspaceDTO> getPublicWorkspaces(
+            org.springframework.data.domain.Pageable pageable) {
+        // All workspaces are returned; visibility filtering can be added when the
+        // entity has a visibility field.
+        return workspaceRepository.findAll(pageable).map(this::toWorkspaceDTO);
+    }
+
+    @Transactional(readOnly = true)
     public StudentWorkspaceDTO getWorkspaceById(Long workspaceId) {
         return toWorkspaceDTO(findWorkspace(workspaceId));
     }
