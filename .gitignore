@@ -1,0 +1,19 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# Build
+target/
+build/
+
+# Environment
+*.env
+
+check/**
+
+cred.txt
