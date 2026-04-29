@@ -1,25 +1,29 @@
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100),
+    full_name VARCHAR(255),
     profile_picture_url VARCHAR(500),
     total_study_minutes INTEGER DEFAULT 0,
     current_status VARCHAR(50) DEFAULT 'OFFLINE',
     role VARCHAR(20) DEFAULT 'STUDENT',
+    auth_provider VARCHAR(20) DEFAULT 'LOCAL',
+    current_streak INTEGER DEFAULT 0,
+    last_study_date TIMESTAMP,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
 
 -- Study Groups Table
+-- group_type replaces the old is_private boolean (GroupType enum: PUBLIC/PRIVATE)
 CREATE TABLE IF NOT EXISTS study_groups (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     description TEXT,
-    invite_code VARCHAR(50) NOT NULL UNIQUE,
-    is_private BOOLEAN DEFAULT false,
+    invite_code VARCHAR(255) NOT NULL UNIQUE,
+    group_type VARCHAR(20) DEFAULT 'PUBLIC',
     creator_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
@@ -27,6 +31,7 @@ CREATE TABLE IF NOT EXISTS study_groups (
 );
 
 -- Study Sessions Table
+-- user_id maps to the 'creator' field on StudySession; visibility added
 CREATE TABLE IF NOT EXISTS study_sessions (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
@@ -36,8 +41,9 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     end_time TIMESTAMP,
     duration_minutes INTEGER,
     is_group_session BOOLEAN DEFAULT false,
-    room_code VARCHAR(100) UNIQUE,
-    status VARCHAR(50) DEFAULT 'SCHEDULED',
+    room_code VARCHAR(255) UNIQUE,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
+    visibility VARCHAR(20) DEFAULT 'PUBLIC',
     user_id BIGINT NOT NULL,
     study_group_id BIGINT,
     created_at TIMESTAMP NOT NULL,
@@ -46,6 +52,7 @@ CREATE TABLE IF NOT EXISTS study_sessions (
 );
 
 -- Group Members (Many-to-Many Junction Table)
+-- Keeps joined_at and role as they are used by the application
 CREATE TABLE IF NOT EXISTS group_members (
     user_id BIGINT NOT NULL,
     group_id BIGINT NOT NULL,
@@ -57,25 +64,30 @@ CREATE TABLE IF NOT EXISTS group_members (
 );
 
 -- Session Participants Table
+-- Added last_paused_at and total_paused_seconds to match SessionParticipant entity
 CREATE TABLE IF NOT EXISTS session_participants (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     study_session_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     joined_at TIMESTAMP NOT NULL,
     left_at TIMESTAMP,
+    last_paused_at TIMESTAMP,
     minutes_participated INTEGER,
+    total_paused_seconds BIGINT DEFAULT 0,
     UNIQUE (study_session_id, user_id),
     FOREIGN KEY (study_session_id) REFERENCES study_sessions(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Activity Table
+-- study_session_id is nullable (Activity.java: nullable = true)
+-- type is VARCHAR not ENUM for H2 compatibility with EnumType.STRING
 CREATE TABLE IF NOT EXISTS activity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     type VARCHAR(50) NOT NULL,
     message TEXT,
     timestamp TIMESTAMP NOT NULL,
-    study_session_id BIGINT NOT NULL,
+    study_session_id BIGINT,
     user_id BIGINT NOT NULL,
     FOREIGN KEY (study_session_id) REFERENCES study_sessions(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -120,12 +132,14 @@ CREATE TABLE IF NOT EXISTS course_sections (
 );
 
 -- Course Materials Table
+-- Added contributor_name to match CourseMaterial entity
 CREATE TABLE IF NOT EXISTS course_materials (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     title VARCHAR(255) NOT NULL,
     file_url VARCHAR(1000) NOT NULL,
     file_type VARCHAR(20) DEFAULT 'OTHER',
     original_file_name VARCHAR(500),
+    contributor_name VARCHAR(255),
     section_id BIGINT NOT NULL,
     uploaded_at TIMESTAMP NOT NULL,
     FOREIGN KEY (section_id) REFERENCES course_sections(id)
@@ -206,11 +220,13 @@ CREATE TABLE IF NOT EXISTS workspace_materials (
 );
 
 -- Contribution Proposals Table
+-- Added proposed_section_title to match ContributionProposal entity
 CREATE TABLE IF NOT EXISTS contribution_proposals (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     status VARCHAR(50) DEFAULT 'PENDING' NOT NULL,
     message TEXT,
     review_message TEXT,
+    proposed_section_title VARCHAR(255),
     student_id BIGINT NOT NULL,
     target_course_id BIGINT NOT NULL,
     target_section_id BIGINT,

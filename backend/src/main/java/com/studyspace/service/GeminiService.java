@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GeminiService {
 
-    private static final String MODEL = "gemini-2.5-flash";
+    private static final String MODEL = "gemini-3.1-flash-lite-preview";
     private static final int MAX_CONTEXT_CHARS = 10_000;
 
     private final Client client;

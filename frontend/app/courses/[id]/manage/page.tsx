@@ -28,6 +28,15 @@ export default function CourseManagePage() {
 	const [loading, setLoading] = useState(true);
 	const [publishing, setPublishing] = useState(false);
 
+	const refreshCourse = async () => {
+		try {
+			const updated = await coursesApi.getById(Number(id));
+			setCourse(updated);
+		} catch {
+			// silently ignore — stale data is better than a crash
+		}
+	};
+
 	useEffect(() => {
 		if (!user) return;
 		Promise.all([
@@ -186,9 +195,10 @@ export default function CourseManagePage() {
 									courseId={course.id}
 									userId={user.id}
 									proposals={proposals}
-									onUpdated={(updated) =>
-										setProposals((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-									}
+									onUpdated={(updated) => {
+										setProposals((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+										refreshCourse();
+									}}
 								/>
 							</TabsContent>
 						</Tabs>
