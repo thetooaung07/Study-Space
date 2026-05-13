@@ -1,0 +1,390 @@
+\chapter{Analysis}
+\label{ch:analysis}
+
+This chapter establishes the foundation for all subsequent design and implementation decisions.
+It begins by defining the problem and the target audience whose needs motivated this project, then
+describes the intended architecture at a conceptual level before any technology is named. The formal
+functional and non-functional requirements are stated next, followed by a use-case view grouped by
+actor. The chapter closes by examining existing platforms and identifying the integration gap that
+none of them currently fills.
+
+% ----------------------------------------------------------------
+\section{Problem Statement and Target Audience}
+\label{sec:problem-statement}
+
+The primary target audience of StudySpace consists of two groups whose workflows are closely
+coupled: \emph{students} and \emph{instructors} at a higher-education faculty. Students are the
+consumers and potential contributors of course content. Their typical lifecycle within a single
+course involves browsing uploaded materials, asking questions about specific documents, annotating
+or extending study notes independently, and occasionally contributing improvements that could
+benefit their peers. Instructors are the publishers and curators of that content. Their lifecycle
+involves creating a course structure, uploading materials into named sections, managing which
+students are enrolled, and reviewing any student contributions before deciding whether to make them
+visible to the whole class.
+
+The Faculty of Information Technology at CTU in Prague serves as the representative context. A
+student's daily workflow involves switching between multiple systems: the faculty course portal or
+Moodle for lecture slides and reading assignments, Microsoft Teams or SharePoint for live sessions
+and recordings, Progtest or GitLab for programming assignments and grading, and Discord, WhatsApp,
+or email for informal peer discussion. This constant context-switching leads to scattered
+information, loss of peer-generated knowledge, and extra effort spent locating the right tool for a
+given task. Discussions about a specific lecture slide happen in a general chat channel with no link
+to the actual material. Student notes and annotations remain in personal files and never contribute
+back to the course. There is no structured way for a student to propose improvements to lecture
+materials, and AI tools are used in isolation without any connection to the course content.
+
+StudySpace aims to unify course management, student collaboration, contextual discussion, and AI
+assistance into a single platform, so that the interactions between these activities are preserved
+and visible to all participants.
+
+% ----------------------------------------------------------------
+\section{Architecture Overview}
+\label{sec:architecture-overview}
+
+\subsection{System Architecture}
+\label{subsec:system-architecture}
+
+At the highest level, StudySpace is a web application that separates the browser-based user
+interface from the server-side application logic and the persistent data store. The user interface
+runs entirely in the browser and communicates with the backend over two channels: a standard
+request-response channel for operations such as loading course content, uploading materials, and
+submitting contribution proposals, and a persistent real-time channel for events that must reach
+all connected participants without a manual page refresh, such as chat messages and study-session
+activity feeds.
+
+The backend is a single application that handles all business logic, enforces access control,
+processes file uploads, calls the external AI API, and broadcasts real-time events. The data store
+holds all persistent state, including user accounts, course structures, Private Workspace records,
+Merge Proposals, and conversation history.
+
+All three tiers run as isolated containers managed by a single container orchestration file, so the
+complete application can be started with one command and requires no manual environment
+configuration. The final architecture diagram is presented in section~\ref{sec:system-architecture-final}
+after the technology choices have been made.
+
+% TODO: Insert high-level system architecture diagram here
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_2_1_system-architecture.png}
+%     \caption{Conceptual three-tier system architecture of StudySpace}
+%     \label{fig:conceptual-architecture}
+% \end{figure}
+
+\subsection{Logical Architecture}
+\label{subsec:logical-architecture}
+
+The server-side application follows the Model-View-Controller (MVC) layered pattern. The
+\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
+the response. The \emph{service layer} contains all business logic, orchestrates data access, and
+enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
+provides data access through named query methods and custom queries for complex lookups. Entity
+classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
+contract and decouple the internal entity structure from the shape of the JSON responses, so the
+two can evolve independently.
+
+% TODO: Insert MVC layered architecture diagram here
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{images/fig_2_2_logical-architecture.png}
+%     \caption{Logical (MVC) architecture of the StudySpace backend}
+%     \label{fig:logical-architecture}
+% \end{figure}
+
+% ----------------------------------------------------------------
+\section{Functional Requirements}
+\label{sec:requirements}
+
+The following requirements are derived directly from the problem statement and the target audience
+description in section~\ref{sec:problem-statement}. Each requirement is identified by an ID that
+is referenced throughout the remainder of the thesis.
+
+\bigskip
+\noindent\textbf{FR-01 --- Course Administration.}
+An Instructor must be able to create, update, and delete courses and organise their content into
+named sections, while a Student must be able to browse and read any course they are enrolled in.
+
+The Instructor creates a course with a title and description and controls whether it is published
+and visible to students. Within a published course the Instructor defines \emph{sections}, each
+with an ordered index that determines the display sequence. Course Materials (PDF documents,
+slide sets, video files, or images) are uploaded into sections; the backend infers the file type
+from the MIME type and extension and stores it alongside the file URL so the frontend can render
+the appropriate viewer without an additional request. Enrollment is managed per student: the
+Instructor can activate or drop individual students, and a student sees only the courses in which
+their enrollment status is \texttt{ACTIVE}.
+
+\bigskip
+\noindent\textbf{FR-02 --- Content Extension System.}
+A Student must be able to clone a course into a Private Workspace, add or modify materials
+independently, and submit a Merge Proposal for the Instructor to review and optionally publish.
+
+When a student clones a course, the backend performs a deep copy of the course structure into a
+new \texttt{StudentWorkspace}: every section and every Course Material is mirrored as a
+\texttt{WorkspaceSection} and a \texttt{WorkspaceMaterial}. Cloned materials carry the flag
+\texttt{isReference = true}, meaning they point to the original file URL rather than a new copy,
+which saves storage. The student may then upload additional materials into the Private Workspace.
+When satisfied, the student submits a Merge Proposal, which the Instructor reviews in a dedicated
+queue. On approval, the backend copies the student's file into the course storage and publishes it
+as a new Course Material credited to the contributor.
+
+\bigskip
+\noindent\textbf{FR-03 --- Contextual Messaging System.}
+Users must be able to post messages in the workspace chat and attach a direct reference to a
+specific Course Material, so that other users can open the material from within the message.
+
+The chat panel is embedded in the workspace view alongside the material list. Users compose
+messages in a rich-text input and can type \texttt{@} followed by a material name to trigger an
+autocomplete dropdown. Selecting a material embeds a non-editable tag chip in the message. When
+the message is submitted, the chip is serialised into a portable token of the form
+\texttt{@[id:title]}, which is stored as the message text. On render, the token is parsed back into
+a clickable badge, which the user clicks to download or open the referenced Course Material. This
+Contextual Anchor persists in the chat history and remains accessible to every enrolled student who
+opens the workspace later.
+
+\bigskip
+\noindent\textbf{FR-04 --- AI-Based Content Querying.}
+Users must be able to ask natural-language questions about the content of the currently open
+workspace and receive answers grounded in that content.
+
+The AI panel is a collapsible sidebar within the workspace view. When the user submits a question,
+the frontend sends the question together with the URL of the selected Course Material to the
+backend. The backend extracts the plain text from the document, constructs a structured prompt
+that includes a system instruction, the document context truncated to 10\,000 characters, and the
+user's question, then forwards the prompt to the Large Language Model (LLM) API. The response is
+streamed back to the frontend and displayed with a typewriter animation. Conversation history is
+preserved in the database through a hybrid memory model: a rolling buffer of recent messages and a
+compressed long-term summary, ensuring that the AI can reference earlier turns in a session even
+after the short-term buffer overflows.
+
+\bigskip
+\noindent\textbf{FR-05 --- Access Control.}
+The system must recognise two roles, Student and Instructor, and enforce role-based restrictions
+at the API level so that students cannot perform instructor-only operations.
+
+Role assignment happens at registration and is stored as the \texttt{role} field of the
+\texttt{User} entity. The authentication flow issues a signed JSON Web Token (JWT) upon successful
+login; the token encodes the user's email and is valid for ten hours. Every subsequent request must
+carry the token in the \texttt{Authorization: Bearer} header. The \texttt{JwtAuthenticationFilter}
+intercepts each request, extracts and validates the token, and populates the Spring Security
+context. Instructor-only endpoints are protected with \texttt{@PreAuthorize} annotations or
+explicit ownership checks in the service layer so that a student account receives an HTTP 403
+response if it attempts a restricted operation.
+
+\subsection{Non-Functional Requirements}
+\label{subsec:nonfunctional-requirements}
+
+The following non-functional requirements define the quality constraints the system must satisfy
+regardless of the specific feature being used.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Non-functional requirements}
+    \label{tab:nonfunctional-requirements}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabularx}{\textwidth}{|p{1.5cm}|X|}
+        \hline
+        \textbf{ID} & \textbf{Description} \\
+        \hline
+        NFR-01 & \textbf{Usability}: The interface should be straightforward enough for
+                 students with no prior training to use without a manual. \\
+        \hline
+        NFR-02 & \textbf{Security}: All endpoints except login and registration must
+                 require a valid JWT token. Role-based access must be enforced on the
+                 server side. \\
+        \hline
+        NFR-03 & \textbf{Performance}: Course and workspace pages should load within
+                 three seconds under normal conditions. \\
+        \hline
+        NFR-04 & \textbf{Maintainability}: The backend and frontend must be clearly
+                 separated and independently deployable. The project structure should
+                 follow established conventions for its respective framework. \\
+        \hline
+        NFR-05 & \textbf{Deployability}: The entire application must be runnable with
+                 a single Docker Compose command without manual environment setup. \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+% ----------------------------------------------------------------
+\section{Use Cases}
+\label{sec:use-cases}
+
+The system has two types of actors: \emph{Student} and \emph{Instructor}. The use cases below
+describe the main interactions each actor has with the system, grouped by role. Pre-conditions
+are stated for the non-trivial cases that have dependencies on prior system state.
+
+% TODO: Insert use case diagram here
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_2_3_use-case-diagram.png}
+%     \caption{UML use case diagram for StudySpace}
+%     \label{fig:use-case-diagram}
+% \end{figure}
+
+\subsection*{Instructor Use Cases}
+
+\begin{itemize}
+    \item \textbf{\texttt{Create course}}: The Instructor creates a course with a title and
+          description and sets its published status.
+    \item \textbf{\texttt{Upload Course Material}}: Pre-condition: the course and at least one
+          section exist. The Instructor selects a file, assigns a title, and uploads it into a
+          named section. The backend infers the file type and persists the file URL.
+    \item \textbf{\texttt{Manage enrolments}}: The Instructor approves or drops individual
+          student enrollments from the course management panel.
+    \item \textbf{\texttt{Review Merge Proposal}}: Pre-condition: at least one student has
+          submitted a Merge Proposal for this course. The Instructor inspects the proposed
+          Course Material and either approves it (publishing it on the main course page with the
+          contributor's name attached) or rejects it with an optional review note.
+\end{itemize}
+
+\subsection*{Student Use Cases}
+
+\begin{itemize}
+    \item \textbf{\texttt{Browse course materials}}: The student navigates to an enrolled course
+          and opens individual sections to read the uploaded Course Materials.
+    \item \textbf{\texttt{Clone course to Private Workspace}}: Pre-condition: the student is
+          enrolled in a published course. The student triggers a clone action; the backend creates
+          a Private Workspace containing mirror copies of all sections and Course Materials.
+    \item \textbf{\texttt{Submit Merge Proposal}}: Pre-condition: the student owns a Private
+          Workspace with at least one non-reference material or a modified reference material.
+          The student selects materials and a target section, optionally adds a message, and
+          submits the proposal for Instructor review.
+    \item \textbf{\texttt{Post contextual message}}: The student types a message in the workspace
+          chat, uses \texttt{@} to attach a Contextual Anchor to a specific Course Material, and
+          submits. All enrolled users can see the message and follow the anchor.
+    \item \textbf{\texttt{Query AI assistant}}: The student opens the AI panel, selects a Course
+          Material for context, and types a question. The system sends the question and the
+          extracted document text to the LLM API and displays the answer.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\section{Existing Solutions}
+\label{sec:existing-solutions}
+
+Several platforms address parts of the problem described in section~\ref{sec:problem-statement}.
+This section compares the most relevant ones against the core features that StudySpace provides,
+concluding with a synthesis of the integration gap that none of them fills end-to-end.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \caption{Comparison of existing platforms against StudySpace features}
+    \label{tab:platform-comparison}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{1.5cm} *{5}{>{\centering\arraybackslash\hspace{0pt}}X}}
+        \toprule
+        \textbf{Platform}
+            & \textbf{Structured course materials}
+            & \textbf{Student content contribution}
+            & \textbf{Contextual discussion}
+            & \textbf{AI content assistance}
+            & \textbf{Role-based access control} \\
+        \midrule
+        \textbf{Zoom / Teams}
+            & None & None & None & None & Partial \\
+        \textbf{Discord}
+            & None & None & None & None & Partial \\
+        \textbf{Moodle}
+            & Full & Limited & None & None & Full \\
+        \textbf{Notion / Docs}
+            & Full & Partial & None & Generic & None \\
+        \textbf{StudySpace}
+            & Full & Full & Full & Context & Full \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+The comparison in Table~\ref{tab:platform-comparison} shows that no existing platform covers all
+areas simultaneously. The following subsections analyse each platform in detail.
+
+% ----------------------------------------------------------------
+\subsection{Zoom and Microsoft Teams}
+\label{subsec:zoom-teams}
+
+Zoom and Microsoft Teams are the dominant platforms for synchronous online education. Both support
+high-quality video conferencing, screen sharing, breakout rooms, and session recording. Microsoft
+Teams adds persistent channels, a file-sharing area backed by SharePoint, and deep integration
+with the Microsoft 365 productivity suite.
+
+Despite these strengths, neither platform is designed for asynchronous, material-centric
+collaboration. Files shared during a meeting are stored in a flat SharePoint folder rather than
+being organised into a course structure that reflects the academic curriculum. Discussion threads
+are tied to meeting events, making conversations about a lecture slide inaccessible to students
+who join the course later. There is no mechanism for students to annotate shared files and propose
+changes back to the Instructor; the Instructor remains the sole publisher of content. The
+asynchronous knowledge-management and student contribution use cases are left entirely unaddressed.
+
+% ----------------------------------------------------------------
+\subsection{Discord}
+\label{subsec:discord}
+
+Discord was originally designed for gaming communities but has been widely adopted by student
+groups as an informal alternative to institutional platforms. Its server and channel model allows
+students to self-organise into topic-specific channels, and its low barrier to entry means that
+most students already have an account.
+
+However, Discord's design is fundamentally chat-centric and lacks any concept of structured
+educational content. Files are posted as raw message attachments in a general channel with no link
+to a course section or curriculum structure. There is no role hierarchy that distinguishes
+Instructors from students at the permission level beyond basic moderation roles; an Instructor
+cannot publish a set of Course Materials in a read-only area that students can then clone and
+annotate. Content disappears into scroll history, there is no access control aligned with course
+enrolment, and there is no mechanism for structured content contribution or AI-assisted querying
+of Course Materials.
+
+% ----------------------------------------------------------------
+\subsection{Moodle}
+\label{subsec:moodle}
+
+Moodle is a mature, open-source Learning Management System (LMS) used by thousands of
+universities worldwide, including CTU. It provides the most comprehensive course management
+feature set of any platform considered: Instructors can define courses with hierarchical sections,
+upload files and links, set up graded assignments and quizzes, track student progress, and manage
+enrolment through a role-based permission model.
+
+Despite this breadth, Moodle has well-documented limitations with respect to student agency and
+contextual collaboration. Its discussion model is based on forums that are standalone modules
+attached to a course but not anchored to specific Course Materials; a student cannot attach a
+comment directly to a particular document without navigating to a separate forum module. Student
+contribution in Moodle is limited to wiki modules and assignment submissions, which are graded
+artefacts that do not become part of the course content visible to other students. Moodle also
+has no built-in AI assistant that operates on the actual course content in real time.
+
+% ----------------------------------------------------------------
+\subsection{Notion and Google Docs}
+\label{subsec:notion-docs}
+
+Notion and Google Docs represent a different category: general-purpose collaborative writing
+tools. Both support real-time co-editing, rich text formatting, embedded media, and comment
+threads. Notion extends this with a hierarchical page structure and customisable database views,
+making it possible to approximate a course workspace.
+
+The critical gaps are the absence of role-based access control aligned with academic roles and
+the lack of a structured contribution workflow. In a shared Notion workspace, any collaborator
+can edit any page, creating conflicts and the risk of accidental data loss in a course setting
+with many students. Google Docs has stricter permission levels but no multi-tier workflow where a
+student creates a private draft, develops it independently, and then submits it for review and
+publication. Neither platform is AI-aware in a course-content sense: Notion AI and Google's
+Gemini integration can generate or summarise text, but they operate on the open document in
+isolation, without knowledge of which course the document belongs to or what other materials are
+in the same section.
+
+% ----------------------------------------------------------------
+\subsection{Summary of Gaps}
+\label{subsec:gap-summary}
+
+The analysis above reveals a consistent pattern across all evaluated platforms. None of them
+provides a mechanism for anchoring a discussion message to a named Course Material within a
+structured course hierarchy, meaning that contextual references must be described manually in
+text and the connection to the source material is easily lost. No platform supports a
+clone-then-propose contribution model in which a student creates a private enriched copy of a
+course section and submits it back for Instructor review and publication; the Instructor remains
+the sole publisher of course content in every platform examined. Where AI assistance is
+available, as in Notion AI or Google's Gemini integration, it operates on the open document in
+isolation and cannot be grounded in the broader course context. The result is that satisfying all
+four requirements simultaneously forces students to use at least two to three separate platforms,
+reproducing the context-switching overhead described in section~\ref{sec:problem-statement}.
+
+StudySpace addresses this integration gap by combining structured course management, a
+clone-based student contribution workflow with Instructor review, chat messages with Contextual
+Anchors tied to specific Course Materials, and an AI assistant grounded in the actual course
+content, all within a single application with role-based access control.

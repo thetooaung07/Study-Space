@@ -186,6 +186,17 @@ interface ContextualChatProps {
 export function ContextualChat({ materials }: ContextualChatProps) {
 	const { user } = useAuth();
 	const [width, setWidth] = useState(384);
+
+	/**
+	 * Stable session UUID — generated once per component mount.
+	 * Sent with every query so the backend can correlate turns into one Conversation.
+	 */
+	const [conversationId] = useState<string>(() => {
+		const id = crypto.randomUUID();
+		console.log("[CHAT] New conversation session started — conversationId:", id);
+		return id;
+	});
+
 	const [messages, setMessages] = useState<Message[]>([
 		{
 			id: "welcome",
@@ -385,8 +396,24 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 		setTagQuery(null);
 		setIsLoading(true);
 
+		// ── Debug log: outgoing request ──────────────────────────────────────
+		console.log("[CHAT] Sending query", {
+			conversationId,
+			questionLength: question.length,
+			hasDocument: !!documentUrl,
+			documentTitle: documentTitle ?? null,
+		});
+
 		try {
-			const res = await chatApi.query({ question, documentUrl, documentTitle });
+			const requestPayload = { conversationId, question, documentUrl, documentTitle };
+			const res = await chatApi.query(requestPayload);
+
+			// ── Debug log: incoming response ─────────────────────────────────
+			console.log("[CHAT] Response received", {
+				conversationId,
+				answerLength: res.answer?.length ?? 0,
+				contextDocumentTitle: res.contextDocumentTitle ?? null,
+			});
 
 			const aiMsg: Message = {
 				id: (Date.now() + 1).toString(),
@@ -400,6 +427,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 			// user just got a new reply — snap back to bottom
 			userScrolledRef.current = false;
 		} catch (err: any) {
+			console.error("[CHAT] Query failed", { conversationId, error: err?.message });
 			const errMsg: Message = {
 				id: (Date.now() + 1).toString(),
 				role: "error",

@@ -1,0 +1,61 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+StudySpace was designed to address the tool fragmentation that forces students and instructors at
+higher-education faculties to operate across at least two or three disconnected platforms to
+accomplish tasks that are intrinsically linked: reading a document, asking a question about it,
+and contributing an improvement to it. The project demonstrates that a single, integrated
+environment can satisfy all four core collaboration needs simultaneously.
+
+The course administration module (FR-01) was fully implemented as a hierarchical structure of
+courses, sections, and Course Materials with Instructor-controlled enrollment and a pluggable
+file storage backend that switches between local disk and Google Cloud Storage by changing a
+Spring profile. The Content Extension System (FR-02) realised the clone-then-propose workflow:
+students can fork any enrolled course into a Private Workspace, extend it with their own
+materials, and submit a Merge Proposal for the Instructor to review and publish, with the
+contributor's name recorded on the resulting Course Material. The Contextual Messaging System
+(FR-03) introduced a portable anchor token that survives serialisation and re-render, enabling
+any message in the workspace chat to carry a deep link to a specific Course Material that other
+students can click to open the file directly. The AI content querying feature (FR-04) integrated
+the Google Gemini API through a structured prompt pipeline that grounds the model's answers in
+the actual course document rather than in general knowledge, with a hybrid memory model that
+preserves conversation context across long sessions. The access control layer (FR-05) enforces
+role separation at the API level through a stateless JWT filter, ensuring that Student accounts
+cannot execute Instructor-only operations regardless of the client application used.
+
+User and usability testing confirmed the correctness of the main flows and uncovered two bugs
+that were resolved during the implementation phase: a referential-integrity violation when
+removing reference materials, addressed by the soft-delete \texttt{isHidden} flag, and a
+scroll-hijacking issue in the AI panel, resolved by a programmatic scroll guard.
+
+% ----------------------------------------------------------------
+\section{Future Work}
+\label{sec:future-work}
+
+The current prototype has several documented limitations that were explicitly deferred to keep the
+scope manageable for a bachelor thesis.
+
+The AI querying feature (FR-04) extracts document text at query time by parsing the file on every
+request, which imposes latency and cost proportional to the document size. A future extension
+would replace on-the-fly extraction with pre-computed vector embeddings stored in a pgvector
+column, enabling indexed similarity search that scales to large course document collections
+without re-parsing on each query.
+
+The Contextual Anchor in the messaging system (FR-03) currently stores only the material
+identifier and title in the token. A natural extension is to support page-level or section-level
+anchors, where the token also encodes a byte offset or a page number, allowing the receiving
+client to open the PDF viewer at the exact page the sender was looking at.
+
+The enrollment model (FR-01) supports two statuses (\texttt{ACTIVE} and \texttt{DROPPED}) but
+does not model enrollment requests or an Instructor approval step. In a real faculty deployment,
+courses that should not be publicly accessible would require an invitation or approval workflow
+before granting access to Course Materials.
+
+The study session feature, implemented through the WebSocket infrastructure, provides real-time
+participant tracking and a shared activity feed. Based on the testing conducted in section~\ref{sec:impl-testing}, a shared collaborative document or whiteboard within the session
+would significantly increase the usefulness of synchronous study sessions.
+
+Finally, the application was developed and tested locally and in a single-instance Docker
+deployment. Making the application horizontally scalable would require the WebSocket session
+state to be shared through an external STOMP broker such as RabbitMQ or ActiveMQ, and the JWT
+secret to be provided through a secure vault rather than an environment variable.

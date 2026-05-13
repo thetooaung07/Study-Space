@@ -10,15 +10,18 @@ import org.springframework.stereotype.Service;
  * Client service that communicates with Google's Gemini API using the official
  * Google GenAI Java SDK (com.google.genai:google-genai).
  *
- * <p>Implements a local RAG pattern by injecting extracted document text as
- * context before the user's question.
+ * <p><strong>Phase 1 refactor:</strong> The original {@code buildPrompt} helper has been
+ * moved to {@link PromptBuilder}. This class is now responsible solely for
+ * firing API calls and handling errors — keeping concerns separated.
+ *
+ * <p><strong>New in Phase 3:</strong> {@link #generateSummary(String)} sends a
+ * separate Gemini call to compress old messages into a rolling summary.
  */
 @Service
 @Slf4j
 public class GeminiService {
 
-    private static final String MODEL = "gemini-3.1-flash-lite-preview";
-    private static final int MAX_CONTEXT_CHARS = 10_000;
+    private static final String MODEL = "gemini-3-flash-preview";
 
     private final Client client;
 
@@ -27,41 +30,87 @@ public class GeminiService {
         log.info("[GEMINI] Service initialised — model: {}, key: {}", MODEL, maskKey(apiKey));
     }
 
+    // ─── Public API ──────────────────────────────────────────────────────────
+
     /**
-     * Sends the student's question to Gemini, optionally enriched with document context.
+     * Sends a fully assembled prompt to Gemini and returns the answer text.
      *
-     * @param context      extracted text from a tagged PDF (may be blank)
-     * @param userQuestion the student's question
-     * @return Gemini's answer as a plain string
+     * <p>This is the primary generation call used by {@link MemoryManager}.
+     * The prompt is built externally by {@link PromptBuilder} so that
+     * prompt logic can be unit-tested independently.
+     *
+     * @param prompt complete prompt string (system + memory + document + question)
+     * @return Gemini's response as a plain string
      */
+    public String generate(String prompt) {
+        log.info("[GEMINI] generate() — prompt length: {} chars", prompt.length());
+        return callApi(prompt, "generate");
+    }
+
+    /**
+     * Sends a summarisation prompt to Gemini and returns the updated summary text.
+     *
+     * <p>This is a <em>separate</em> LLM call from {@link #generate}, keeping
+     * summarisation independently debuggable (Phase 3).
+     *
+     * @param summarisationPrompt pre-built prompt from {@link PromptBuilder#buildSummarisationPrompt}
+     * @return new summary text
+     */
+    public String generateSummary(String summarisationPrompt) {
+        log.info("[GEMINI] generateSummary() — summarisation prompt length: {} chars",
+                summarisationPrompt.length());
+        return callApi(summarisationPrompt, "generateSummary");
+    }
+
+    /**
+     * Legacy convenience method retained for backward compatibility.
+     * New code should use {@link #generate(String)} via {@link MemoryManager}.
+     *
+     * @deprecated Use {@link MemoryManager#handleQuery} instead.
+     */
+    @Deprecated
     public String askGeminiWithContext(String context, String userQuestion) {
-        log.info("[GEMINI] Question: '{}' | context present: {} ({} chars)",
-                userQuestion,
-                context != null && !context.isBlank(),
-                context != null ? context.length() : 0);
+        log.warn("[GEMINI] askGeminiWithContext() called (legacy path) — prefer MemoryManager.handleQuery()");
+        StringBuilder sb = new StringBuilder();
+        sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n\n");
+        if (context != null && !context.isBlank()) {
+            sb.append("Use the following document content as context to answer the student's question. ");
+            sb.append("Only rely on this context if it is relevant; otherwise answer from your general knowledge.\n\n");
+            sb.append("--- DOCUMENT CONTEXT ---\n");
+            String safeContext = context.length() > 10_000
+                    ? context.substring(0, 10_000) + "\n[...document truncated...]"
+                    : context;
+            sb.append(safeContext);
+            sb.append("\n--- END OF DOCUMENT CONTEXT ---\n\n");
+        }
+        sb.append("Student's question: ").append(userQuestion);
+        return callApi(sb.toString(), "askGeminiWithContext(legacy)");
+    }
 
-        String prompt = buildPrompt(context, userQuestion);
-        log.info("[GEMINI] Prompt built — {} total chars", prompt.length());
-        log.info("[GEMINI] Sending to Gemini API...");
+    // ─── Private helpers ─────────────────────────────────────────────────────
 
+    /**
+     * Executes a single content-generation request to Gemini and handles errors.
+     *
+     * @param prompt  the full prompt string
+     * @param caller  label used in log messages for tracing which path triggered the call
+     */
+    private String callApi(String prompt, String caller) {
+        log.debug("[GEMINI][{}] Sending request to Gemini API (model={})...", caller, MODEL);
         try {
-            GenerateContentResponse response = client.models.generateContent(
-                    MODEL,
-                    prompt,
-                    null
-            );
-
+            GenerateContentResponse response = client.models.generateContent(MODEL, prompt, null);
             String answer = response.text();
-            log.info("[GEMINI] Answer received — {} chars: '{}'",
+            log.info("[GEMINI][{}] Response received — {} chars: '{}'",
+                    caller,
                     answer != null ? answer.length() : 0,
                     answer != null && answer.length() > 200 ? answer.substring(0, 200) + "..." : answer);
             return answer;
 
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-            log.error("[GEMINI] API call failed: {}", msg, e);
+            log.error("[GEMINI][{}] API call failed: {}", caller, msg, e);
 
-            // Surface rate-limit info to the user if possible
+            // Surface rate-limit info to the caller
             if (msg.contains("429") || msg.contains("RESOURCE_EXHAUSTED") || msg.contains("quota")) {
                 java.util.regex.Matcher m = java.util.regex.Pattern
                         .compile("Please retry in ([\\d.]+)s")
@@ -73,27 +122,6 @@ public class GeminiService {
             }
             throw new RuntimeException("AI service is currently unavailable. Please try again later.", e);
         }
-    }
-
-    // ─── private helpers ────────────────────────────────────────────────────────
-
-    private String buildPrompt(String context, String userQuestion) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n\n");
-
-        if (context != null && !context.isBlank()) {
-            sb.append("Use the following document content as context to answer the student's question. ");
-            sb.append("Only rely on this context if it is relevant; otherwise answer from your general knowledge.\n\n");
-            sb.append("--- DOCUMENT CONTEXT ---\n");
-            String safeContext = context.length() > MAX_CONTEXT_CHARS
-                    ? context.substring(0, MAX_CONTEXT_CHARS) + "\n[...document truncated...]"
-                    : context;
-            sb.append(safeContext);
-            sb.append("\n--- END OF DOCUMENT CONTEXT ---\n\n");
-        }
-
-        sb.append("Student's question: ").append(userQuestion);
-        return sb.toString();
     }
 
     private String maskKey(String key) {

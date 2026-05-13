@@ -166,6 +166,12 @@ export const contributionsApi = {
 // ─── AI Chat endpoints ───────────────────────────────────────────────────────
 
 export interface ChatQueryRequest {
+	/**
+	 * Client-generated UUID that identifies this chat session.
+	 * Must be stable across all turns in the same conversation.
+	 * If omitted, the backend falls back to stateless mode (no memory).
+	 */
+	conversationId?: string;
 	question: string;
 	/** fileUrl from WorkspaceMaterial – local path today, S3/GCS URL later */
 	documentUrl?: string;
@@ -179,8 +185,9 @@ export interface ChatQueryResponse {
 
 export const chatApi = {
 	/**
-	 * Ask Gemini a question with optional PDF document context.
+	 * Ask Gemini a question with optional PDF document context and conversation memory.
 	 * Passes the material's fileUrl directly – no re-upload required.
+	 * When conversationId is provided the backend maintains rolling memory across turns.
 	 */
 	query: (data: ChatQueryRequest): Promise<ChatQueryResponse> =>
 		api.post("/chat/query", data),

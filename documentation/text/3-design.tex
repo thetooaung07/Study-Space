@@ -1,0 +1,483 @@
+\chapter{Design}
+\label{ch:design}
+
+This chapter translates the requirements and architectural overview established in
+Chapter~\ref{ch:analysis} into concrete technical decisions. The domain model defines the
+entities and their relationships. The technology analysis justifies each major component of the
+stack by comparing alternatives against the project requirements. The database schema and
+entity-relationship diagram document the persistent data model. The finalised system architecture
+and API design are presented, and the chapter closes with the user interface design.
+
+% ----------------------------------------------------------------
+\section{Domain Model}
+\label{sec:domain-model}
+
+The domain model consists of the entities that carry the application's persistent state. Each
+entity is described below, and the complete UML class diagram is presented in
+Figure~\ref{fig:uml-class-diagram} at the end of this section.
+
+\textbf{User} is the central actor entity. It stores the account credentials (username, email,
+and bcrypt-hashed password), the display name, a profile picture URL, and a role field that
+takes one of two values: \texttt{STUDENT} or \texttt{INSTRUCTOR}. The entity also tracks a
+cumulative study-time counter and a current-streak counter that are updated by the gamification
+subsystem. A user can create many \texttt{Course} records (as an Instructor), own many
+\texttt{StudentWorkspace} records (as a Student), and participate in many \texttt{StudySession}
+records through the \texttt{SessionParticipant} junction entity.
+
+\textbf{Course} represents a published course created by one Instructor. It carries a title, a
+text description, a boolean \texttt{isPublished} flag that controls student visibility, and a
+many-to-one relationship to its owning \texttt{User} (the Instructor). Deleting a
+\texttt{Course} cascades to all its \texttt{CourseSection} and \texttt{CourseEnrollment} records
+via \texttt{CascadeType.ALL} with orphan removal, ensuring no orphaned sections or enrollments
+remain after a course is removed.
+
+\textbf{CourseSection} organises Course Materials within a course into named, ordered groups. It
+carries a title, an optional text description, and an \texttt{orderIndex} integer that determines
+the display sequence. Each section belongs to exactly one \texttt{Course}, and each section owns
+an ordered list of \texttt{CourseMaterial} records. Deleting a section cascades to all its
+materials.
+
+\textbf{CourseMaterial} represents a single file uploaded into a course section. It stores a
+display title, the file storage URL, the inferred file type as a \texttt{MaterialType} enum
+(\texttt{PDF}, \texttt{SLIDES}, \texttt{VIDEO}, \texttt{IMAGE}, \texttt{OTHER}), the original
+filename, an optional \texttt{contributorName} field (populated when the material originated
+from an approved Merge Proposal), and a timestamp. Each \texttt{CourseMaterial} belongs to
+exactly one \texttt{CourseSection}.
+
+\textbf{CourseEnrollment} is the join entity that records a student's membership in a course.
+It carries an \texttt{EnrollmentStatus} field (\texttt{ACTIVE} or \texttt{DROPPED}) and the
+timestamp of the initial enrollment. A unique constraint on the pair \texttt{(course\_id,
+student\_id)} prevents duplicate enrollment rows. Setting the status to \texttt{DROPPED} rather
+than deleting the row preserves the enrollment history and allows re-activation.
+
+\textbf{StudentWorkspace} is the root entity of a student's Private Workspace. It holds a name,
+a description, a reference to the owning \texttt{User}, and a list of \texttt{WorkspaceSpace}
+records. The workspace is the container that the student manages independently; it does not belong
+to any course and cannot be seen or modified by the Instructor.
+
+\textbf{WorkspaceSpace} represents a single cloned or manually created space within a Private
+Workspace. It carries a title, a description, an optional foreign key to the \texttt{Course} it
+was forked from (\texttt{forkedFromCourse}), and a boolean \texttt{isPublished} flag used when a
+space is surfaced in a public gallery. Each space owns an ordered list of
+\texttt{WorkspaceSection} records.
+
+\textbf{WorkspaceMaterial} mirrors \texttt{CourseMaterial} within the student's space. Two flags
+encode the copy-on-write behaviour: \texttt{isReference = true} means the material points to
+the original course file URL and no physical copy was made; \texttt{isHidden = true} implements
+a soft-delete that hides the row from the student's view without physically removing it, which is
+necessary because a contribution proposal may hold a foreign-key reference to the material row
+and deleting it would violate referential integrity.
+
+\textbf{ContributionProposal} links a student's \texttt{WorkspaceMaterial} to a target
+\texttt{Course} and optionally a target \texttt{CourseSection}. Its \texttt{ProposalStatus} enum
+field (\texttt{PENDING}, \texttt{APPROVED}, \texttt{REJECTED}) drives the Instructor review
+workflow. When no existing section is targeted, the \texttt{proposedSectionTitle} field holds the
+name of a new section to be created on approval. The \texttt{reviewedAt} timestamp is set when
+the Instructor takes action, and the \texttt{contributorDisplayName} is copied from the student's
+profile at submission time so it remains stable even if the student later changes their name.
+
+\textbf{Conversation} persists the AI chat memory for a single user session. Rather than storing
+every message individually in a separate table, the entity uses a hybrid memory model: a
+\texttt{summary} text column holds a compressed rolling summary of older turns, updated by a
+separate LLM call when the recent buffer overflows, and a \texttt{recentMessages} column stores
+a JSON-serialised list of the most recent turns as plain text (compatible with PostgreSQL
+\texttt{TEXT} and H2 for testing). The entity's primary key is a client-generated UUID string,
+so no database sequence is required.
+
+% TODO: Insert UML class diagram as Figure 3.1
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{images/fig_3_1_uml-class-diagram.png}
+%     \caption{UML class diagram of the StudySpace domain model}
+%     \label{fig:uml-class-diagram}
+% \end{figure}
+
+% ----------------------------------------------------------------
+\section{Technology Analysis}
+\label{sec:technologies}
+
+This section justifies each major technology choice by comparing the available alternatives against
+the requirements established in Chapter~\ref{ch:analysis}. The goal was to select a stack that is
+well suited for the required features, has strong community support and ecosystem maturity, and is
+practical to use within the scope of a bachelor thesis prototype.
+
+% ----------------------------------------------------------------
+\subsection{Frontend Framework}
+\label{subsec:frontend-tech}
+
+FR-01 through FR-04 require a responsive, component-rich user interface that manages complex
+shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
+simultaneously on the same screen.
+
+\textbf{React~19}~\cite{React} is a declarative UI library maintained by Meta. Its component model
+encourages decomposing the interface into small, reusable pieces, each responsible for a single
+part of the view. The unidirectional data flow makes state changes predictable and easier to trace
+during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
+rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
+
+\textbf{Vue.js} is a progressive framework with a smaller bundle size and a gentler learning
+curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
+components, and the TypeScript integration, while improving, is less seamless than in React.
+
+\textbf{Angular} is a full-featured framework backed by Google that includes dependency injection,
+a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
+module system exceeds what is justified for a single-team prototype of this scope.
+
+React was selected because its component model aligns directly with the StudySpace screen layout
+(course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
+first-class, and its ecosystem provides the resizable panel, rich-text input, and WebSocket hook
+primitives needed by FR-02 and FR-03 without significant additional integration effort.
+
+React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
+routing via the App Router, server-side rendering where applicable, and built-in image
+optimisation. Compared to a plain Vite or Create React App setup, Next.js removes boilerplate
+routing configuration and makes the project structure self-documenting through the directory
+layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
+\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}, which provide accessible, unstyled
+component primitives that Tailwind classes are applied to. State management across the application
+uses \textbf{Redux Toolkit}~\cite{ReduxToolkit}, which offers predictable reducers and typed
+async thunks for all API interactions.
+
+% ----------------------------------------------------------------
+\subsection{Backend Framework}
+\label{subsec:backend-tech}
+
+FR-05 requires robust authentication and role-based authorisation. FR-02 and FR-04 involve
+complex transactional operations over relational data. These requirements favour a statically
+typed language with mature transaction management and security libraries.
+
+\textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
+object-oriented foundation with a mature ecosystem. Spring Boot's convention-over-configuration
+approach applies sensible defaults automatically, embeds a Tomcat web server, and offers
+first-class integration with Spring Security, Spring Data JPA, Spring WebSocket, and Springdoc
+OpenAPI --- all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
+improve the throughput of concurrent request handling without the complexity of reactive
+programming.
+
+\textbf{Node.js with NestJS or Express} excels in I/O-bound tasks due to its event-driven
+architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
+transactional operations required by the Content Extension System (FR-02), and the ORM ecosystem
+does not reach the integration depth and stability of Spring Data JPA.
+
+\textbf{Python with Django or FastAPI} is excellent for rapid prototyping and AI integration.
+Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
+without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
+concurrent CPU-bound tasks.
+
+Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model
+maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
+authentication and method-level authorisation out of the box (directly addressing FR-05), and the
+mature transaction management ensures referential integrity across the complex clone and proposal
+approval operations required by FR-02.
+
+% ----------------------------------------------------------------
+\subsection{Database and Vector Store}
+\label{subsec:database-tech}
+
+The application's data model is inherently relational: users own workspaces, workspaces belong
+to courses, clone records track inheritance, and proposals reference both student materials and
+instructor courses. FR-02 requires ACID transaction guarantees across multi-entity writes.
+
+\textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
+system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
+foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
+and higher-level access is provided by Spring Data JPA with Hibernate as the ORM provider.
+
+\textbf{MongoDB} (NoSQL document store) and \textbf{Cassandra} (wide-column store) are optimised
+for unstructured or semi-structured data and horizontal scalability. However, they lack strict
+schema enforcement and standard join operations. Using a document store would require significant
+denormalisation, duplicating data to avoid application-level joins, which introduces the risk of
+inconsistency when a Course Material is approved and must be reflected in both the workspace and
+the course tables atomically.
+
+PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
+transactions are required for the clone and approval workflows (FR-02), and foreign-key
+constraints enforce referential integrity between proposals and their source materials. The AI
+assistant (FR-04) does not require a dedicated vector store at this prototype stage because the
+document text is extracted at query time and injected directly into the prompt; full vector
+embeddings are identified as a future extension in section~\ref{sec:future-work}.
+
+% ----------------------------------------------------------------
+\subsection{LLM API Integration}
+\label{subsec:ai-tech}
+
+FR-04 requires an LLM API capable of answering questions grounded in a provided document context
+within a single prompt, without fine-tuning.
+
+\textbf{Google Gemini API (gemini-2.5-flash)} provides a large context window, competitive
+quality on open-domain question answering, and an official Java SDK that integrates directly with
+the Spring Boot application. The free tier is sufficient for prototype-level usage.
+
+\textbf{OpenAI GPT-4o} exposes a compatible REST interface and achieves comparable quality on
+question answering tasks. However, the Java SDK is less mature than the official Google GenAI
+SDK, and the cost per token is higher for the same context window size at the time of writing.
+
+The Google Gemini API was selected because the official Google GenAI Java SDK~\cite{GoogleGenAI}
+integrates directly with Spring Boot without additional HTTP client configuration, the
+\texttt{gemini-2.5-flash} model's context window comfortably accommodates the 10\,000-character
+document extract required by FR-04, and the free tier capacity is sufficient for the prototype.
+
+% ----------------------------------------------------------------
+\subsection{Authentication and Authorisation}
+\label{subsec:auth-tech}
+
+FR-05 requires stateless authentication suitable for a REST API consumed by a single-page
+application, with role-based restrictions enforced on the server side.
+
+\textbf{JSON Web Tokens (JWT) with Spring Security}~\cite{SpringSecurity} enables stateless
+authentication: after login, the server issues a signed token that the client stores and sends
+with every subsequent request. The server validates the token signature without consulting a
+session store, which simplifies horizontal scaling.
+
+\textbf{Server-side sessions} with Spring Session require a shared session store (such as Redis)
+across instances and add network latency to every request. For a stateless REST API served to a
+browser-based SPA, this overhead is unnecessary.
+
+\textbf{OAuth~2.0 only} (without local credentials) would prevent users without a Google or
+GitHub account from registering, which is inappropriate for a faculty application where students
+may not use third-party providers for academic accounts.
+
+JWT with Spring Security was selected because it achieves stateless session management (directly
+satisfying NFR-02), requires no external session store, and Spring Security's filter chain
+integrates the JWT validation and role check into a single, reusable \texttt{OncePerRequestFilter}
+implementation. Google OAuth~2.0 login is supported as an optional alternative authentication
+path alongside the primary local credential flow.
+
+% ----------------------------------------------------------------
+\subsection{Real-Time Communication}
+\label{subsec:websocket-tech}
+
+The study-session feature requires real-time event delivery to all connected participants without
+polling, as required by the real-time study-session feature.
+
+
+\textbf{WebSocket with STOMP over SockJS}~\cite{SockJS} layers a publish-subscribe model on top
+of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
+per-session topics, allowing the server to push participant-list updates and activity events to
+all subscribers without the clients polling.
+
+\textbf{Server-Sent Events (SSE)} provide a unidirectional push channel from server to client.
+They lack the bidirectional subscription model needed for clients to send activity events (such as
+a hand-raise) back to the server over the same connection.
+
+\textbf{Long Polling} achieves real-time delivery but requires each client to maintain a pending
+request and re-establish it after every response, producing significant per-client overhead on
+the server.
+
+WebSocket with STOMP over SockJS was selected because the bidirectional subscription model covers
+both server-to-client pushes (participant list updates, activity events) and client-to-server
+messages (hand raises) over a single connection, and Spring Boot's built-in STOMP message broker
+requires no additional infrastructure.
+
+% ----------------------------------------------------------------
+\subsection{File Storage}
+\label{subsec:storage-tech}
+
+FR-01 and FR-02 require file upload and retrieval for Course Materials and Private Workspace
+materials. The storage backend must be swappable between a local development mode and a
+production cloud target.
+
+\textbf{Local file storage} (writing files to a directory under the working directory) is zero-cost
+and requires no external service in development. It is unsuitable for production because files are
+lost when the container is recreated and cannot be shared across multiple server instances.
+
+\textbf{Google Cloud Storage (GCS)} is a managed object store with high durability, direct URL
+serving, and a Java client library. It requires a GCP project and credentials, which adds setup
+overhead during development.
+
+A \texttt{FileStorageService} interface with two concrete implementations was designed:
+\texttt{LocalFileStorageService} for development and \texttt{GcsFileStorageService} for production.
+The active implementation is selected by a Spring profile, keeping the storage backend transparent
+to the rest of the application and satisfying NFR-04. The interface defines three methods:
+\texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed
+by FR-01 and FR-02.
+
+% ----------------------------------------------------------------
+\section{Database Schema}
+\label{sec:database-schema}
+
+The relational schema follows directly from the domain model described in
+section~\ref{sec:domain-model}. Each entity maps to a dedicated table, and all foreign-key
+relationships are enforced at the database level.
+
+The primary tables are \texttt{users}, \texttt{courses}, \texttt{course\_sections},
+\texttt{course\_materials}, \texttt{course\_enrollments}, \texttt{student\_workspaces},
+\texttt{workspace\_spaces}, \texttt{workspace\_sections}, \texttt{workspace\_materials},
+\texttt{contribution\_proposals}, and \texttt{conversations}. The
+\texttt{course\_enrollments} table carries a unique constraint on
+\texttt{(course\_id, student\_id)} to prevent duplicate enrollment rows. The
+\texttt{workspace\_materials} table carries the two boolean flags \texttt{isReference}
+and \texttt{isHidden} that implement the copy-on-write and soft-delete semantics described
+in section~\ref{sec:domain-model}.
+
+The AI conversation memory is stored in the \texttt{conversations} table as two \texttt{TEXT}
+columns: \texttt{summary} for the compressed long-term memory and \texttt{recent\_messages} for
+the JSON-serialised short-term buffer. This design avoids a separate message table and keeps the
+memory retrieval to a single row lookup by the client-generated UUID primary key. The current
+prototype does not use vector embeddings; document text is extracted at query time and injected
+into the prompt. A dedicated embedding column using \texttt{pgvector} is identified as a future
+extension that would replace on-the-fly extraction with indexed similarity search.
+
+% TODO: Insert ERD as Figure 3.2
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{images/fig_3_2_er-diagram.png}
+%     \caption{Entity-relationship diagram of the StudySpace database schema}
+%     \label{fig:er-diagram}
+% \end{figure}
+
+% ----------------------------------------------------------------
+\section{System Architecture (Final)}
+\label{sec:system-architecture-final}
+
+StudySpace follows a three-tier architecture. The \emph{presentation layer} is a Next.js and
+React application running in the browser; it communicates with the backend via the REST API for
+most operations and via a persistent WebSocket (STOMP/SockJS) connection during active study
+sessions. The \emph{business logic layer} is a Spring Boot application that handles authentication,
+data access, real-time session broadcasting, and LLM API calls. The \emph{data layer} is a
+PostgreSQL database that stores all persistent data.
+
+All three tiers are defined in \texttt{docker-compose.yml} and run in the same Docker network,
+so they can reach each other by service name without exposing internal ports to the host.
+
+The backend is organised into the following packages, each with a single responsibility and
+dependencies flowing only from controller to service to repository:
+
+\begin{table}[htbp]
+    \centering
+    \caption{Backend package structure}
+    \label{tab:backend-packages}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabularx}{\textwidth}{|p{3cm}|X|}
+        \hline
+        \textbf{Package} & \textbf{Responsibility} \\
+        \hline
+        \texttt{controller} & Defines REST endpoints, maps HTTP requests to service calls,
+                              and validates incoming request bodies. \\
+        \hline
+        \texttt{service} & Contains all business logic. Services are called by controllers
+                          and may call one or more repositories. Transactions are managed
+                          at this layer. \\
+        \hline
+        \texttt{repository} & Spring Data JPA repositories, providing CRUD operations and
+                              custom JPQL queries for complex data access. \\
+        \hline
+        \texttt{entity} & JPA entity classes mapped to database tables. \\
+        \hline
+        \texttt{dto} & Data Transfer Objects used as the API contract, decoupling the
+                      API response shape from the internal entity structure. \\
+        \hline
+        \texttt{security} & JWT filter, \texttt{UserDetailsService} implementation, and
+                           Spring Security configuration. \\
+        \hline
+        \texttt{config} & Application-level configuration beans: CORS policy, Swagger
+                         setup, and WebSocket registration. \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+% TODO: Insert final architecture diagram as Figure 3.3
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_3_3_system-architecture-final.png}
+%     \caption{Final system architecture of StudySpace}
+%     \label{fig:system-architecture-final}
+% \end{figure}
+
+% ----------------------------------------------------------------
+\section{API Design}
+\label{sec:api-design}
+
+The backend exposes a RESTful API following standard HTTP conventions. Resources are identified
+by URL paths, and operations are expressed through HTTP methods (\texttt{GET}, \texttt{POST},
+\texttt{PUT}, \texttt{DELETE}). All protected endpoints require a valid JWT token in the
+\texttt{Authorization: Bearer <token>} header.
+
+Authentication follows a four-step flow. The client sends credentials to
+\texttt{POST /api/auth/login}. The server validates the credentials and returns a signed JWT
+token. The client stores the token in memory and includes it in the \texttt{Authorization}
+header of all subsequent requests. The server's \texttt{JwtAuthenticationFilter} validates the
+token on each request before passing control to the controller.
+
+The full API is documented through the Swagger UI available at \texttt{/swagger-ui/index.html}
+when the backend is running, auto-generated by Springdoc OpenAPI from controller annotations.
+
+% ----------------------------------------------------------------
+\section{UI and Wireframe Design}
+\label{sec:ui-design}
+
+The interface is role-aware: students and Instructors see different navigation options and action
+buttons depending on their role. The application uses a sidebar navigation layout with the main
+content area to the right.
+
+\subsection{Navigation and Layout}
+\label{subsec:navigation}
+
+The sidebar items differ by role. Students see links to their enrolled courses, their Private
+Workspaces, and their study sessions. Instructors additionally see course management, enrollment
+management, and Merge Proposal review links. The role check is performed client-side from the
+JWT payload, but all data-sensitive actions are re-validated server-side.
+
+\subsection{Course and Workspace Views}
+\label{subsec:course-workspace-views}
+
+The course list page shows all courses the user is enrolled in or manages. Selecting a workspace
+opens the workspace viewer, which renders the Course Material alongside a contextual chat panel.
+Students can use the chat panel to discuss the course content and attach a Contextual Anchor to
+a specific Course Material using the \texttt{@}-mention system.
+
+% TODO: Insert workspace view wireframe as Figure 3.4
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_3_4_workspace-view.png}
+%     \caption{Workspace viewer wireframe: Course Material list with contextual chat panel}
+%     \label{fig:workspace-view}
+% \end{figure}
+
+The workspace viewer places the material list on the left and the contextual chat panel on the
+right. This layout satisfies the FR-03 use case \texttt{Post contextual message} by keeping the
+source material and the discussion visible simultaneously. The panel is resizable so students can
+balance reading space against chat space according to their preference.
+
+\subsection{Private Workspace and Merge Proposal Views}
+\label{subsec:clone-workspace}
+
+When a student clones a course, they receive a Private Workspace that they can edit freely. The
+cloned workspace view mirrors the course structure and adds upload controls for new materials.
+The Merge Proposal submission dialog allows the student to select materials and choose a target
+section, optionally typing a proposed new section name if none of the existing sections is
+appropriate.
+
+% TODO: Insert merge proposal wireframe as Figure 3.5
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_3_5_merge-proposal.png}
+%     \caption{Merge Proposal submission dialog wireframe}
+%     \label{fig:merge-proposal}
+% \end{figure}
+
+The Merge Proposal dialog reflects the FR-02 use case \texttt{Submit Merge Proposal}: the student
+selects one or more materials, picks a target section or proposes a new one, and submits.
+The design keeps the form minimal to reduce friction and mirrors the Git-inspired workflow that
+technically experienced students will recognise.
+
+\subsection{AI Assistant Panel}
+\label{subsec:ai-panel}
+
+The AI assistant is accessible through a collapsible side panel within the workspace viewer. The
+student types a question in natural language, and the system sends the question together with
+the content of the currently open Course Material to the LLM API. The response is displayed in
+a conversational format with a typewriter animation. The panel is designed not to obscure the
+Course Material so the student can consult both simultaneously.
+
+% TODO: Insert AI panel wireframe as Figure 3.6
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{images/fig_3_6_ai-panel.png}
+%     \caption{AI assistant panel wireframe: question input and response display}
+%     \label{fig:ai-panel}
+% \end{figure}
+
+The collapsible design satisfies FR-04 by making the AI assistant available at any point during
+material review without forcing the student to navigate to a separate page, preserving the reading
+context while the answer is displayed.

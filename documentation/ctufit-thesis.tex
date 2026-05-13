@@ -1,0 +1,272 @@
+%% This is the ctufit-thesis example file. It is used to produce theses
+%% for submission to Czech Technical University, Faculty of Information Technology.
+%%
+%% This is version 1.6.3, built 16. 3. 2026.
+%% 
+%% Get the newest version from
+%% https://gitlab.fit.cvut.cz/theses-templates/FITthesis-LaTeX
+%%
+%%
+%% Copyright 2024, Tomas Novacek
+%% Copyright 2021, Eliska Sestakova and Ondrej Guth
+%%
+%% This work may be distributed and/or modified under the
+%% conditions of the LaTeX Project Public License, either version 1.3
+%% of this license or (at your option) any later version.
+%% The latest version of this license is in
+%%  https://www.latex-project.org/lppl.txt
+%% and version 1.3 or later is part of all distributions of LaTeX
+%% version 2005/12/01 or later.
+%%
+%% This work has the LPPL maintenance status `maintained'.
+%%
+%% The current maintainer of this work is Tomas Novacek (novacto3@fit.cvut.cz).
+%% Alternatively, submit bug reports to the tracker at
+%% https://gitlab.fit.cvut.cz/theses-templates/FITthesis-LaTeX/issues
+%%
+%%
+
+% arara: xelatex
+% arara: biber
+% arara: xelatex
+% arara: xelatex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CLASS OPTIONS
+% language: czech/english/slovak
+% thesis type: bachelor/master/dissertation/doctoral-report
+% electronic (oneside) or printed (twoside), twoside is default
+% paragraph - if passed, this optional argument sets paragraphs as the deepest level of headers, styles it, numbers it and adds it to Table of Content. Use with care! Normally, it is considered unwise to use it, since it is too deep.
+% colour: bw for black&white OR no option for default colour scheme
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[english,bachelor,unicode,oneside]{ctufit-thesis}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FILL IN THIS INFORMATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ctufittitle{StudySpace: A Collaborative Web Application for Academic
+Students} % replace with the title of your thesis
+\ctufitauthorfull{Thet Oo Aung} % replace with your full name (first name(s) and then family name(s) / surname(s)) including academic degrees
+\ctufitauthorsurnames{Aung} 
+\ctufitauthorgivennames{Thet Oo} 
+\ctufitsupervisor{Ing.\,Jan Blizničenko,\,Ph.D.}
+\ctufitdepartment{Department of Software Engineering}
+\ctufitprogram{Informatics} % replace with your study program
+\ctufitspecialisation{Software Engineering} % replace with your specialisation
+\ctufityear{2026} % replace with the year of your defence
+\ctufitdeclarationplace{Prague} % replace with the place where you sign the declaration
+\ctufitdeclarationdate{\today} % replace with the date of signature of the declaration
+\ctufitabstractCZE{Tato bakalářská práce popisuje návrh a implementaci prototypu webové aplikace StudySpace, která umožňuje studentům a vyučujícím spravovat studijní materiály a spolupracovat v jednom prostředí. Aplikace řeší problém, kdy studenti dnes používají několik různých nástrojů najednou pro materiály, komunikaci i odevzdávání úkolů.
+
+Práce zahrnuje analýzu existujících systémů pro správu výuki a následnou implementaci klíčových funkcí: správu kurzů, systém, ve kterém si student může naklonovat studijní pracovní prostor, přidat vlastní poznámky a upravený dokument přispět zpět na původní stránku kurzu ke kontrole vyučujícím, zasílání zpráv navázaných na konkrétní části obsahu a dotazování materiálů pomocí umělé inteligence. Backend je postaven na Java a Spring Boot, frontend na Next.js a React, databáze PostgreSQL a nasazení probíhá pomocí Dockeru. Systém je otestován jednotkovými, repozitářovými a integračními testy.}
+\ctufitabstractENG{This bachelor's thesis describes the design and implementation of a prototype of StudySpace, a web application that allows students and instructors to manage course materials and collaborate in one place. The application addresses the problem of students having to switch between multiple separate tools for materials, communication, and assignments.
+
+The thesis presents an analysis of existing learning management systems and system requirements, followed by the design and implementation of key features: course management, a system where students can clone a workspace, add their own notes, and contribute the updated document back to the original course page for the instructor to review, messages linked to specific parts of the content, and an AI assistant for querying study materials. The backend is built with Java and Spring Boot, the frontend with Next.js and React, using PostgreSQL for data storage and Docker for deployment. The system is verified with unit, repository, and integration tests.}
+\ctufitkeywordsCZE{webová aplikace, spolupráce, React, Spring Boot, Next.js, PostgreSQL, REST API, Docker, WebSocket}
+\ctufitkeywordsENG{web application, collaboration, React, Spring Boot, Next.js, PostgreSQL, REST API, Docker, WebSocket}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% END FILL IN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CUSTOMIZATION of this template
+% Skip this part or alter it if you know what you are doing.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\RequirePackage{iftex}[2020/03/06]
+\iftutex % XeLaTeX and LuaLaTeX
+    \RequirePackage{ellipsis}[2020/05/22] %ellipsis workaround for XeLaTeX
+\else
+    \errmessage{Only compilation with XeLaTeX or LuaLaTeX is allowed}
+    \stop
+\fi
+
+% hyperlinks
+\hypersetup{
+    pdfpagelayout=TwoPageRight,
+    colorlinks=false,
+    allcolors=decoration,
+    pdfborder={0 0 0.1}
+}
+
+% uncomment the following to hide all hyperlinks
+%\hypersetup{hidelinks}
+
+% uncomment the following to change the colour of all hyperlinks to CTU blue
+%\hypersetup{allbordercolors=decoration}
+
+\RequirePackage{pdfpages}[2020/01/28]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CUSTOMIZATION of this template END
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+% PACKAGES SETTINGS
+% You may choose to modify this part.
+%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{dirtree}
+\usepackage{lipsum,tikz}
+\usepackage[style=iso-numeric]{biblatex}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{makecell}
+\usepackage{float}      % [H] placement specifier for tables and figures
+\usepackage{microtype}
+% Raggedright X column for tabularx (prevents underfull boxes with short cell content)
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\addbibresource{text/bib-database.bib}
+\usepackage{xurl}
+\usepackage{xcolor}  % required by listings for colour styles
+\usepackage{listings} % typesetting of sources
+%\usepackage{minted}
+
+% ─── Listings global style ─────────────────────────────────────
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=false,
+  columns=flexible,
+  keepspaces=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=5pt,
+  showstringspaces=false,
+  tabsize=4,
+  frame=single,
+  captionpos=b,
+  escapeinside={(*}{*)},
+  % Java keyword colours
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  stringstyle=\ttfamily,
+}
+% Register TypeScript as an alias of Java for syntax highlighting purposes
+\lstdefinelanguage{TypeScript}[]{Java}{
+  morekeywords={const,let,var,async,await,export,import,from,of,
+                interface,type,enum,string,number,boolean,void,any,
+                HTMLDivElement,Node,HTMLElement,undefined},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%
+% PACKAGES SETTINGS END
+%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\frontmatter\frontmatterinit % do not remove these two commands
+
+\thispagestyle{empty}\maketitle\thispagestyle{empty}\cleardoublepage % do not remove these four commands
+
+\includepdf[pages={1-}]{aungthet-assignment.pdf} % replace this file with your thesis assignment generated from ProjectsFIT
+
+\imprintpage % do not remove this command
+\stopTOCentries
+
+%%%%%%%%%%%%%%%%%%%
+% ACKNOWLEDGMENT
+% FILL IN / MODIFY
+% This is a place to thank people for helping you. It is common to thank your supervisor.
+%%%%%%%%%%%%%%%%%%%
+\begin{acknowledgmentpage}
+	I would like to thank my supervisor, Ing. Jan Blizničenko, Ph.D., for his guidance throughout the preparation of this thesis. I would also like to thank my family for their continuous support and encouragement.
+\end{acknowledgmentpage}
+%%%%%%%%%%%%%%%%%%%
+% ACKNOWLEDGMENT END
+%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%
+% DECLARATION
+% FILL IN / MODIFY
+%%%%%%%%%%%%%%%%%%%
+% INSTRUCTIONS
+% ENG: choose one of approved texts of the declaration. DO NOT CREATE YOUR OWN. Find the approved texts at https://courses.fit.cvut.cz/SFE/download/index.html#_documents (document Declaration for FT in English)
+% CZE/SLO: Vyberte jedno z fakultou schvalenych prohlaseni. NEVKLADEJTE VLASTNI TEXT. Schvalena prohlaseni najdete zde: https://courses.fit.cvut.cz/SZZ/dokumenty/index.html#_dokumenty (prohlášení do ZP)
+\begin{declarationpage}
+	I hereby declare that this bachelor’s thesis entitled “StudySpace” was written by me independently and that I have used only the sources listed in the bibliography. I declare that I have not submitted this thesis or any part thereof for the purpose of obtaining any other degree or qualification.
+	
+	I acknowledge that my thesis is subject to the Act No. 121/2000 Coll., the Copyright Act of the Czech Republic, and that Czech Technical University in Prague has the right to conclude a license agreement on the use of this thesis
+as specified by this Act.
+\end{declarationpage}
+%%%%%%%%%%%%%%%%%%%
+% DECLARATION END
+%%%%%%%%%%%%%%%%%%%
+
+% Use one of the two following commands. The first prints abstracts+keywords on two pages, the second puts them on one page (if possible). \printonepageabstract can also accept optional argument that specifies a vertical space before both abstracts (the default is 18 mm).
+\printtwopageabstract
+%\printonepageabstract
+
+\tableofcontents % do not remove this command
+%%%%%%%%%%%%%%%%%%%%%%
+% list of other contents: figures, tables, code listings, algorithms, etc.
+% add/remove commands accordingly
+%%%%%%%%%%%%%%%%%%%%%%
+\listoffigures % list of figures
+\begingroup
+\let\clearpage\relax
+\listoftables % list of tables. Remove if you do not have any.
+\thectufitlistingscommand{} % list of code listings. Remove if you do not have any.
+\thectufitlistofalgorithmscommand{} % list of algorithm pseudocodes defined using the algorithm package.
+\endgroup
+%%%%%%%%%%%%%%%%%%%%%%
+% list of other contents END
+%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%
+% ABBREVIATIONS
+% FILL IN / MODIFY
+% OR REMOVE ENTIRELY
+% List the abbreviations in lexicography order.
+%%%%%%%%%%%%%%%%%%%
+\chapter{\thectufitabbreviationlabel}
+
+\begin{tabular}{rl}
+	API   & Application Programming Interface              \\
+	CS    & Computer Science                               \\
+	DB    & Database                                       \\
+	DTO   & Data Transfer Object                           \\
+	ER    & Entity-Relationship                            \\
+	HTTP  & Hypertext Transfer Protocol                    \\
+	JPA   & Java Persistence API                           \\
+	JSON  & JavaScript Object Notation                     \\
+	JWT   & JSON Web Token                                 \\
+	LLM   & Large Language Model                           \\
+	LMS   & Learning Management System                     \\
+	MVC   & Model-View-Controller                          \\
+	ORM   & Object-Relational Mapping                      \\
+	RAG   & Retrieval-Augmented Generation                 \\
+	RBAC  & Role-Based Access Control                      \\
+	REST  & Representational State Transfer                \\
+	SPA   & Single Page Application                        \\
+	SQL   & Structured Query Language                      \\
+	SSR   & Server-Side Rendering                          \\
+	UI    & User Interface                                 \\
+	URL   & Uniform Resource Locator                       \\
+	UX    & User Experience                                \\
+	UML   & Unified Modeling Language                      \\
+\end{tabular}
+%%%%%%%%%%%%%%%%%%%
+% ABBREVIATIONS END
+%%%%%%%%%%%%%%%%%%%
+\resumeTOCentries
+\mainmatter\mainmatterinit % do not remove these two commands
+%%%%%%%%%%%%%%%%%%%
+% THE THESIS
+% MODIFY ANYTHING BELOW THIS LINE
+%%%%%%%%%%%%%%%%%%%
+
+\include{text/text} % include `text.tex' from `text/' subdirectory
+
+\appendix\appendixinit % do not remove these two commands
+
+\include{text/appendix} % include `appendix.tex' from `text/' subdirectory
+
+\backmatter % do not remove this command
+
+\printbibliography[heading=bibintoc] % print out the BibLaTeX-generated bibliography list
+
+\include{text/medium} % include `medium.tex' from `text/' subdirectory
+
+\end{document}

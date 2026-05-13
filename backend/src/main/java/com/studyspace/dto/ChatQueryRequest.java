@@ -8,6 +8,13 @@ import lombok.Data;
 @Data
 public class ChatQueryRequest {
 
+    /**
+     * Client-generated UUID that identifies the chat session.
+     * If null or blank, the backend treats the call as a stateless
+     * (no-memory) request — backward-compatible.
+     */
+    private String conversationId;
+
     /** The student's question. */
     private String question;
 
@@ -24,3 +31,4 @@ public class ChatQueryRequest {
      */
     private String documentTitle;
 }
+

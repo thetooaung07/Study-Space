@@ -248,3 +248,20 @@ CREATE INDEX IF NOT EXISTS idx_workspace_req_space ON workspace_sections(space_i
 CREATE INDEX IF NOT EXISTS idx_workspace_mat_sec ON workspace_materials(section_id);
 CREATE INDEX IF NOT EXISTS idx_proposal_student ON contribution_proposals(student_id);
 CREATE INDEX IF NOT EXISTS idx_proposal_course ON contribution_proposals(target_course_id);
+
+-- ==========================================
+-- AI Chat Memory Tables (Phase 1)
+-- ==========================================
+
+-- Conversations Table
+-- Stores rolling summary (long-term) and recent_messages (short-term buffer as JSON text).
+-- Uses TEXT for recent_messages for H2 compatibility (no JSONB support).
+CREATE TABLE IF NOT EXISTS conversations (
+    id          VARCHAR(36) PRIMARY KEY,
+    summary     TEXT        DEFAULT '',
+    recent_messages TEXT    DEFAULT '[]',
+    created_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP   DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_updated ON conversations(updated_at);

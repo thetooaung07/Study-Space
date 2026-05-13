@@ -21,3 +21,6 @@ cred.txt
 
 backend/uploads/**
 docs/**
+
+AGENTS.md
+todo.txt

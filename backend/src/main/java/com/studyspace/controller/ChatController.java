@@ -3,7 +3,7 @@ package com.studyspace.controller;
 import com.studyspace.dto.ChatQueryRequest;
 import com.studyspace.dto.ChatQueryResponse;
 import com.studyspace.service.DocumentService;
-import com.studyspace.service.GeminiService;
+import com.studyspace.service.MemoryManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -14,10 +14,17 @@ import org.springframework.web.bind.annotation.*;
  *
  * <p>Endpoint: {@code POST /api/chat/query}
  *
- * <p>The frontend sends the student's question together with the {@code fileUrl} that is already
- * stored on the {@code WorkspaceMaterial} object (local path today, S3/GCS URL tomorrow).
- * No re-upload or DB look-up is needed — {@link DocumentService} fetches the bytes directly
- * from wherever the URL points.
+ * <p>The controller is intentionally thin — it delegates all orchestration
+ * to {@link MemoryManager}, which handles session loading, prompt assembly,
+ * Gemini calls, buffer management, and persistence.
+ *
+ * <p><strong>Memory phases wired in:</strong>
+ * <ul>
+ *   <li>Phase 1 — Session lifecycle (load/create via conversationId)</li>
+ *   <li>Phase 2 — Recent message buffer injected into prompt</li>
+ *   <li>Phase 3 — Rolling summary compression on buffer overflow</li>
+ *   <li>Phase 4 — Document context injected at prompt-build time via PromptBuilder</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/api/chat")
@@ -27,44 +34,66 @@ import org.springframework.web.bind.annotation.*;
 public class ChatController {
 
     private final DocumentService documentService;
-    private final GeminiService geminiService;
+    private final MemoryManager memoryManager;
 
     /**
      * Accepts a student's question (optionally with a tagged document URL) and returns an
-     * AI-generated teaching-assistant answer.
+     * AI-generated teaching-assistant answer with full memory context.
      *
-     * <p>Orchestration:
+     * <p>Orchestration (performed inside {@link MemoryManager}):
      * <ol>
-     *   <li>If {@code documentUrl} is present, stream the PDF and extract text.</li>
-     *   <li>Pass the context + question to Gemini.</li>
-     *   <li>Return the answer along with the document title for the UI to display.</li>
+     *   <li>If {@code conversationId} is present, load session memory from the DB.</li>
+     *   <li>If {@code documentUrl} is present, extract text from the PDF.</li>
+     *   <li>Build a rich prompt: system + summary + recent buffer + document context + question.</li>
+     *   <li>Call Gemini and obtain the answer.</li>
+     *   <li>Append both turns to the buffer; compress if needed.</li>
+     *   <li>Persist the updated conversation state.</li>
      * </ol>
      *
-     * <p>Graceful degradation: if PDF extraction fails (e.g. non-PDF file, network error
-     * for a remote URL), the controller still calls Gemini without context rather than
-     * returning an error — students always get some kind of answer.
+     * <p>Graceful degradation: if PDF extraction fails the call continues without document context.
+     * If {@code conversationId} is missing the call is stateless (backward-compatible).
      */
     @PostMapping("/query")
     public ResponseEntity<ChatQueryResponse> query(@RequestBody ChatQueryRequest request) {
+        log.info("[CHAT_CTRL] POST /api/chat/query — conversationId={}, questionLength={}, hasDoc={}",
+                request.getConversationId() != null ? request.getConversationId() : "<none>",
+                request.getQuestion() != null ? request.getQuestion().length() : 0,
+                request.getDocumentUrl() != null && !request.getDocumentUrl().isBlank());
+
         if (request.getQuestion() == null || request.getQuestion().isBlank()) {
             throw new RuntimeException("Question must not be empty.");
         }
 
-        String context = "";
+        // ── Extract document context (Phase 4 integration) ───────────────────
+        String documentContext = "";
         String contextDocumentTitle = null;
 
-        String documentUrl = request.getDocumentUrl();
-        if (documentUrl != null && !documentUrl.isBlank()) {
+        if (request.getDocumentUrl() != null && !request.getDocumentUrl().isBlank()) {
             contextDocumentTitle = request.getDocumentTitle();
+            log.info("[CHAT_CTRL] Extracting PDF text from: {}", request.getDocumentUrl());
             try {
-                context = documentService.extractTextFromPdfUrl(documentUrl);
+                documentContext = documentService.extractTextFromPdfUrl(request.getDocumentUrl());
+                log.info("[CHAT_CTRL] PDF extracted — {} chars", documentContext.length());
             } catch (RuntimeException e) {
-                log.warn("PDF extraction failed for '{}': {}. Answering without context.", documentUrl, e.getMessage());
-                context = "";
+                log.warn("[CHAT_CTRL] PDF extraction failed for '{}': {}. Answering without document context.",
+                        request.getDocumentUrl(), e.getMessage());
+                documentContext = "";
             }
         }
 
-        String answer = geminiService.askGeminiWithContext(context, request.getQuestion());
+        // ── Delegate to MemoryManager ────────────────────────────────────────
+        log.info("[CHAT_CTRL] Handing off to MemoryManager — conversationId={}",
+                request.getConversationId() != null ? request.getConversationId() : "<stateless>");
+
+        String answer = memoryManager.handleQuery(
+                request.getConversationId(),
+                request.getQuestion(),
+                documentContext
+        );
+
+        log.info("[CHAT_CTRL] Response ready — answerLength={}, contextDoc={}",
+                answer != null ? answer.length() : 0, contextDocumentTitle);
+
         return ResponseEntity.ok(new ChatQueryResponse(answer, contextDocumentTitle));
     }
 }
