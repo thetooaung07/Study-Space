@@ -43,6 +43,60 @@ const MaterialIcon = ({ type }: { type: MaterialType }) => {
 	}
 };
 
+// ─── Lightweight Syntax Highlighter (no extra npm dependencies, highly optimized)
+const highlightCode = (codeText: string): React.ReactNode[] => {
+	const regex = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:public|private|protected|class|interface|enum|extends|implements|void|return|import|package|const|let|var|function|new|if|else|for|while|switch|case|default|try|catch|finally|throw|throws|static|final|volatile|transient|synchronized|abstract|native|strictfp|export|from|as|await|async|yield|debugger|super|this|typeof|instanceof|in|of|delete|null|true|false)\b)|(\b(?:[A-Z]\w+)\b)|(\b\w+)(?=\()|(\b\d+(?:\.\d+)?\b)/g;
+
+	const parts: React.ReactNode[] = [];
+	let lastIndex = 0;
+	let match;
+
+	while ((match = regex.exec(codeText)) !== null) {
+		const matchIndex = match.index;
+		
+		// Add plain text before match
+		if (matchIndex > lastIndex) {
+			parts.push(codeText.slice(lastIndex, matchIndex));
+		}
+
+		const [
+			full,
+			comment,
+			string,
+			keyword,
+			className,
+			func,
+			number
+		] = match;
+
+		let classNameSpan = "";
+		if (comment) classNameSpan = "text-neutral-450 dark:text-neutral-500 italic";
+		else if (string) classNameSpan = "text-[#116329] dark:text-emerald-400 font-medium";
+		else if (keyword) classNameSpan = "text-[#CF222E] dark:text-fuchsia-400 font-semibold";
+		else if (className) classNameSpan = "text-[#8250DF] dark:text-cyan-400 font-semibold";
+		else if (func) classNameSpan = "text-[#0550AE] dark:text-blue-300";
+		else if (number) classNameSpan = "text-[#953800] dark:text-amber-400";
+
+		if (classNameSpan) {
+			parts.push(
+				<span key={matchIndex} className={classNameSpan}>
+					{full}
+				</span>
+			);
+		} else {
+			parts.push(full);
+		}
+
+		lastIndex = regex.lastIndex;
+	}
+
+	if (lastIndex < codeText.length) {
+		parts.push(codeText.slice(lastIndex));
+	}
+
+	return parts;
+};
+
 // ─── Markdown renderer for AI messages ───────────────────────────────────────
 
 const MarkdownContent = ({ content }: { content: string }) => (
@@ -51,43 +105,53 @@ const MarkdownContent = ({ content }: { content: string }) => (
 		components={{
 			// Headings
 			h1: ({ children }) => (
-				<h1 className="text-base font-bold mt-3 mb-1.5 first:mt-0 text-foreground">{children}</h1>
+				<h1 className="text-base font-bold mt-3 mb-1.5 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h1>
 			),
 			h2: ({ children }) => (
-				<h2 className="text-sm font-bold mt-3 mb-1 first:mt-0 text-foreground">{children}</h2>
+				<h2 className="text-sm font-bold mt-3 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h2>
 			),
 			h3: ({ children }) => (
-				<h3 className="text-sm font-semibold mt-2.5 mb-1 first:mt-0 text-foreground">{children}</h3>
+				<h3 className="text-sm font-semibold mt-2.5 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h3>
 			),
 			// Paragraph
-			p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+			p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</p>,
 			// Bold / Italic
-			strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-			em: ({ children }) => <em className="italic text-muted-foreground">{children}</em>,
+			strong: ({ children }) => <strong className="font-bold text-neutral-950 dark:text-neutral-50">{children}</strong>,
+			em: ({ children }) => <em className="italic text-neutral-600 dark:text-neutral-400">{children}</em>,
 			// Unordered list
-			ul: ({ children }) => <ul className="list-disc list-outside pl-4 mb-2 space-y-0.5">{children}</ul>,
+			ul: ({ children }) => <ul className="list-disc list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">{children}</ul>,
 			// Ordered list
-			ol: ({ children }) => <ol className="list-decimal list-outside pl-4 mb-2 space-y-0.5">{children}</ol>,
-			li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+			ol: ({ children }) => <ol className="list-decimal list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">{children}</ol>,
+			li: ({ children }) => <li className="leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</li>,
 			// Inline code
 			code: ({ children, className }) => {
 				const isBlock = className?.startsWith("language-");
+				const codeStr = String(children).replace(/\n$/, "");
+
 				if (isBlock) {
+					const lang = className?.replace("language-", "") || "";
 					return (
-						<code className="block w-full overflow-x-auto rounded-md bg-muted/60 border border-border px-3 py-2 text-xs font-mono text-foreground leading-relaxed">
-							{children}
-						</code>
+						<div className="relative group">
+							{lang && (
+								<div className="absolute right-3 top-3 text-[9px] font-mono text-neutral-450 dark:text-neutral-600 uppercase select-none group-hover:text-neutral-600 dark:group-hover:text-neutral-350 transition-colors">
+									{lang}
+								</div>
+							)}
+							<code className="block w-full overflow-x-auto p-4 text-xs font-mono text-neutral-800 dark:text-neutral-100 leading-relaxed whitespace-pre bg-transparent">
+								{highlightCode(codeStr)}
+							</code>
+						</div>
 					);
 				}
 				return (
-					<code className="rounded bg-muted/60 border border-border px-1 py-0.5 text-[11px] font-mono text-foreground">
+					<code className="rounded-md bg-[#FAF2E8] dark:bg-neutral-800 px-1.5 py-0.5 text-[11px] font-mono text-[#9E5700] dark:text-amber-400 border border-[#EADCC9] dark:border-neutral-700 font-semibold shadow-[0_1px_2px_rgba(158,87,0,0.03)] transition-all">
 						{children}
 					</code>
 				);
 			},
 			// Code block wrapper
 			pre: ({ children }) => (
-				<pre className="mb-2 last:mb-0 rounded-md bg-muted/60 border border-border overflow-hidden">
+				<pre className="mb-3 last:mb-0 rounded-xl bg-[#FAF9F5] dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm overflow-hidden animate-in fade-in duration-200">
 					{children}
 				</pre>
 			),
@@ -291,13 +355,39 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 	const filteredMaterials = useMemo(() => {
 		if (tagQuery === null) return [];
 		const q = tagQuery.toLowerCase();
-		return materials.filter((m) => m.title.toLowerCase().includes(q)).slice(0, 5);
+
+		// Collect IDs of materials already tagged in the input area
+		const taggedIds = new Set<number>();
+		if (inputRef.current) {
+			const existingTags = inputRef.current.querySelectorAll("[data-material-id]");
+			existingTags.forEach((tag) => {
+				const idStr = (tag as HTMLElement).dataset.materialId;
+				if (idStr) taggedIds.add(Number(idStr));
+			});
+		}
+
+		return materials.filter((m) => m.title.toLowerCase().includes(q) && !taggedIds.has(m.id)).slice(0, 5);
 	}, [tagQuery, materials]);
 
 	const insertTag = (material: WorkspaceMaterial) => {
 		if (!inputRef.current) return;
 		const selection = window.getSelection();
 		if (!selection?.focusNode) return;
+
+		// Guard against duplicate tags
+		const existingTags = inputRef.current.querySelectorAll("[data-material-id]");
+		let isDuplicate = false;
+		existingTags.forEach((tag) => {
+			if ((tag as HTMLElement).dataset.materialId === String(material.id)) {
+				isDuplicate = true;
+			}
+		});
+
+		if (isDuplicate) {
+			setTagQuery(null);
+			inputRef.current.focus();
+			return;
+		}
 
 		if (selection.focusNode.nodeType === Node.TEXT_NODE) {
 			const text = selection.focusNode.textContent || "";
@@ -536,7 +626,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 												? "You"
 												: isAI
 													? msg.provider === "openai"
-														? "GPT-4o Mini"
+														? "GPT-5.4 mini"
 														: "Gemini 3.5 Flash"
 													: isError
 														? "Error"
@@ -554,7 +644,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 										isMe
 											? "bg-accent text-accent-foreground border border-border shadow-sm rounded-tr-none leading-relaxed whitespace-pre-wrap"
 											: isAI
-												? "bg-primary/10 text-foreground border border-primary/20 rounded-tl-none"
+												? "bg-primary/5 dark:bg-primary/10 text-neutral-900 dark:text-neutral-50 border border-primary/20 rounded-tl-none shadow-xs"
 												: isError
 													? "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-none leading-relaxed"
 													: "bg-muted text-muted-foreground border border-transparent text-xs italic leading-relaxed"
@@ -588,7 +678,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 							<div className="flex items-center gap-1.5 mb-1 px-1">
 								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
 								<span className="text-xs font-medium">
-									{provider === "openai" ? "GPT-4o Mini" : "Gemini 3.5 Flash"}
+									{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3.5 Flash"}
 								</span>
 							</div>
 							<div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 rounded-tl-none flex items-center gap-2 text-sm text-muted-foreground">
@@ -649,7 +739,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 						onInput={handleInput}
 						onKeyDown={handleKeyDown}
 						data-placeholder="Ask a question… Use @ to attach a file"
-						className="w-full min-h-[44px] max-h-[120px] overflow-y-auto bg-transparent px-3 pt-3 text-sm focus-visible:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground cursor-text aria-disabled:opacity-50"
+						className="w-full min-h-[44px] max-h-[120px] overflow-y-auto bg-transparent px-3 py-2 text-sm focus-visible:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground cursor-text aria-disabled:opacity-50"
 					/>
 
 					{/* Footer bar containing model dropdown and send button */}
@@ -663,7 +753,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 								className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all duration-200 border border-border/60 bg-muted/30 hover:border-border shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
 							>
 								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
-								<span>{provider === "openai" ? "GPT-4o Mini" : "Gemini 3.5 Flash"}</span>
+								<span>{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3.5 Flash"}</span>
 								<ChevronDown className="h-3 w-3 opacity-60 transition-opacity duration-200" />
 							</button>
 
@@ -709,7 +799,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 											<div className="flex flex-col items-start gap-0.5">
 												<span className="text-xs font-semibold flex items-center gap-1">
 													<Sparkles className="h-3 w-3 text-emerald-500" />
-													GPT-4o Mini
+													GPT-5.4 mini
 												</span>
 												<span className="text-[10px] opacity-75">Swappable OpenAI</span>
 											</div>
