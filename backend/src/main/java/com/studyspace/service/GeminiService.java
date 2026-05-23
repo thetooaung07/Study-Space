@@ -5,7 +5,6 @@ import com.google.genai.types.Content;
 import com.google.genai.types.EmbedContentConfig;
 import com.google.genai.types.EmbedContentResponse;
 import com.google.genai.types.GenerateContentResponse;
-import com.google.genai.types.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

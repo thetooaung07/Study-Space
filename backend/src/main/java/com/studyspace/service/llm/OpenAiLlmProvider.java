@@ -24,7 +24,7 @@ import java.util.Map;
 public class OpenAiLlmProvider implements LlmProvider {
 
     private static final String BASE_URL = "https://api.openai.com/v1";
-    private static final String MODEL    = "gpt-4o-mini";
+    private static final String MODEL    = "gpt-5.4-mini";
 
     private final RestClient restClient;
     private final boolean    enabled;
