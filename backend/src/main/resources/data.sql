@@ -1,264 +1,189 @@
-
--- StudySpace Sample Data
--- Seed data for development and testing
+-- StudySpace Sample Data (Postgres-compatible)
+-- All inserts use ON CONFLICT DO NOTHING for idempotency.
 
 -- Insert Sample Users (password: 'password' for all)
 INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, current_streak, last_study_date, role, created_at, updated_at)
 VALUES
-('johndoe', 'john.doe@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe', '', 495, 'ONLINE', 5, DATEADD('DAY', -1, CURRENT_TIMESTAMP), 'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('janesmith', 'jane.smith@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith', '', 720, 'STUDYING', 12, CURRENT_TIMESTAMP, 'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('bobwilson', 'bob.wilson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson', '', 330, 'AWAY', 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP), 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('alicejohnson', 'alice.johnson@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Alice Johnson', '', 890, 'ONLINE', 21, DATEADD('DAY', -1, CURRENT_TIMESTAMP), 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('charliebrown', 'charlie.brown@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Charlie Brown', '', 240, 'ONLINE', 7, CURRENT_TIMESTAMP, 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('johndoe',      'john.doe@example.com',    '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'John Doe',      '', 495, 'ONLINE',   5,  CURRENT_TIMESTAMP - INTERVAL '1 day',  'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('janesmith',    'jane.smith@example.com',  '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Jane Smith',    '', 720, 'STUDYING', 12, CURRENT_TIMESTAMP,                     'INSTRUCTOR', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('bobwilson',    'bob.wilson@example.com',  '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Bob Wilson',    '', 330, 'AWAY',     3,  CURRENT_TIMESTAMP - INTERVAL '2 days', 'STUDENT',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('alicejohnson', 'alice.johnson@example.com','$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle','Alice Johnson', '', 890, 'ONLINE',   21, CURRENT_TIMESTAMP - INTERVAL '1 day',  'STUDENT',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('charliebrown', 'charlie.brown@example.com','$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle','Charlie Brown', '', 240, 'ONLINE',   7,  CURRENT_TIMESTAMP,                     'STUDENT',    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO NOTHING;
 
 
 -- Insert Sample Study Groups
 INSERT INTO study_groups (name, description, invite_code, group_type, creator_id, created_at, updated_at)
 VALUES
-('Advanced Mathematics', 'A group for students tackling advanced calculus, linear algebra, and differential equations. Weekly problem-solving sessions!', 'MATH2024', 'PUBLIC', 1, DATEADD('DAY', -30, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Programming Masters', 'Java, Python, and C++ programming enthusiasts. Code reviews, algorithm challenges, and project collaboration.', 'PROG5678', 'PUBLIC', 2, DATEADD('DAY', -25, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Biology Study Circle', 'Focused on cellular biology, genetics, and molecular biology. Perfect for pre-med students!', 'BIO1234', 'INVITE_ONLY', 3, DATEADD('DAY', -20, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('History Nerds United', 'Medieval and modern history discussion group. From ancient civilizations to contemporary events.', 'HIST9999', 'PUBLIC', 4, DATEADD('DAY', -15, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Language Learning Crew', 'Spanish, French, and German language practice. Conversation practice and grammar help!', 'LANG5555', 'PUBLIC', 5, DATEADD('DAY', -10, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('Advanced Mathematics',   'A group for students tackling advanced calculus, linear algebra, and differential equations.',   'MATH2024', 'PUBLIC',      1, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP),
+('Programming Masters',    'Java, Python, and C++ programming enthusiasts. Code reviews, algorithm challenges.',              'PROG5678', 'PUBLIC',      2, CURRENT_TIMESTAMP - INTERVAL '25 days', CURRENT_TIMESTAMP),
+('Biology Study Circle',   'Focused on cellular biology, genetics, and molecular biology.',                                   'BIO1234',  'INVITE_ONLY', 3, CURRENT_TIMESTAMP - INTERVAL '20 days', CURRENT_TIMESTAMP),
+('History Nerds United',   'Medieval and modern history discussion group.',                                                   'HIST9999', 'PUBLIC',      4, CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP),
+('Language Learning Crew', 'Spanish, French, and German language practice.',                                                  'LANG5555', 'PUBLIC',      5, CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP)
+ON CONFLICT (invite_code) DO NOTHING;
 
 
--- Insert Group Members (Many-to-Many join table)
+-- Insert Group Members
 INSERT INTO group_members (user_id, group_id)
-VALUES
--- Advanced Mathematics members
-(1, 1),
-(2, 1),
-(3, 1),
-(4, 1),
--- Programming Masters members
-(2, 2),
-(1, 2),
-(5, 2),
--- Biology Study Circle members
-(3, 3),
-(4, 3),
-(5, 3),
--- History Nerds United members
-(4, 4),
-(1, 4),
-(2, 4),
--- Language Learning Crew members
-(5, 5),
-(1, 5),
-(3, 5);
+VALUES (1,1),(2,1),(3,1),(4,1),(2,2),(1,2),(5,2),(3,3),(4,3),(5,3),(4,4),(1,4),(2,4),(5,5),(1,5),(3,5)
+ON CONFLICT (user_id, group_id) DO NOTHING;
 
 
--- Insert Sample Study Sessions (Mix of COMPLETED and ACTIVE)
+-- Insert Sample Study Sessions
 INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, is_group_session, room_code, status, visibility, user_id, study_group_id, created_at)
 VALUES
--- COMPLETED group sessions
-('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH', DATEADD('HOUR', -48, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 120, true, 'ROOM-1701100800001', 'COMPLETED', 'PUBLIC', 1, 1, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)),
-('Java OOP Concepts', 'Reviewing inheritance, polymorphism, and abstraction', 'PROGRAMMING', DATEADD('HOUR', -24, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 90, true, 'ROOM-1701187200002', 'COMPLETED', 'PUBLIC', 2, 2, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)),
-('Biology Lab Report Writing', 'How to write effective lab reports for genetics experiments', 'SCIENCE', DATEADD('HOUR', -72, CURRENT_TIMESTAMP), DATEADD('MINUTE', 60, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 60, true, 'ROOM-1700928000003', 'COMPLETED', 'PUBLIC', 3, 3, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)),
-('World War II Overview', 'Comprehensive review of major events, battles, and figures', 'HISTORY', DATEADD('HOUR', -120, CURRENT_TIMESTAMP), DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 150, true, 'ROOM-1700755200004', 'COMPLETED', 'PUBLIC', 4, 4, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)),
-('Spanish Conversation Practice', 'Informal Spanish speaking session for intermediate learners', 'LANGUAGE', DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45, true, 'ROOM-1700841600005', 'COMPLETED', 'PUBLIC', 5, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)),
-
--- COMPLETED solo sessions
-('Linear Algebra Problem Set', 'Working through chapter 5 eigenvalue exercises', 'MATH', DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90, false, 'ROOM-1701270000006', 'COMPLETED', 'PRIVATE', 1, NULL, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)),
-('Genetics Quiz Prep', 'Final preparation for midterm exam on Mendelian genetics', 'SCIENCE', DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 120, false, 'ROOM-1701316800007', 'COMPLETED', 'PUBLIC', 3, NULL, DATEADD('HOUR', -8, CURRENT_TIMESTAMP));
-
--- -- ACTIVE sessions (ongoing)
--- ('Python Data Structures', 'Lists, dictionaries, and sets deep dive with coding exercises', 'PROGRAMMING', DATEADD('MINUTE', -45, CURRENT_TIMESTAMP), NULL, NULL, true, 'ROOM-1701360000008', 'ACTIVE', 'PUBLIC', 2, 2, DATEADD('MINUTE', -45, CURRENT_TIMESTAMP)),
--- ('Differential Equations Review', 'Preparing for final exam - solving first and second order ODEs', 'MATH', DATEADD('MINUTE', -20, CURRENT_TIMESTAMP), NULL, NULL, true, 'ROOM-1701360000009', 'ACTIVE', 'PUBLIC', 1, 1, DATEADD('MINUTE', -20, CURRENT_TIMESTAMP));
+('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH',        CURRENT_TIMESTAMP - INTERVAL '48 hours', CURRENT_TIMESTAMP - INTERVAL '46 hours', 120, true,  'ROOM-1701100800001', 'COMPLETED', 'PUBLIC',   1, 1, CURRENT_TIMESTAMP - INTERVAL '48 hours'),
+('Java OOP Concepts',               'Reviewing inheritance, polymorphism, and abstraction',  'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '24 hours', CURRENT_TIMESTAMP - INTERVAL '22.5 hours', 90, true,  'ROOM-1701187200002', 'COMPLETED', 'PUBLIC',   2, 2, CURRENT_TIMESTAMP - INTERVAL '24 hours'),
+('Biology Lab Report Writing',      'How to write effective lab reports',                     'SCIENCE',     CURRENT_TIMESTAMP - INTERVAL '72 hours', CURRENT_TIMESTAMP - INTERVAL '71 hours', 60,  true,  'ROOM-1700928000003', 'COMPLETED', 'PUBLIC',   3, 3, CURRENT_TIMESTAMP - INTERVAL '72 hours'),
+('World War II Overview',           'Comprehensive review of major events, battles, and figures', 'HISTORY', CURRENT_TIMESTAMP - INTERVAL '120 hours', CURRENT_TIMESTAMP - INTERVAL '117.5 hours', 150, true, 'ROOM-1700755200004', 'COMPLETED', 'PUBLIC',  4, 4, CURRENT_TIMESTAMP - INTERVAL '120 hours'),
+('Spanish Conversation Practice',   'Informal Spanish speaking session for intermediate learners', 'LANGUAGE', CURRENT_TIMESTAMP - INTERVAL '96 hours', CURRENT_TIMESTAMP - INTERVAL '95.25 hours', 45, true, 'ROOM-1700841600005', 'COMPLETED', 'PUBLIC', 5, 5, CURRENT_TIMESTAMP - INTERVAL '96 hours'),
+('Linear Algebra Problem Set',      'Working through chapter 5 eigenvalue exercises',          'MATH',        CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '4.5 hours',   90,  false, 'ROOM-1701270000006', 'COMPLETED', 'PRIVATE',  1, NULL, CURRENT_TIMESTAMP - INTERVAL '6 hours'),
+('Genetics Quiz Prep',              'Final preparation for midterm exam on Mendelian genetics', 'SCIENCE',    CURRENT_TIMESTAMP - INTERVAL '8 hours', CURRENT_TIMESTAMP - INTERVAL '6 hours',     120, false, 'ROOM-1701316800007', 'COMPLETED', 'PUBLIC',   3, NULL, CURRENT_TIMESTAMP - INTERVAL '8 hours')
+ON CONFLICT (room_code) DO NOTHING;
 
 
 -- Insert Session Participants
 INSERT INTO session_participants (study_session_id, user_id, joined_at, left_at, minutes_participated)
 VALUES
--- Session 1: Calculus Integration (completed)
-(1, 1, DATEADD('HOUR', -48, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 120),
-(1, 2, DATEADD('MINUTE', 5, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 120, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 115),
-(1, 3, DATEADD('HOUR', -48, CURRENT_TIMESTAMP), DATEADD('MINUTE', 110, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 110),
-
--- Session 2: Java OOP (completed)
-(2, 2, DATEADD('HOUR', -24, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 90),
-(2, 1, DATEADD('MINUTE', 10, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 85, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 75),
-(2, 5, DATEADD('HOUR', -24, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 90),
-
--- Session 3: Biology Lab (completed)
-(3, 3, DATEADD('HOUR', -72, CURRENT_TIMESTAMP), DATEADD('MINUTE', 60, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 60),
-(3, 4, DATEADD('MINUTE', 2, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 58, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 56),
-
--- Session 4: WWII Overview (completed)
-(4, 4, DATEADD('HOUR', -120, CURRENT_TIMESTAMP), DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 150),
-(4, 1, DATEADD('HOUR', -120, CURRENT_TIMESTAMP), DATEADD('MINUTE', 145, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 145),
-(4, 2, DATEADD('MINUTE', 15, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 135),
-
--- Session 5: Spanish Conversation (completed)
-(5, 5, DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45),
-(5, 1, DATEADD('MINUTE', 3, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 48, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 45),
-(5, 3, DATEADD('HOUR', -96, CURRENT_TIMESTAMP), DATEADD('MINUTE', 40, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 40),
-
--- Session 6: Linear Algebra solo (completed)
-(6, 1, DATEADD('HOUR', -6, CURRENT_TIMESTAMP), DATEADD('MINUTE', 90, DATEADD('HOUR', -6, CURRENT_TIMESTAMP)), 90),
-
--- Session 7: Genetics Quiz Prep (completed)
-(7, 3, DATEADD('HOUR', -8, CURRENT_TIMESTAMP), DATEADD('MINUTE', 120, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 120),
-(7, 5, DATEADD('MINUTE', 10, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), DATEADD('MINUTE', 115, DATEADD('HOUR', -8, CURRENT_TIMESTAMP)), 105);
-
--- -- Session 8: Python Data Structures (ACTIVE - no left_at)
--- (8, 2, DATEADD('MINUTE', -45, CURRENT_TIMESTAMP), NULL, NULL),
--- (8, 5, DATEADD('MINUTE', -40, CURRENT_TIMESTAMP), NULL, NULL),
--- (8, 1, DATEADD('MINUTE', -30, CURRENT_TIMESTAMP), NULL, NULL),
-
--- -- Session 9: Differential Equations (ACTIVE - no left_at)
--- (9, 1, DATEADD('MINUTE', -20, CURRENT_TIMESTAMP), NULL, NULL),
--- (9, 4, DATEADD('MINUTE', -15, CURRENT_TIMESTAMP), NULL, NULL);
+(1, 1, CURRENT_TIMESTAMP - INTERVAL '48 hours',             CURRENT_TIMESTAMP - INTERVAL '46 hours', 120),
+(1, 2, CURRENT_TIMESTAMP - INTERVAL '48 hours' + INTERVAL '5 minutes',  CURRENT_TIMESTAMP - INTERVAL '46 hours', 115),
+(1, 3, CURRENT_TIMESTAMP - INTERVAL '48 hours',             CURRENT_TIMESTAMP - INTERVAL '46.17 hours', 110),
+(2, 2, CURRENT_TIMESTAMP - INTERVAL '24 hours',             CURRENT_TIMESTAMP - INTERVAL '22.5 hours',  90),
+(2, 1, CURRENT_TIMESTAMP - INTERVAL '24 hours' + INTERVAL '10 minutes', CURRENT_TIMESTAMP - INTERVAL '22.58 hours', 75),
+(2, 5, CURRENT_TIMESTAMP - INTERVAL '24 hours',             CURRENT_TIMESTAMP - INTERVAL '22.5 hours',  90),
+(3, 3, CURRENT_TIMESTAMP - INTERVAL '72 hours',             CURRENT_TIMESTAMP - INTERVAL '71 hours',    60),
+(3, 4, CURRENT_TIMESTAMP - INTERVAL '72 hours' + INTERVAL '2 minutes',  CURRENT_TIMESTAMP - INTERVAL '71.03 hours', 56),
+(4, 4, CURRENT_TIMESTAMP - INTERVAL '120 hours',            CURRENT_TIMESTAMP - INTERVAL '117.5 hours', 150),
+(4, 1, CURRENT_TIMESTAMP - INTERVAL '120 hours',            CURRENT_TIMESTAMP - INTERVAL '117.58 hours', 145),
+(4, 2, CURRENT_TIMESTAMP - INTERVAL '120 hours' + INTERVAL '15 minutes', CURRENT_TIMESTAMP - INTERVAL '117.5 hours', 135),
+(5, 5, CURRENT_TIMESTAMP - INTERVAL '96 hours',             CURRENT_TIMESTAMP - INTERVAL '95.25 hours', 45),
+(5, 1, CURRENT_TIMESTAMP - INTERVAL '96 hours' + INTERVAL '3 minutes',  CURRENT_TIMESTAMP - INTERVAL '95.2 hours',  45),
+(5, 3, CURRENT_TIMESTAMP - INTERVAL '96 hours',             CURRENT_TIMESTAMP - INTERVAL '95.33 hours', 40),
+(6, 1, CURRENT_TIMESTAMP - INTERVAL '6 hours',              CURRENT_TIMESTAMP - INTERVAL '4.5 hours',   90),
+(7, 3, CURRENT_TIMESTAMP - INTERVAL '8 hours',              CURRENT_TIMESTAMP - INTERVAL '6 hours',     120),
+(7, 5, CURRENT_TIMESTAMP - INTERVAL '8 hours' + INTERVAL '10 minutes',  CURRENT_TIMESTAMP - INTERVAL '6.08 hours',  105)
+ON CONFLICT (study_session_id, user_id) DO NOTHING;
 
 
 -- Insert Sample Activities
 INSERT INTO activity (type, message, timestamp, study_session_id, user_id)
 VALUES
--- Session 1 activities
-('SESSION_CREATED', 'created the session', DATEADD('HOUR', -48, CURRENT_TIMESTAMP), 1, 1),
-('JOINED', 'joined the session', DATEADD('MINUTE', 5, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 1, 2),
-('JOINED', 'joined the session', DATEADD('MINUTE', 1, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 1, 3),
-('HAND_RAISE', 'raised hand with question about integration limits', DATEADD('MINUTE', 30, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 1, 1),
-('MESSAGE', 'Can someone explain u-substitution again?', DATEADD('MINUTE', 45, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 1, 3),
-('MILESTONE_REACHED', 'Session completed: 120 minutes', DATEADD('MINUTE', 120, DATEADD('HOUR', -48, CURRENT_TIMESTAMP)), 1, 1),
-
--- Session 2 activities
-('SESSION_CREATED', 'created the session', DATEADD('HOUR', -24, CURRENT_TIMESTAMP), 2, 2),
-('JOINED', 'joined the session', DATEADD('MINUTE', 10, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 2, 1),
-('JOINED', 'joined the session', DATEADD('HOUR', -24, CURRENT_TIMESTAMP), 2, 5),
-('MESSAGE', 'What is the difference between List and Set?', DATEADD('MINUTE', 25, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 2, 2),
-('HAND_RAISE', 'raised hand', DATEADD('MINUTE', 40, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 2, 5),
-('MILESTONE_REACHED', 'Session completed: 90 minutes', DATEADD('MINUTE', 90, DATEADD('HOUR', -24, CURRENT_TIMESTAMP)), 2, 2),
-
--- Session 3 activities  
-('SESSION_CREATED', 'created the session', DATEADD('HOUR', -72, CURRENT_TIMESTAMP), 3, 3),
-('JOINED', 'joined the session', DATEADD('MINUTE', 2, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 3, 4),
-('MESSAGE', 'Remember to cite sources properly!', DATEADD('MINUTE', 30, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 3, 3),
-('MILESTONE_REACHED', 'Session completed: 60 minutes', DATEADD('MINUTE', 60, DATEADD('HOUR', -72, CURRENT_TIMESTAMP)), 3, 3),
-
--- Session 4 activities
-('SESSION_CREATED', 'created the session', DATEADD('HOUR', -120, CURRENT_TIMESTAMP), 4, 4),
-('JOINED', 'joined the session', DATEADD('HOUR', -120, CURRENT_TIMESTAMP), 4, 1),
-('JOINED', 'joined the session', DATEADD('MINUTE', 15, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 4, 2),
-('HAND_RAISE', 'raised hand with historical question', DATEADD('MINUTE', 50, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 4, 4),
-('MESSAGE', 'The Treaty of Versailles was crucial!', DATEADD('MINUTE', 80, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 4, 1),
-('MILESTONE_REACHED', 'Session completed: 150 minutes', DATEADD('MINUTE', 150, DATEADD('HOUR', -120, CURRENT_TIMESTAMP)), 4, 4),
-
--- Session 5 activities
-('SESSION_CREATED', 'created the session', DATEADD('HOUR', -96, CURRENT_TIMESTAMP), 5, 5),
-('JOINED', 'joined the session', DATEADD('MINUTE', 3, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 5, 1),
-('JOINED', 'joined the session', DATEADD('HOUR', -96, CURRENT_TIMESTAMP), 5, 3),
-('MESSAGE', 'Hola! Vamos a practicar!', DATEADD('MINUTE', 10, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 5, 5),
-('MILESTONE_REACHED', 'Session completed: 45 minutes', DATEADD('MINUTE', 45, DATEADD('HOUR', -96, CURRENT_TIMESTAMP)), 5, 5);
-
--- -- Session 8 activities (ACTIVE Python session)
--- ('SESSION_CREATED', 'created the session', DATEADD('MINUTE', -45, CURRENT_TIMESTAMP), 8, 2),
--- ('JOINED', 'joined the session', DATEADD('MINUTE', -40, CURRENT_TIMESTAMP), 8, 5),
--- ('JOINED', 'joined the session', DATEADD('MINUTE', -30, CURRENT_TIMESTAMP), 8, 1),
--- ('MESSAGE', 'Let us start with list comprehensions!', DATEADD('MINUTE', -25, CURRENT_TIMESTAMP), 8, 2),
--- ('HAND_RAISE', 'raised hand', DATEADD('MINUTE', -10, CURRENT_TIMESTAMP), 8, 1),
-
--- -- Session 9 activities (ACTIVE Diff Eq session)
--- ('SESSION_CREATED', 'created the session', DATEADD('MINUTE', -20, CURRENT_TIMESTAMP), 9, 1),
--- ('JOINED', 'joined the session', DATEADD('MINUTE', -15, CURRENT_TIMESTAMP), 9, 4),
--- ('MESSAGE', 'Focus on homogeneous equations first', DATEADD('MINUTE', -5, CURRENT_TIMESTAMP), 9, 1);
+('SESSION_CREATED',  'created the session',                            CURRENT_TIMESTAMP - INTERVAL '48 hours',                         1, 1),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '48 hours' + INTERVAL '5 minutes',  1, 2),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '48 hours' + INTERVAL '1 minute',   1, 3),
+('HAND_RAISE',       'raised hand with question about integration',    CURRENT_TIMESTAMP - INTERVAL '48 hours' + INTERVAL '30 minutes', 1, 1),
+('MESSAGE',          'Can someone explain u-substitution again?',      CURRENT_TIMESTAMP - INTERVAL '48 hours' + INTERVAL '45 minutes', 1, 3),
+('MILESTONE_REACHED','Session completed: 120 minutes',                 CURRENT_TIMESTAMP - INTERVAL '46 hours',                         1, 1),
+('SESSION_CREATED',  'created the session',                            CURRENT_TIMESTAMP - INTERVAL '24 hours',                         2, 2),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '24 hours' + INTERVAL '10 minutes', 2, 1),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '24 hours',                         2, 5),
+('MESSAGE',          'What is the difference between List and Set?',   CURRENT_TIMESTAMP - INTERVAL '24 hours' + INTERVAL '25 minutes', 2, 2),
+('HAND_RAISE',       'raised hand',                                    CURRENT_TIMESTAMP - INTERVAL '24 hours' + INTERVAL '40 minutes', 2, 5),
+('MILESTONE_REACHED','Session completed: 90 minutes',                  CURRENT_TIMESTAMP - INTERVAL '22.5 hours',                       2, 2),
+('SESSION_CREATED',  'created the session',                            CURRENT_TIMESTAMP - INTERVAL '72 hours',                         3, 3),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '72 hours' + INTERVAL '2 minutes',  3, 4),
+('MESSAGE',          'Remember to cite sources properly!',             CURRENT_TIMESTAMP - INTERVAL '72 hours' + INTERVAL '30 minutes', 3, 3),
+('MILESTONE_REACHED','Session completed: 60 minutes',                  CURRENT_TIMESTAMP - INTERVAL '71 hours',                         3, 3),
+('SESSION_CREATED',  'created the session',                            CURRENT_TIMESTAMP - INTERVAL '120 hours',                        4, 4),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '120 hours',                        4, 1),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '120 hours' + INTERVAL '15 minutes',4, 2),
+('HAND_RAISE',       'raised hand with historical question',           CURRENT_TIMESTAMP - INTERVAL '120 hours' + INTERVAL '50 minutes',4, 4),
+('MESSAGE',          'The Treaty of Versailles was crucial!',          CURRENT_TIMESTAMP - INTERVAL '120 hours' + INTERVAL '80 minutes',4, 1),
+('MILESTONE_REACHED','Session completed: 150 minutes',                 CURRENT_TIMESTAMP - INTERVAL '117.5 hours',                      4, 4),
+('SESSION_CREATED',  'created the session',                            CURRENT_TIMESTAMP - INTERVAL '96 hours',                         5, 5),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '96 hours' + INTERVAL '3 minutes',  5, 1),
+('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '96 hours',                         5, 3),
+('MESSAGE',          'Hola! Vamos a practicar!',                       CURRENT_TIMESTAMP - INTERVAL '96 hours' + INTERVAL '10 minutes', 5, 5),
+('MILESTONE_REACHED','Session completed: 45 minutes',                  CURRENT_TIMESTAMP - INTERVAL '95.25 hours',                      5, 5)
+ON CONFLICT (study_session_id, user_id, timestamp, type) DO NOTHING;
 
 
 -- ============================================
 -- Course Administration Seed Data
 -- ============================================
 
--- Insert Sample Courses (instructors: johndoe=1, janesmith=2)
 INSERT INTO courses (title, description, instructor_id, is_published, created_at, updated_at)
 VALUES
-('Introduction to Calculus', 'A foundational course covering limits, derivatives, and integrals. Perfect for first-year university students.', 1, true, DATEADD('DAY', -14, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Advanced Java Programming', 'Deep dive into Java: OOP, design patterns, concurrency, and Spring Boot fundamentals.', 1, true, DATEADD('DAY', -10, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Molecular Biology Essentials', 'From DNA replication to gene expression — core concepts for life science students.', 2, true, DATEADD('DAY', -7, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Modern World History', 'A survey of major historical events from 1800 to the present day.', 2, false, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('Introduction to Calculus',    'A foundational course covering limits, derivatives, and integrals.', 1, true,  CURRENT_TIMESTAMP - INTERVAL '14 days', CURRENT_TIMESTAMP),
+('Advanced Java Programming',   'Deep dive into Java: OOP, design patterns, concurrency, and Spring Boot.', 1, true,  CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP),
+('Molecular Biology Essentials','From DNA replication to gene expression.',                            2, true,  CURRENT_TIMESTAMP - INTERVAL '7 days',  CURRENT_TIMESTAMP),
+('Modern World History',        'A survey of major historical events from 1800 to the present day.',   2, false, CURRENT_TIMESTAMP - INTERVAL '3 days',  CURRENT_TIMESTAMP)
+ON CONFLICT (title) DO NOTHING;
 
 
--- Insert Course Sections
 INSERT INTO course_sections (title, description, order_index, course_id, created_at)
 VALUES
--- Course 1: Intro to Calculus
-('Chapter 1: Limits', 'Understanding the concept of a limit and continuity.', 0, 1, DATEADD('DAY', -14, CURRENT_TIMESTAMP)),
-('Chapter 2: Derivatives', 'Rules of differentiation — chain rule, product rule, and more.', 1, 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
-('Chapter 3: Integration', 'Introduction to Riemann sums, antiderivatives, and definite integrals.', 2, 1, DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
-
--- Course 2: Advanced Java
-('Module 1: OOP Refresher', 'Revisiting classes, interfaces, polymorphism, and SOLID principles.', 0, 2, DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
-('Module 2: Design Patterns', 'Creational, structural, and behavioural patterns with real examples.', 1, 2, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-('Module 3: Spring Boot', 'Building RESTful APIs with Spring Boot, JPA, and security.', 2, 2, DATEADD('DAY', -8, CURRENT_TIMESTAMP)),
-
--- Course 3: Molecular Biology
-('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 3, DATEADD('DAY', -7, CURRENT_TIMESTAMP)),
-('Unit 2: Gene Expression', 'Transcription, translation, and post-translational modifications.', 1, 3, DATEADD('DAY', -6, CURRENT_TIMESTAMP)),
-
--- Course 4: Modern World History (draft)
-('Part 1: Industrial Revolution', 'Origins and global impact of industrialisation.', 0, 4, DATEADD('DAY', -3, CURRENT_TIMESTAMP));
+('Chapter 1: Limits',       'Understanding the concept of a limit and continuity.',                0, 1, CURRENT_TIMESTAMP - INTERVAL '14 days'),
+('Chapter 2: Derivatives',  'Rules of differentiation — chain rule, product rule, and more.',     1, 1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
+('Chapter 3: Integration',  'Introduction to Riemann sums, antiderivatives, and definite integrals.', 2, 1, CURRENT_TIMESTAMP - INTERVAL '12 days'),
+('Module 1: OOP Refresher', 'Revisiting classes, interfaces, polymorphism, and SOLID principles.', 0, 2, CURRENT_TIMESTAMP - INTERVAL '10 days'),
+('Module 2: Design Patterns','Creational, structural, and behavioural patterns with real examples.', 1, 2, CURRENT_TIMESTAMP - INTERVAL '9 days'),
+('Module 3: Spring Boot',   'Building RESTful APIs with Spring Boot, JPA, and security.',          2, 2, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+('Unit 1: DNA Structure',   'Watson-Crick model, base pairing, and genomic organisation.',         0, 3, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+('Unit 2: Gene Expression', 'Transcription, translation, and post-translational modifications.',   1, 3, CURRENT_TIMESTAMP - INTERVAL '6 days'),
+('Part 1: Industrial Revolution','Origins and global impact of industrialisation.',                 0, 4, CURRENT_TIMESTAMP - INTERVAL '3 days')
+ON CONFLICT (course_id, title) DO NOTHING;
 
 
--- Insert Course Materials (files are placeholder URLs for local dev)
 INSERT INTO course_materials (title, file_url, file_type, original_file_name, section_id, uploaded_at)
 VALUES
--- Calculus Section 1
-('Limits Lecture Notes', '/uploads/courses/limits-lecture-notes.pdf', 'PDF', 'limits-lecture-notes.pdf', 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
-('Limits Practice Problems', '/uploads/courses/limits-practice.pdf', 'PDF', 'limits-practice.pdf', 1, DATEADD('DAY', -13, CURRENT_TIMESTAMP)),
--- Calculus Section 2
-('Derivatives Slides', '/uploads/courses/derivatives-slides.pdf', 'SLIDES', 'derivatives-slides.pdf', 2, DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
--- Java Section 1
-('OOP Cheatsheet', '/uploads/courses/oop-cheatsheet.pdf', 'PDF', 'oop-cheatsheet.pdf', 4, DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
--- Java Section 3
-('Spring Boot Getting Started', '/uploads/courses/spring-boot-intro.pdf', 'PDF', 'spring-boot-intro.pdf', 6, DATEADD('DAY', -7, CURRENT_TIMESTAMP)),
--- Biology Section 1
-('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', 7, DATEADD('DAY', -6, CURRENT_TIMESTAMP));
+('Limits Lecture Notes',       '/uploads/courses/limits-lecture-notes.pdf',  'PDF',    'limits-lecture-notes.pdf',  1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
+('Limits Practice Problems',   '/uploads/courses/limits-practice.pdf',        'PDF',    'limits-practice.pdf',       1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
+('Derivatives Slides',         '/uploads/courses/derivatives-slides.pdf',     'SLIDES', 'derivatives-slides.pdf',    2, CURRENT_TIMESTAMP - INTERVAL '12 days'),
+('OOP Cheatsheet',             '/uploads/courses/oop-cheatsheet.pdf',         'PDF',    'oop-cheatsheet.pdf',        4, CURRENT_TIMESTAMP - INTERVAL '9 days'),
+('Spring Boot Getting Started','/uploads/courses/spring-boot-intro.pdf',      'PDF',    'spring-boot-intro.pdf',     6, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+('DNA Structure Overview',     '/uploads/courses/dna-structure.pdf',          'PDF',    'dna-structure.pdf',         7, CURRENT_TIMESTAMP - INTERVAL '6 days' )
+ON CONFLICT (section_id, title) DO NOTHING;
 
 
--- Insert Course Enrollments (students: bobwilson=3, alicejohnson=4, charliebrown=5)
 INSERT INTO course_enrollments (course_id, student_id, status, enrolled_at)
 VALUES
--- Calculus enrollments
-(1, 3, 'ACTIVE', DATEADD('DAY', -12, CURRENT_TIMESTAMP)),
-(1, 4, 'ACTIVE', DATEADD('DAY', -11, CURRENT_TIMESTAMP)),
-(1, 5, 'ACTIVE', DATEADD('DAY', -10, CURRENT_TIMESTAMP)),
--- Java enrollments
-(2, 3, 'ACTIVE', DATEADD('DAY', -9, CURRENT_TIMESTAMP)),
-(2, 5, 'ACTIVE', DATEADD('DAY', -8, CURRENT_TIMESTAMP)),
--- Biology enrollments
-(3, 4, 'ACTIVE', DATEADD('DAY', -6, CURRENT_TIMESTAMP)),
-(3, 3, 'DROPPED', DATEADD('DAY', -4, CURRENT_TIMESTAMP));
+(1, 3, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '12 days'),
+(1, 4, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '11 days'),
+(1, 5, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '10 days'),
+(2, 3, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '9 days'),
+(2, 5, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '8 days'),
+(3, 4, 'ACTIVE',   CURRENT_TIMESTAMP - INTERVAL '6 days'),
+(3, 3, 'DROPPED',  CURRENT_TIMESTAMP - INTERVAL '4 days')
+ON CONFLICT (course_id, student_id) DO NOTHING;
+
 
 -- ============================================
--- Workspace System Run Seed Data
+-- Workspace System Seed Data
 -- ============================================
 
 INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
 VALUES
-('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Bob Math Workspace', 'Workspace for advanced mathematics.', 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('Alice Study Space', 'My personal workspace for pre-med and general studies.', 4, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP),
+('Bob Math Workspace','Workspace for advanced mathematics.',                     3, CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP)
+ON CONFLICT (owner_id, name) DO NOTHING;
 
 INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
 VALUES
-('My Pre-Med Notes', 'Self-compiled notes and diagrams.', 1, NULL, false, DATEADD('DAY', -5, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Molecular Biology Essentials (Fork)', 'Forked from the official course.', 1, 3, false, DATEADD('DAY', -4, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP),
-('Advanced Mathematics', 'Cloned repository for advanced mathematics.', 2, 1, false, DATEADD('DAY', -3, CURRENT_TIMESTAMP), CURRENT_TIMESTAMP);
+('My Pre-Med Notes',                     'Self-compiled notes and diagrams.',           1, NULL, false, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP),
+('Molecular Biology Essentials (Fork)',  'Forked from the official course.',            1, 3,    false, CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP),
+('Advanced Mathematics',                 'Cloned repository for advanced mathematics.', 2, 1,    false, CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP)
+ON CONFLICT (workspace_id, title) DO NOTHING;
 
 INSERT INTO workspace_sections (title, description, order_index, space_id, created_at)
 VALUES
-('General Biology Notes', 'Notes from textbook reading.', 0, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
-('Unit 1: DNA Structure', 'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP)),
-('Advanced Math Concepts', 'Advanced formulas and proofs.', 0, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
-('Calculus Homework', 'Completed assignments.', 1, 3, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
+('General Biology Notes',   'Notes from textbook reading.',                           0, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('Unit 1: DNA Structure',   'Watson-Crick model, base pairing, and genomic organisation.', 0, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+('Advanced Math Concepts',  'Advanced formulas and proofs.',                           0, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Calculus Homework',       'Completed assignments.',                                  1, 3, CURRENT_TIMESTAMP - INTERVAL '2 days')
+ON CONFLICT (space_id, title) DO NOTHING;
 
 INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
 VALUES
-('Cells Diagram', '/uploads/workspaces/cells-diagram.pdf', 'PDF', 'cells-diagram.pdf', false, false, 1, DATEADD('DAY', -5, CURRENT_TIMESTAMP)),
-('DNA Structure Overview', '/uploads/courses/dna-structure.pdf', 'PDF', 'dna-structure.pdf', true, false, 2, DATEADD('DAY', -4, CURRENT_TIMESTAMP)),
-('Alice Extra DNA Notes', '/uploads/workspaces/extra-dna-notes.pdf', 'PDF', 'extra-dna-notes.pdf', false, false, 2, DATEADD('DAY', -2, CURRENT_TIMESTAMP)),
-('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf', 'PDF', 'advanced-calculus-ref.pdf', false, false, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
-('Linear Algebra Cheatsheet', '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf', 'PDF', 'linear-algebra-cheatsheet.pdf', false, false, 3, DATEADD('DAY', -3, CURRENT_TIMESTAMP)),
-('Assignment 1 Submission', '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf', 'PDF', 'assignment-1.pdf', false, false, 4, DATEADD('DAY', -2, CURRENT_TIMESTAMP));
+('Cells Diagram',               '/uploads/workspaces/cells-diagram.pdf',                                     'PDF', 'cells-diagram.pdf',                false, false, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+('DNA Structure Overview',      '/uploads/courses/dna-structure.pdf',                                        'PDF', 'dna-structure.pdf',                true,  false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+('Alice Extra DNA Notes',       '/uploads/workspaces/extra-dna-notes.pdf',                                   'PDF', 'extra-dna-notes.pdf',              false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Linear Algebra Cheatsheet',   '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+('Assignment 1 Submission',     '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
+ON CONFLICT (section_id, title) DO NOTHING;
 
 INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
 VALUES
-('PENDING', 'I created an extra summary for the DNA structure that might be helpful for others!', 3, 7, 3, 4, 'Alice Johnson', DATEADD('DAY', -1, CURRENT_TIMESTAMP));
+('PENDING', 'I created an extra summary for the DNA structure that might be helpful for others!', 3, 7, 3, 4, 'Alice Johnson', CURRENT_TIMESTAMP - INTERVAL '1 day')
+ON CONFLICT (student_id, target_course_id, target_section_id, source_material_id) DO NOTHING;

@@ -12,6 +12,8 @@ import {
 	Loader2,
 	Sparkles,
 	AlertCircle,
+	ChevronDown,
+	Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -175,6 +177,7 @@ interface Message {
 	timestamp: Date;
 	/** Title of document used for AI context (only for ai messages) */
 	contextDocumentTitle?: string | null;
+	provider?: "gemini" | "openai";
 }
 
 interface ContextualChatProps {
@@ -186,6 +189,8 @@ interface ContextualChatProps {
 export function ContextualChat({ materials }: ContextualChatProps) {
 	const { user } = useAuth();
 	const [width, setWidth] = useState(384);
+	const [provider, setProvider] = useState<"gemini" | "openai">("gemini");
+	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
 	/**
 	 * Stable session UUID — generated once per component mount.
@@ -257,6 +262,14 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 
 	const handleInput = () => {
 		if (!inputRef.current) return;
+
+		// Force complete empty state if text is cleared to allow :empty selector to fire
+		const textVal = inputRef.current.textContent || "";
+		const hasTags = inputRef.current.querySelector("[data-material-id]");
+		if (textVal.trim() === "" && !hasTags) {
+			inputRef.current.innerHTML = "";
+		}
+
 		const selection = window.getSelection();
 		if (!selection?.focusNode) {
 			setTagQuery(null);
@@ -402,10 +415,11 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 			questionLength: question.length,
 			hasDocument: !!documentUrl,
 			documentTitle: documentTitle ?? null,
+			provider,
 		});
 
 		try {
-			const requestPayload = { conversationId, question, documentUrl, documentTitle };
+			const requestPayload = { conversationId, question, documentUrl, documentTitle, provider };
 			const res = await chatApi.query(requestPayload);
 
 			// ── Debug log: incoming response ─────────────────────────────────
@@ -421,6 +435,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 				text: res.answer,
 				timestamp: new Date(),
 				contextDocumentTitle: res.contextDocumentTitle,
+				provider: provider,
 			};
 			setStreamingId(aiMsg.id);
 			setMessages((prev) => [...prev, aiMsg]);
@@ -493,7 +508,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 			<div className="p-4 border-b border-border flex items-center justify-between shrink-0">
 				<div>
 					<h3 className="font-semibold text-sm flex items-center gap-1.5">
-						<Sparkles className="h-3.5 w-3.5 text-primary" />
+						<Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
 						AI Study Assistant
 					</h3>
 					<p className="text-xs text-muted-foreground">Ask questions · Tag @ files for context</p>
@@ -517,7 +532,15 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 										{isAI && <Sparkles className="h-3 w-3 text-primary" />}
 										{isError && <AlertCircle className="h-3 w-3 text-destructive" />}
 										<span className="text-xs font-medium">
-											{isMe ? "You" : isAI ? "Gemini" : isError ? "Error" : msg.userName}
+											{isMe
+												? "You"
+												: isAI
+													? msg.provider === "openai"
+														? "GPT-4o Mini"
+														: "Gemini 3.5 Flash"
+													: isError
+														? "Error"
+														: msg.userName}
 										</span>
 										<span className="text-[10px] text-muted-foreground">
 											{format(msg.timestamp, "HH:mm")}
@@ -564,7 +587,9 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 						<div className="flex flex-col items-start">
 							<div className="flex items-center gap-1.5 mb-1 px-1">
 								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
-								<span className="text-xs font-medium">Gemini</span>
+								<span className="text-xs font-medium">
+									{provider === "openai" ? "GPT-4o Mini" : "Gemini 3.5 Flash"}
+								</span>
 							</div>
 							<div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 rounded-tl-none flex items-center gap-2 text-sm text-muted-foreground">
 								<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -578,7 +603,7 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 			</div>
 
 			{/* Input area */}
-			<div className="p-3 border-t border-border bg-background relative shrink-0 pb-10">
+			<div className="p-3 border-t border-border bg-background relative shrink-0">
 				{/* @ mention dropdown */}
 				{tagQuery !== null && (
 					<div className="absolute bottom-full left-0 w-full p-2 pb-0">
@@ -616,18 +641,107 @@ export function ContextualChat({ materials }: ContextualChatProps) {
 					</div>
 				)}
 
-				<div className="flex items-end gap-2">
+				<div className="flex flex-col border border-input rounded-xl p-1 bg-background focus-within:ring-3/50 focus-within:ring-ring/50 focus-within:border-ring/50 shadow-xs">
+					{/* Text Input area */}
 					<div
 						ref={inputRef}
 						contentEditable={!isLoading}
 						onInput={handleInput}
 						onKeyDown={handleKeyDown}
 						data-placeholder="Ask a question… Use @ to attach a file"
-						className="flex-1 min-h-[40px] max-h-[120px] overflow-y-auto w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground cursor-text aria-disabled:opacity-50"
+						className="w-full min-h-[44px] max-h-[120px] overflow-y-auto bg-transparent px-3 pt-3 text-sm focus-visible:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground cursor-text aria-disabled:opacity-50"
 					/>
-					<Button size="icon" onClick={handleSendMessage} disabled={isLoading} className="shrink-0 mb-0.5">
-						{isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-					</Button>
+
+					{/* Footer bar containing model dropdown and send button */}
+					<div className="flex items-center justify-between border-t border-border/40 pt-2 pb-1 px-2 mt-1 shrink-0">
+						{/* Custom Model Selector Dropdown */}
+						<div className="relative">
+							<button
+								type="button"
+								onClick={() => setIsModelMenuOpen((p) => !p)}
+								disabled={isLoading}
+								className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all duration-200 border border-border/60 bg-muted/30 hover:border-border shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+							>
+								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
+								<span>{provider === "openai" ? "GPT-4o Mini" : "Gemini 3.5 Flash"}</span>
+								<ChevronDown className="h-3 w-3 opacity-60 transition-opacity duration-200" />
+							</button>
+
+							{/* Dropdown Menu Overlay & Body */}
+							{isModelMenuOpen && (
+								<>
+									{/* Overlay to handle click-away */}
+									<div className="fixed inset-0 z-20" onClick={() => setIsModelMenuOpen(false)} />
+
+									<div className="absolute bottom-full left-0 mb-1.5 w-48 bg-popover border border-border rounded-lg shadow-md p-1 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
+										<button
+											onClick={() => {
+												setProvider("gemini");
+												setIsModelMenuOpen(false);
+											}}
+											className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-left transition-colors ${
+												provider === "gemini"
+													? "bg-primary/10 text-primary"
+													: "hover:bg-muted text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<div className="flex flex-col items-start gap-0.5">
+												<span className="text-xs font-semibold flex items-center gap-1">
+													<Sparkles className="h-3 w-3" />
+													Gemini 3.5 Flash
+												</span>
+												<span className="text-[10px] opacity-75">Default model</span>
+											</div>
+											{provider === "gemini" && <Check className="h-3.5 w-3.5 shrink-0" />}
+										</button>
+
+										<button
+											onClick={() => {
+												setProvider("openai");
+												setIsModelMenuOpen(false);
+											}}
+											className={`w-full flex items-center justify-between px-2.5 py-2 rounded-md text-left transition-colors ${
+												provider === "openai"
+													? "bg-primary/10 text-primary"
+													: "hover:bg-muted text-muted-foreground hover:text-foreground"
+											}`}
+										>
+											<div className="flex flex-col items-start gap-0.5">
+												<span className="text-xs font-semibold flex items-center gap-1">
+													<Sparkles className="h-3 w-3 text-emerald-500" />
+													GPT-4o Mini
+												</span>
+												<span className="text-[10px] opacity-75">Swappable OpenAI</span>
+											</div>
+											{provider === "openai" && (
+												<Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+											)}
+										</button>
+									</div>
+								</>
+							)}
+						</div>
+
+						{/* Send Button */}
+						<Button
+							size="sm"
+							onClick={handleSendMessage}
+							disabled={isLoading}
+							className="h-7 gap-1.5 shadow-md rounded-lg px-3 font-medium text-xs transition-all hover:shadow-lg active:scale-95"
+						>
+							{isLoading ? (
+								<>
+									<Loader2 className="h-3.5 w-3.5 animate-spin" />
+									<span>Thinking...</span>
+								</>
+							) : (
+								<>
+									<span>Send</span>
+									<Send className="h-3.5 w-3.5" />
+								</>
+							)}
+						</Button>
+					</div>
 				</div>
 			</div>
 		</div>

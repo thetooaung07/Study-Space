@@ -30,5 +30,12 @@ public class ChatQueryRequest {
      * Echoed back in the response so the UI can confirm which file was used.
      */
     private String documentTitle;
+
+    /**
+     * LLM provider to use for this query.
+     * Accepted values: {@code "gemini"} (default) or {@code "openai"}.
+     * Falls back to Gemini if absent or unrecognised.
+     */
+    private String provider;
 }
 

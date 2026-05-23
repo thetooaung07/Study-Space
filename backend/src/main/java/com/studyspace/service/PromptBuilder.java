@@ -1,66 +1,63 @@
 package com.studyspace.service;
 
-import com.studyspace.entity.Conversation.ChatMessage;
+import com.studyspace.entity.Message;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
- * Assembles the full runtime prompt that is sent to Gemini for each user turn.
+ * Assembles the full runtime prompt sent to the LLM for each user turn.
  *
- * <p>Prompt structure (Phase 2 — Recent Message Buffer):
+ * <p>Prompt structure:
  * <pre>
  *   [SYSTEM INSTRUCTIONS]
- *   [Long-term summary   — if present]
- *   [Recent conversation — if any]
- *   [Document context    — if a file was tagged]
+ *   [Long-term summary     — if present]
+ *   [Recent conversation   — last N messages from DB]
+ *   [Relevant RAG excerpts — top-K chunks from document_chunks]
  *   [Current user question]
  * </pre>
  *
- * <p>Separating prompt construction here makes it easy to tune, test and
- * debug without touching LLM-calling code in {@link GeminiService}.
+ * <p>Separating prompt construction here keeps LLM-calling code in
+ * {@link com.studyspace.service.llm.LlmProvider} implementations free of
+ * formatting logic, and makes prompt templates independently testable.
  */
 @Service
 @Slf4j
 public class PromptBuilder {
 
-    private static final int MAX_CONTEXT_CHARS = 10_000;
-
     // ─── Public API ──────────────────────────────────────────────────────────
 
     /**
-     * Builds the runtime prompt.
+     * Builds the runtime prompt for a single user turn.
      *
      * @param summary        rolling long-term summary (may be blank)
-     * @param recentMessages short-term message buffer (may be empty)
-     * @param documentContext extracted PDF text (may be blank)
-     * @param userQuestion   current question from the student
-     * @return complete prompt string ready to send to Gemini
+     * @param recentMessages recent DB messages for this conversation (may be empty)
+     * @param ragChunks      top-K semantically relevant document excerpts (may be empty)
+     * @param userQuestion   the student's current question
+     * @return complete prompt string ready to send to the LLM provider
      */
-    public String buildRuntimePrompt(
-            String summary,
-            List<ChatMessage> recentMessages,
-            String documentContext,
-            String userQuestion) {
-
+    public String buildRuntimePrompt(String summary,
+                                     List<Message> recentMessages,
+                                     List<String> ragChunks,
+                                     String userQuestion) {
         StringBuilder sb = new StringBuilder();
 
         // ── System preamble ─────────────────────────────────────────────────
         sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n");
         sb.append("Answer clearly, concisely, and in Markdown where appropriate.\n\n");
 
-        // ── Long-term summary (Phase 3) ──────────────────────────────────────
+        // ── Long-term summary ────────────────────────────────────────────────
         if (summary != null && !summary.isBlank()) {
             sb.append("## Conversation Summary (long-term memory)\n");
             sb.append(summary.trim()).append("\n\n");
             log.debug("[PROMPT_BUILDER] Injected long-term summary ({} chars)", summary.length());
         }
 
-        // ── Recent message buffer (Phase 2) ─────────────────────────────────
+        // ── Recent message buffer ────────────────────────────────────────────
         if (recentMessages != null && !recentMessages.isEmpty()) {
             sb.append("## Recent Conversation\n");
-            for (ChatMessage msg : recentMessages) {
+            for (Message msg : recentMessages) {
                 String label = "user".equalsIgnoreCase(msg.getRole()) ? "Student" : "Assistant";
                 sb.append(label).append(": ").append(msg.getContent()).append("\n");
             }
@@ -68,29 +65,28 @@ public class PromptBuilder {
             log.debug("[PROMPT_BUILDER] Injected {} recent messages", recentMessages.size());
         }
 
-        // ── Document context ─────────────────────────────────────────────────
-        if (documentContext != null && !documentContext.isBlank()) {
-            sb.append("## Document Context\n");
-            sb.append("Use the following extracted document text to answer the student's question. ");
-            sb.append("Only rely on it if relevant; otherwise answer from your general knowledge.\n\n");
-            String safeCtx = documentContext.length() > MAX_CONTEXT_CHARS
-                    ? documentContext.substring(0, MAX_CONTEXT_CHARS) + "\n[...document truncated...]"
-                    : documentContext;
-            sb.append(safeCtx).append("\n\n");
-            log.debug("[PROMPT_BUILDER] Injected document context ({} chars, truncated={})",
-                    safeCtx.length(), documentContext.length() > MAX_CONTEXT_CHARS);
+        // ── RAG document excerpts (replaces full-document injection) ─────────
+        if (ragChunks != null && !ragChunks.isEmpty()) {
+            sb.append("## Relevant Document Excerpts\n");
+            sb.append("The following excerpts were retrieved from the tagged Course Material. ");
+            sb.append("Use them to inform your answer where relevant.\n\n");
+            for (int i = 0; i < ragChunks.size(); i++) {
+                sb.append("### Excerpt ").append(i + 1).append("\n");
+                sb.append(ragChunks.get(i).trim()).append("\n\n");
+            }
+            log.debug("[PROMPT_BUILDER] Injected {} RAG chunks", ragChunks.size());
         }
 
-        // ── Current user question ────────────────────────────────────────────
+        // ── Current question ─────────────────────────────────────────────────
         sb.append("## Student's Current Question\n");
         sb.append(userQuestion.trim());
 
         String prompt = sb.toString();
-        log.info("[PROMPT_BUILDER] Final prompt assembled — {} chars total, summary={}, recentMsgs={}, hasDoc={}",
+        log.info("[PROMPT_BUILDER] Prompt assembled — {} chars | summary={} | recentMsgs={} | ragChunks={}",
                 prompt.length(),
                 summary != null && !summary.isBlank(),
                 recentMessages != null ? recentMessages.size() : 0,
-                documentContext != null && !documentContext.isBlank());
+                ragChunks != null ? ragChunks.size() : 0);
 
         return prompt;
     }
@@ -98,15 +94,15 @@ public class PromptBuilder {
     // ─── Summarisation prompt ────────────────────────────────────────────────
 
     /**
-     * Builds a separate summarisation prompt used to update the long-term rolling summary.
-     * This is intentionally a different prompt from the runtime prompt to keep
-     * summarisation behaviour predictable and independently debuggable.
+     * Builds a summarisation prompt for the async memory compressor.
+     * Accepts raw {@code [role, content]} pairs so it can be called from
+     * {@link AsyncMemoryCompressor} without importing entity classes.
      *
-     * @param oldSummary     existing summary (may be blank for the first compression)
-     * @param messagesToSummarise messages that are about to be evicted from the buffer
+     * @param oldSummary   existing rolling summary (may be blank on first compression)
+     * @param messagePairs list of {@code [role, content]} arrays representing old messages
      * @return prompt to send to Gemini for a summary update
      */
-    public String buildSummarisationPrompt(String oldSummary, List<ChatMessage> messagesToSummarise) {
+    public String buildSummarisationPromptFromPairs(String oldSummary, List<String[]> messagePairs) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("You are a memory compression assistant.\n");
@@ -119,9 +115,11 @@ public class PromptBuilder {
         }
 
         sb.append("## New Conversation to Incorporate\n");
-        for (ChatMessage msg : messagesToSummarise) {
-            String label = "user".equalsIgnoreCase(msg.getRole()) ? "Student" : "Assistant";
-            sb.append(label).append(": ").append(msg.getContent()).append("\n");
+        for (String[] pair : messagePairs) {
+            String role    = pair[0];
+            String content = pair[1];
+            String label   = "user".equalsIgnoreCase(role) ? "Student" : "Assistant";
+            sb.append(label).append(": ").append(content).append("\n");
         }
 
         sb.append("\n## Instructions\n");
@@ -133,8 +131,21 @@ public class PromptBuilder {
         sb.append("Keep the summary factual, concise (under 400 words), and in plain prose. ");
         sb.append("Do NOT replay the conversation verbatim. Output only the updated summary.\n");
 
-        log.info("[PROMPT_BUILDER] Summarisation prompt built — {} messages to fold, existingSummary={}",
-                messagesToSummarise.size(), oldSummary != null && !oldSummary.isBlank());
+        log.info("[PROMPT_BUILDER] Summarisation prompt built — {} pairs, existingSummary={}",
+                messagePairs.size(), oldSummary != null && !oldSummary.isBlank());
         return sb.toString();
+    }
+
+    /**
+     * Convenience overload for callers that have a {@link List} of {@link Message} entities.
+     *
+     * @param oldSummary        existing rolling summary
+     * @param messagesToSummarise messages to fold into the summary
+     */
+    public String buildSummarisationPrompt(String oldSummary, List<Message> messagesToSummarise) {
+        List<String[]> pairs = messagesToSummarise.stream()
+                .map(m -> new String[]{m.getRole(), m.getContent()})
+                .toList();
+        return buildSummarisationPromptFromPairs(oldSummary, pairs);
     }
 }

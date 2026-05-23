@@ -1,7 +1,11 @@
 package com.studyspace.service;
 
 import com.google.genai.Client;
+import com.google.genai.types.Content;
+import com.google.genai.types.EmbedContentConfig;
+import com.google.genai.types.EmbedContentResponse;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -60,6 +64,68 @@ public class GeminiService {
         log.info("[GEMINI] generateSummary() — summarisation prompt length: {} chars",
                 summarisationPrompt.length());
         return callApi(summarisationPrompt, "generateSummary");
+    }
+
+    /**
+     * Generates a 768-dimensional embedding vector for the given text using
+     * Google's {@code gemini-embedding-001} model with custom output dimensionality.
+     *
+     * <p>Used by {@link com.studyspace.service.DocumentVectorService} for both
+     * chunk ingestion and query embedding during RAG retrieval.
+     *
+     * @param text the text to embed (typically a document chunk or a user question)
+     * @return 768-dimensional embedding as a {@code float[]}
+     */
+    public float[] generateEmbedding(String text) {
+        log.debug("[GEMINI] generateEmbedding() — text length: {} chars", text.length());
+        try {
+            EmbedContentConfig config = EmbedContentConfig.builder()
+                    .outputDimensionality(768)
+                    .build();
+            // Call gemini-embedding-001 with custom dimension configuration
+            EmbedContentResponse response = client.models.embedContent(
+                    "gemini-embedding-001", text, config);
+            // response.embeddings() returns Optional<List<ContentEmbedding>>; index 0 is the single result
+            java.util.List<Float> values =
+                    response.embeddings().get().get(0).values().get();
+            float[] result = new float[values.size()];
+            for (int i = 0; i < values.size(); i++) {
+                result[i] = values.get(i);
+            }
+            log.debug("[GEMINI] Embedding generated — dimension={}", result.length);
+            return result;
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            log.error("[GEMINI] generateEmbedding() failed: {}", msg, e);
+            throw new RuntimeException("Failed to generate embedding: " + msg, e);
+        }
+    }
+
+
+    /**
+     * Sends a multimodal {@link Content} request to {@code gemini-2.0-flash}.
+     *
+     * <p>Used by {@link com.studyspace.service.DocumentVectorService} to extract
+     * text from image-heavy or scanned PDFs by passing the raw PDF bytes alongside
+     * a text instruction. Gemini processes the document visually, producing text
+     * that PDFBox cannot extract from rasterized content.
+     *
+     * @param content a {@link Content} object containing file bytes and an instruction
+     * @return raw {@link GenerateContentResponse} from Gemini
+     */
+    public GenerateContentResponse generateMultimodal(Content content) {
+        log.info("[GEMINI] generateMultimodal() — multimodal PDF extraction call");
+        try {
+            GenerateContentResponse response =
+                    client.models.generateContent("gemini-2.0-flash", content, null);
+            log.info("[GEMINI] Multimodal response — {} chars",
+                    response.text() != null ? response.text().length() : 0);
+            return response;
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            log.error("[GEMINI] generateMultimodal() failed: {}", msg, e);
+            throw new RuntimeException("Multimodal extraction failed: " + msg, e);
+        }
     }
 
     /**

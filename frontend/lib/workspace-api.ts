@@ -176,6 +176,7 @@ export interface ChatQueryRequest {
 	/** fileUrl from WorkspaceMaterial – local path today, S3/GCS URL later */
 	documentUrl?: string;
 	documentTitle?: string;
+	provider?: "gemini" | "openai";
 }
 
 export interface ChatQueryResponse {
