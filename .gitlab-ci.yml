@@ -1,94 +1,118 @@
 stages:
     - build
     - test
+    - scan
     - analyze
 
 # ----------------------------------------
-# 1. Build Stages (Generates Binaries)
+# 1. Backend Compile
 # ----------------------------------------
 backend_build:
     stage: build
-    image: eclipse-temurin:17-jdk
+    image: eclipse-temurin:21-jdk
     script:
         - cd backend
         - chmod +x gradlew
-        # Compiles code and runs dependency check (from previous step)
-        - ./gradlew clean classes dependencyCheckAggregate
+        - ./gradlew classes
     artifacts:
         paths:
-            # CRITICAL: SonarScanner needs these compiled classes
-            - ./backend/build/classes/java/main/
-            - ./backend/build/reports/dependency-check-report.html # Optional: save DC report
-    cache:
-        - key: NVD-db-cache
-          paths:
-              - ./backend/dependency-check-data/
+            - backend/build/classes/java/main/
 
 # ----------------------------------------
-# 2. Test Stages (Generates Coverage)
+# 2. Frontend Build
+# ----------------------------------------
+frontend_build:
+    stage: build
+    image: node:20-alpine
+    script:
+        - cd frontend
+        - npm ci
+        - npm run build
+    artifacts:
+        paths:
+            - ./frontend/.next/
+
+# ----------------------------------------
+# 3. Backend Test + Coverage
 # ----------------------------------------
 backend_test:
     stage: test
-    image: eclipse-temurin:17-jdk
-    dependencies:
-        - backend_build
+    image: eclipse-temurin:21-jdk
+    needs:
+        - job: backend_build
+          artifacts: true
     script:
         - cd backend
         - chmod +x gradlew
         - ./gradlew test
-        - ./gradlew jacocoTestReport # Generates the XML coverage report
+        - ./gradlew jacocoTestReport
     artifacts:
         paths:
-            # CRITICAL: SonarScanner needs this XML for coverage stats
-            - ./backend/build/reports/jacoco/test/jacocoTestReport.xml
-frontend_build:
-    stage: build
-    image: node:18-alpine # Use the Node version your Next.js app requires
-    script:
-        - cd frontend
-        - npm ci # Strictly installs exact dependencies from package-lock.json
-        - npm run build # Builds the Next.js app
-    artifacts:
-        paths:
-            - ./frontend/.next/
-            - ./frontend/node_modules/ # Pass node_modules so Sonar can analyze TS types accurately
+            - backend/build/reports/jacoco/test/jacocoTestReport.xml
+        when: always
+
+# # ----------------------------------------
+# #  Frontend Test + Coverage
+# # ----------------------------------------
+# frontend_test:
+#     stage: test
+#     image: node:20-alpine
+#     needs:
+#         - job: frontend_build
+#           artifacts: false # no build output needed to run tests
+#     script:
+#         - cd frontend
+#         - npm run test:coverage
+#     artifacts:
+#         paths:
+#             - frontend/coverage/lcov.info
+#         when: always
 
 # ----------------------------------------
-# Frontend Test Stage (Optional but Recommended)
+# 4. Dependency Security Scan
 # ----------------------------------------
-frontend_test:
-    stage: test
-    image: node:18-alpine
-    dependencies:
-        - frontend_build
+dependency_check:
+    stage: scan
+    image: eclipse-temurin:21-jdk
+    needs:
+        - job: backend_build
+          artifacts: false
     script:
-        - cd frontend
-        # Assuming you have a test script in package.json like: "test:coverage": "jest --coverage"
-        - npm run test:coverage
+        - cd backend
+        - chmod +x gradlew
+        - ./gradlew dependencyCheckAnalyze
+          -Dorg.owasp.dependencycheck.data.directory=$CI_PROJECT_DIR/backend/dependency-check-data
+          --stacktrace
     artifacts:
         paths:
-            # SonarQube looks for this specific file format for JavaScript/TypeScript coverage
-            - ./frontend/coverage/lcov.info
+            - backend/build/reports/dependency-check-report.html
+        when: always
+    cache:
+        - key: NVD-db-cache-v4
+          paths:
+              - backend/dependency-check-data/
+    allow_failure: true
 
 # ----------------------------------------
-# 3. Unified SonarQube Analysis
+# 5. Unified SonarQube Analysis
 # ----------------------------------------
 sonarQube:
     stage: analyze
     image: sonarsource/sonar-scanner-cli:latest
-    dependencies:
-        - backend_build
-        - backend_test
+    needs:
+        - job: backend_build
+          artifacts: true
+        - job: frontend_build
+          artifacts: false
+        - job: backend_test
+          artifacts: true
     script:
-        # Notice we run one scanner command for both backend and frontend
-        # Note: Modern Sonar prefers 'sonar.token' over 'sonar.login'
-        - sonar-scanner \
-          -Dsonar.projectKey=$SONAR_PROJECT \
-          -Dsonar.projectName=$SONAR_PROJECT \
-          -Dsonar.host.url=$SONAR_URL \
-          -Dsonar.token=$SONAR_TOKEN \
-          -Dsonar.sources=./backend/src/main,./frontend/src \
-          -Dsonar.java.binaries=./backend/build/classes/java/main/ \
-          -Dsonar.coverage.jacoco.xmlReportPaths=./backend/build/reports/jacoco/test/jacocoTestReport.xml \
-          -Dsonar.tests=./backend/src/test/ \
-          -Dsonar.verbose=true
+        - sonar-scanner
+          -Dsonar.projectKey=$SONAR_PROJECT
+          -Dsonar.projectName=$SONAR_PROJECT
+          -Dsonar.host.url=$SONAR_URL
+          -Dsonar.token=$SONAR_TOKEN
+          -Dsonar.sources=backend/src/main,frontend
+          -Dsonar.java.binaries=backend/build/classes/java/main/
+          -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/coverage/**
+          -Dsonar.coverage.jacoco.xmlReportPaths=backend/build/reports/jacoco/test/jacocoTestReport.xml

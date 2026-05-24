@@ -24,3 +24,6 @@ docs/**
 
 AGENTS.md
 todo.txt
+backend/.gradle/
+backend/build/
+backend/.gradle/**
