@@ -13,7 +13,7 @@ interface CourseCardProps {
 	as?: "student" | "instructor";
 }
 
-export function CourseCard({ course, as = "student" }: CourseCardProps) {
+export function CourseCard({ course, as = "student" }: Readonly<CourseCardProps>) {
 	return (
 		<Card className="group flex flex-col h-full hover:shadow-md transition-shadow border-border bg-card">
 			<CardHeader className="pb-3">

@@ -58,11 +58,11 @@ function ModeSelector({
   mode, 
   isSessionActive, 
   onModeChange 
-}: { 
+}: Readonly<{ 
   mode: TimerMode
   isSessionActive: boolean
   onModeChange: (mode: TimerMode) => void 
-}) {
+}>) {
   return (
     <div className="absolute top-4 right-4">
       <Tabs 
@@ -92,7 +92,7 @@ function ModeSelector({
 }
 
 /** Time Display with hours:minutes:seconds */
-function TimeDisplay({ hours, minutes, seconds }: TimeDisplayProps) {
+function TimeDisplay({ hours, minutes, seconds }: Readonly<TimeDisplayProps>) {
   return (
     <div className="flex items-baseline justify-center font-mono leading-none">
       <span className="text-8xl font-bold text-primary tracking-tighter tabular-nums">
@@ -106,7 +106,7 @@ function TimeDisplay({ hours, minutes, seconds }: TimeDisplayProps) {
 }
 
 /** Timer Preset Buttons & Custom Input */
-function TimerPresets({ customMinutes, onPresetSelect, onCustomChange }: TimerPresetsProps) {
+function TimerPresets({ customMinutes, onPresetSelect, onCustomChange }: Readonly<TimerPresetsProps>) {
   return (
     <div className="w-full flex items-center justify-center gap-3">
       <div className="flex gap-2">
@@ -146,7 +146,7 @@ function TimerPresets({ customMinutes, onPresetSelect, onCustomChange }: TimerPr
 }
 
 /** Control Buttons (Reset, Start/Pause, Finish) */
-function TimerControls({ isTracking, isSessionActive, onToggle, onReset, onFinish }: TimerControlsProps) {
+function TimerControls({ isTracking, isSessionActive, onToggle, onReset, onFinish }: Readonly<TimerControlsProps>) {
   return (
     <div className="flex items-center justify-center gap-4">
       <Button 
@@ -198,7 +198,7 @@ function TimerControls({ isTracking, isSessionActive, onToggle, onReset, onFinis
 }
 
 /** Session Stats Grid */
-function SessionStats({ subject, focusLevel, mode }: SessionStatsProps) {
+function SessionStats({ subject, focusLevel, mode }: Readonly<SessionStatsProps>) {
   const stats = [
     { label: "Subject", value: subject },
     { label: "Focus Level", value: focusLevel },

@@ -92,7 +92,7 @@ export function useSessionSocket({
 					onSessionEndedRef.current?.();
 				});
 			},
-			onStompError: (frame: { headers: Record<string, string> }) => {
+			onStompError: (frame: Readonly<{ headers: Record<string, string> }>) => {
 				console.error("[STOMP] Error:", frame.headers["message"]);
 			},
 			onDisconnect: () => {

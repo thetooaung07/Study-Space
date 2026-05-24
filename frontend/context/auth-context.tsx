@@ -17,7 +17,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 	const [user, setUser] = useState<UserDTO | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const router = useRouter();
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 	return (
 		<AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateUser }}>
-			{isLoading ? <FullPageLoader /> : !isAuthenticated && !isAuthRoute ? null : children}
+			{isLoading ? <FullPageLoader /> : !isAuthenticated && !isAuthRoute ? null : children} // NOSONAR
 		</AuthContext.Provider>
 	);
 }

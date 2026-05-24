@@ -47,35 +47,9 @@ public class PromptBuilder {
         sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n");
         sb.append("Answer clearly, concisely, and in Markdown where appropriate.\n\n");
 
-        // ── Long-term summary ────────────────────────────────────────────────
-        if (summary != null && !summary.isBlank()) {
-            sb.append("## Conversation Summary (long-term memory)\n");
-            sb.append(summary.trim()).append("\n\n");
-            log.debug("[PROMPT_BUILDER] Injected long-term summary ({} chars)", summary.length());
-        }
-
-        // ── Recent message buffer ────────────────────────────────────────────
-        if (recentMessages != null && !recentMessages.isEmpty()) {
-            sb.append("## Recent Conversation\n");
-            for (Message msg : recentMessages) {
-                String label = "user".equalsIgnoreCase(msg.getRole()) ? "Student" : "Assistant";
-                sb.append(label).append(": ").append(msg.getContent()).append("\n");
-            }
-            sb.append("\n");
-            log.debug("[PROMPT_BUILDER] Injected {} recent messages", recentMessages.size());
-        }
-
-        // ── RAG document excerpts (replaces full-document injection) ─────────
-        if (ragChunks != null && !ragChunks.isEmpty()) {
-            sb.append("## Relevant Document Excerpts\n");
-            sb.append("The following excerpts were retrieved from the tagged Course Material. ");
-            sb.append("Use them to inform your answer where relevant.\n\n");
-            for (int i = 0; i < ragChunks.size(); i++) {
-                sb.append("### Excerpt ").append(i + 1).append("\n");
-                sb.append(ragChunks.get(i).trim()).append("\n\n");
-            }
-            log.debug("[PROMPT_BUILDER] Injected {} RAG chunks", ragChunks.size());
-        }
+        appendSummary(sb, summary);
+        appendRecentMessages(sb, recentMessages);
+        appendRagChunks(sb, ragChunks);
 
         // ── Current question ─────────────────────────────────────────────────
         sb.append("## Student's Current Question\n");
@@ -89,6 +63,39 @@ public class PromptBuilder {
                 ragChunks != null ? ragChunks.size() : 0);
 
         return prompt;
+    }
+
+    private void appendSummary(StringBuilder sb, String summary) {
+        if (summary != null && !summary.isBlank()) {
+            sb.append("## Conversation Summary (long-term memory)\n");
+            sb.append(summary.trim()).append("\n\n");
+            log.debug("[PROMPT_BUILDER] Injected long-term summary ({} chars)", summary.length());
+        }
+    }
+
+    private void appendRecentMessages(StringBuilder sb, List<Message> recentMessages) {
+        if (recentMessages != null && !recentMessages.isEmpty()) {
+            sb.append("## Recent Conversation\n");
+            for (Message msg : recentMessages) {
+                String label = "user".equalsIgnoreCase(msg.getRole()) ? "Student" : "Assistant";
+                sb.append(label).append(": ").append(msg.getContent()).append("\n");
+            }
+            sb.append("\n");
+            log.debug("[PROMPT_BUILDER] Injected {} recent messages", recentMessages.size());
+        }
+    }
+
+    private void appendRagChunks(StringBuilder sb, List<String> ragChunks) {
+        if (ragChunks != null && !ragChunks.isEmpty()) {
+            sb.append("## Relevant Document Excerpts\n");
+            sb.append("The following excerpts were retrieved from the tagged Course Material. ");
+            sb.append("Use them to inform your answer where relevant.\n\n");
+            for (int i = 0; i < ragChunks.size(); i++) {
+                sb.append("### Excerpt ").append(i + 1).append("\n");
+                sb.append(ragChunks.get(i).trim()).append("\n\n");
+            }
+            log.debug("[PROMPT_BUILDER] Injected {} RAG chunks", ragChunks.size());
+        }
     }
 
     // ─── Summarisation prompt ────────────────────────────────────────────────

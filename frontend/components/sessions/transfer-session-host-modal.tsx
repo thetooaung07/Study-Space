@@ -27,7 +27,7 @@ export function TransferSessionHostDialog({
   sessionTitle,
   participants,
   onTransferAndLeave,
-}: TransferSessionHostDialogProps) {
+}: Readonly<TransferSessionHostDialogProps>) {
   const [selectedHostId, setSelectedHostId] = useState<number | null>(null)
 
   const handleTransfer = () => {

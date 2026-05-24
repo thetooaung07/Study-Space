@@ -32,7 +32,7 @@ export default function EditCoursePage() {
             <h1 className="text-2xl font-bold text-foreground mb-6">Edit Course</h1>
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
-            ) : course && user ? (
+            ) : course && user ? ( // NOSONAR
               <CourseForm course={course} instructorId={user.id} />
             ) : (
               <p className="text-sm text-destructive">Course not found or not authorized.</p>

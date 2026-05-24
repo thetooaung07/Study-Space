@@ -211,7 +211,7 @@ public class CourseService {
 
     private void assertInstructor(Course course, Long userId) {
         if (!course.getInstructor().getId().equals(userId)) {
-            throw new RuntimeException("Forbidden: only the instructor can modify this course.");
+            throw new IllegalStateException("Forbidden: only the instructor can modify this course.");
         }
     }
 

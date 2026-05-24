@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MoreVertical, Calendar, Clock, Users, FileText, Loader2, Trash2 } from "lucide-react";
+import { Calendar, Clock, Users, FileText, Loader2, Trash2 } from "lucide-react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -24,7 +24,7 @@ interface SessionHistoryProps {
 	onSessionDeleted?: () => void;
 }
 
-export function SessionHistory({ onSessionDeleted }: SessionHistoryProps) {
+export function SessionHistory({ onSessionDeleted }: Readonly<SessionHistoryProps>) {
 	const { user } = useAuth();
 	const [sessions, setSessions] = useState<StudySessionDTO[]>([]);
 	const [loading, setLoading] = useState(true);

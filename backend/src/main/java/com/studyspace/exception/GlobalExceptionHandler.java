@@ -16,6 +16,10 @@ import java.util.Map;
 @lombok.extern.slf4j.Slf4j
 public class GlobalExceptionHandler {
     
+    private static final String FIELD_TIMESTAMP = "timestamp";
+    private static final String FIELD_STATUS = "status";
+    private static final String FIELD_MESSAGE = "message";
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
         MethodArgumentNotValidException ex,
@@ -23,9 +27,9 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Validation error: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", DateTimeUtil.nowUtc());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("message", "Validation failed");
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(FIELD_MESSAGE, "Validation failed");
         body.put("errors", ex.getBindingResult().getFieldErrors()
             .stream()
             .map(error -> error.getField() + ": " + error.getDefaultMessage())
@@ -34,6 +38,34 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
     
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(
+        ResourceNotFoundException ex,
+        WebRequest request
+    ) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        Map<String, Object> body = new HashMap<>();
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.NOT_FOUND.value());
+        body.put(FIELD_MESSAGE, ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequestException(
+        BadRequestException ex,
+        WebRequest request
+    ) {
+        log.warn("Bad request: {}", ex.getMessage());
+        Map<String, Object> body = new HashMap<>();
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(FIELD_MESSAGE, ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(
         RuntimeException ex,
@@ -41,9 +73,9 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Runtime exception occurred: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", DateTimeUtil.nowUtc());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("message", ex.getMessage());
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.BAD_REQUEST.value());
+        body.put(FIELD_MESSAGE, ex.getMessage());
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
@@ -55,9 +87,9 @@ public class GlobalExceptionHandler {
     ) {
         log.warn("Resource not found: {}", ex.getResourcePath());
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", DateTimeUtil.nowUtc());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("message", "Resource not found: " + ex.getResourcePath());
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.NOT_FOUND.value());
+        body.put(FIELD_MESSAGE, "Resource not found: " + ex.getResourcePath());
         
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
@@ -69,9 +101,9 @@ public class GlobalExceptionHandler {
     ) {
         log.error("Unexpected error occurred: ", ex);
         Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", DateTimeUtil.nowUtc());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("message", "An unexpected error occurred");
+        body.put(FIELD_TIMESTAMP, DateTimeUtil.nowUtc());
+        body.put(FIELD_STATUS, HttpStatus.INTERNAL_SERVER_ERROR.value());
+        body.put(FIELD_MESSAGE, "An unexpected error occurred");
         
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }

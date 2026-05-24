@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, CloudCog, Search, User } from "lucide-react"
+import { Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

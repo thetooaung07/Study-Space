@@ -23,6 +23,7 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private static final String USER_NOT_FOUND = "User not found";
     
     public UserDTO createUser(CreateUserRequest request) {
         log.info("Creating user with email: {}", request.getEmail());
@@ -55,7 +56,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("User not found with ID: {}", userId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
             
         if (request.getUsername() != null) {
@@ -98,7 +99,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Password change failed - user not found: {}", userId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
             
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -122,7 +123,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 log.warn("User not found with ID: {}", id);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         return convertToDTO(user);
     }
@@ -133,7 +134,7 @@ public class UserService {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> {
                 log.warn("User not found with username: {}", username);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         return convertToDTO(user);
     }
@@ -153,7 +154,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Status update failed - user not found: {}", userId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         user.setCurrentStatus(status);
         log.debug("User ID: {} status updated to {}", userId, status);
@@ -165,7 +166,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Add study minutes failed - user not found: {}", userId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         int newTotal = user.getTotalStudyMinutes() + minutes;
         user.setTotalStudyMinutes(newTotal);
@@ -193,7 +194,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 log.error("Delete user failed - user not found: {}", id);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         
         Set<StudyGroup> groupsToUpdate = new HashSet<>(user.getGroups());

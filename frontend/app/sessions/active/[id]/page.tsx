@@ -2,10 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Users, MessageSquare, Pause, Play, Coffee, LogOut, Volume2, VolumeX, Hand, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -18,7 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { StudySessionDTO, ActivityDTO, UserDTO } from "@/types";
+import { StudySessionDTO, ActivityDTO } from "@/types";
 import { useAuth } from "@/context/auth-context";
 import { TransferSessionHostDialog } from "@/components/sessions/transfer-session-host-modal";
 import { useSessionSocket } from "@/hooks/useSessionSocket";
@@ -152,69 +148,58 @@ export default function ActiveSessionPage() {
 		enabled: !loading,
 	});
 
-	// Initialize user's timer based on server data
-	useEffect(() => {
-		if (session && user) {
-			// Find current user in participants to get true join time
-			// Use loose equality (==) to handle potential string/number mismatches
-			const currentUserParticipant = session.participants?.find((p) => p.id == user.id);
-
-			if (currentUserParticipant) {
-				// 1. Join Time
-				if (currentUserParticipant.joinedAt) {
-					const joinedTime = new Date(currentUserParticipant.joinedAt).getTime();
-					if (!isNaN(joinedTime)) {
-						setUserStartTime(joinedTime);
-					}
-				}
-
-				// 2. Pause Logic
-				let historicalPausedSeconds = currentUserParticipant.totalPausedSeconds || 0;
-				let currentActivePauseCals = 0;
-
-				// If currently paused (has lastPausedAt timestamp), calculate duration until NOW
-				if (currentUserParticipant.lastPausedAt) {
-					const lastPausedTime = new Date(currentUserParticipant.lastPausedAt).getTime();
-					if (!isNaN(lastPausedTime)) {
-						// Timer is currently PAUSED
-						setIsPlaying(false);
-						// Add the duration from last pause until now to total
-						currentActivePauseCals = (new Date().getTime() - lastPausedTime) / 1000;
-					}
-				} else {
-					// If no lastPausedAt, user is actively studying
-					setIsPlaying(true);
-				}
-
-				// Set total paused time (converting seconds to ms)
-				// SMOOTHING FIX: Only update if significant difference (>2s) to avoid jitter from network latency
-				const serverTotalPausedMs = (historicalPausedSeconds + currentActivePauseCals) * 1000;
-
-				setTotalPausedTime((prev) => {
-					const diff = Math.abs(serverTotalPausedMs - prev);
-					// If difference is small (< 2000ms), prefer local state to prevent UI jumps
-					// But ALWAYS update if we are initializing (prev === 0)
-					if (prev === 0 || diff > 2000) {
-						return serverTotalPausedMs;
-					}
-					return prev;
-				});
-
-				// Calculate initial elapsed time immediately if not yet set
-				const startTime = currentUserParticipant.joinedAt
-					? new Date(currentUserParticipant.joinedAt).getTime()
-					: new Date().getTime();
-
-				if (!isNaN(startTime) && elapsedTime === 0) {
-					const now = new Date().getTime();
-					const elapsed = Math.floor((now - startTime - serverTotalPausedMs) / 1000) * TIMER_MULTIPLIER;
-					setElapsedTime(elapsed > 0 ? elapsed : 0);
-				}
-			} else if (!userStartTime) {
-				setUserStartTime(new Date().getTime());
-			}
+	const initializeTimer = useCallback(() => {
+		if (!session || !user) {
+			if (!userStartTime) setUserStartTime(new Date().getTime());
+			return;
 		}
-	}, [session, user]);
+
+		const currentUserParticipant = session.participants?.find((p) => p.id == user.id);
+		if (!currentUserParticipant) {
+			if (!userStartTime) setUserStartTime(new Date().getTime());
+			return;
+		}
+
+		if (currentUserParticipant.joinedAt) {
+			const joinedTime = new Date(currentUserParticipant.joinedAt).getTime();
+			if (!isNaN(joinedTime)) setUserStartTime(joinedTime);
+		}
+
+		let historicalPausedSeconds = currentUserParticipant.totalPausedSeconds || 0;
+		let currentActivePauseCals = 0;
+
+		if (currentUserParticipant.lastPausedAt) {
+			const lastPausedTime = new Date(currentUserParticipant.lastPausedAt).getTime();
+			if (!isNaN(lastPausedTime)) {
+				setIsPlaying(false);
+				currentActivePauseCals = (new Date().getTime() - lastPausedTime) / 1000;
+			}
+		} else {
+			setIsPlaying(true);
+		}
+
+		const serverTotalPausedMs = (historicalPausedSeconds + currentActivePauseCals) * 1000;
+
+		setTotalPausedTime((prev) => {
+			const diff = Math.abs(serverTotalPausedMs - prev);
+			if (prev === 0 || diff > 2000) return serverTotalPausedMs;
+			return prev;
+		});
+
+		const startTime = currentUserParticipant.joinedAt
+			? new Date(currentUserParticipant.joinedAt).getTime()
+			: new Date().getTime();
+
+		if (!isNaN(startTime) && elapsedTime === 0) {
+			const now = new Date().getTime();
+			const elapsed = Math.floor((now - startTime - serverTotalPausedMs) / 1000) * TIMER_MULTIPLIER;
+			setElapsedTime(elapsed > 0 ? elapsed : 0);
+		}
+	}, [session, user, elapsedTime, userStartTime]);
+
+	useEffect(() => {
+		initializeTimer();
+	}, [initializeTimer]);
 
 	// User's personal stopwatch timer - runs independently every second
 	useEffect(() => {
@@ -306,47 +291,48 @@ export default function ActiveSessionPage() {
 		}
 	};
 
+	const syncPause = async (now: number) => {
+		setPauseStartTime(now);
+		await api.put(`/sessions/${sessionId}/participants/${user!.id}/pause`, {});
+	};
+
+	const syncResume = async (now: number) => {
+		let currentPauseStart = pauseStartTime;
+		const currentUserParticipant = session?.participants?.find((p) => p.id == user!.id);
+		if (currentUserParticipant?.lastPausedAt) {
+			const serverPauseStart = new Date(currentUserParticipant.lastPausedAt).getTime();
+			if (!isNaN(serverPauseStart)) {
+				currentPauseStart = serverPauseStart;
+			}
+		}
+
+		if (currentPauseStart) {
+			const pauseDuration = now - currentPauseStart;
+			const historicalSeconds = currentUserParticipant?.totalPausedSeconds || 0;
+			const newTotalMs = historicalSeconds * 1000 + pauseDuration;
+			setTotalPausedTime((prev) => Math.max(prev, newTotalMs));
+		}
+
+		setPauseStartTime(null);
+		await api.put(`/sessions/${sessionId}/participants/${user!.id}/resume`, {});
+	};
+
 	const handlePauseToggle = async () => {
+		if (!user || !sessionId) return;
 		const newIsPlaying = !isPlaying;
 		setIsPlaying(newIsPlaying);
 		const now = new Date().getTime();
 
-		if (user && sessionId) {
-			try {
-				if (!newIsPlaying) {
-					// User is pausing (going on break)
-					setPauseStartTime(now);
-
-					await api.put(`/sessions/${sessionId}/participants/${user.id}/pause`, {});
-				} else {
-					let currentPauseStart = pauseStartTime;
-
-					const currentUserParticipant = session?.participants?.find((p) => p.id == user.id);
-					if (currentUserParticipant?.lastPausedAt) {
-						const serverPauseStart = new Date(currentUserParticipant.lastPausedAt).getTime();
-						if (!isNaN(serverPauseStart)) {
-							currentPauseStart = serverPauseStart;
-						}
-					}
-
-					if (currentPauseStart) {
-						const pauseDuration = now - currentPauseStart;
-
-						const historicalSeconds = currentUserParticipant?.totalPausedSeconds || 0;
-						const newTotalMs = historicalSeconds * 1000 + pauseDuration;
-
-						setTotalPausedTime((prev) => Math.max(prev, newTotalMs));
-					}
-
-					setPauseStartTime(null);
-
-					await api.put(`/sessions/${sessionId}/participants/${user.id}/resume`, {});
-				}
-			} catch (error) {
-				console.error("Failed to sync pause state:", error);
-				setIsPlaying(!newIsPlaying);
-				toast.error("Failed to update status");
+		try {
+			if (!newIsPlaying) {
+				await syncPause(now);
+			} else {
+				await syncResume(now);
 			}
+		} catch (error) {
+			console.error("Failed to sync pause state:", error);
+			setIsPlaying(!newIsPlaying);
+			toast.error("Failed to update status");
 		}
 	};
 

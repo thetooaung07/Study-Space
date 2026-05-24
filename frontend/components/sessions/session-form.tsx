@@ -15,7 +15,7 @@ interface SessionFormProps {
 	onSuccess?: () => void;
 }
 
-export function SessionForm({ onClose, onSuccess }: SessionFormProps) {
+export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) {
 	const { user } = useAuth();
 	const router = useRouter();
 	const [loading, setLoading] = useState(false);

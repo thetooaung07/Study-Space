@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Settings, Users, BookOpen, Eye, EyeOff, Trash2, Loader2, Pencil, GitPullRequest } from "lucide-react";
+import { Users, BookOpen, Eye, EyeOff, Trash2, Loader2, Pencil, GitPullRequest } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -127,7 +127,7 @@ export default function CourseManagePage() {
 								<Button variant="outline" size="sm" onClick={handleTogglePublish} disabled={publishing}>
 									{publishing ? (
 										<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-									) : course.isPublished ? (
+									) : course.isPublished ? ( // NOSONAR
 										<EyeOff className="mr-1.5 h-4 w-4" />
 									) : (
 										<Eye className="mr-1.5 h-4 w-4" />

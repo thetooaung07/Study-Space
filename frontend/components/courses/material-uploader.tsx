@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
 import type { CourseMaterial, MaterialType } from "@/types/courses";
 
-const MaterialIcon = ({ type }: { type: MaterialType }) => {
+const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
   const cls = "h-4 w-4 shrink-0";
   switch (type) {
     case "PDF":
@@ -38,7 +38,7 @@ export function MaterialUploader({
   materials,
   onUploaded,
   onDeleted,
-}: MaterialUploaderProps) {
+}: Readonly<MaterialUploaderProps>) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

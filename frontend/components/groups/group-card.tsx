@@ -1,9 +1,8 @@
 "use client"
 
-import { Users, Star, MoreVertical, BarChart3, LogIn, LogOut, Edit, Trash2 } from "lucide-react"
+import { Users, MoreVertical, BarChart3, LogIn, LogOut, Edit, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
 import { StudyGroupDTO } from "@/types"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
@@ -24,7 +23,7 @@ interface GroupCardProps {
   onLeave?: () => void
 }
 
-export function GroupCard({ group, isOwned = false, onJoin, onEdit, onDelete, onLeave }: GroupCardProps) {
+export function GroupCard({ group, isOwned = false, onJoin, onEdit, onDelete, onLeave }: Readonly<GroupCardProps>) {
  
   const router = useRouter();
   const { user } = useAuth();

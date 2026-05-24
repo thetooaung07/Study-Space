@@ -9,7 +9,7 @@ interface SessionHeaderProps {
 	onLeaveSession: () => void;
 }
 
-export function SessionHeader({ session, participantCount, onLeaveSession }: SessionHeaderProps) {
+export function SessionHeader({ session, participantCount, onLeaveSession }: Readonly<SessionHeaderProps>) {
 	const formatSessionStartTime = (startTime?: string) => {
 		if (!startTime) return "Not started";
 		const date = new Date(startTime);

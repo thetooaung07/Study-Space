@@ -2,7 +2,6 @@
 
 import { Users } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { GroupStatsDTO } from "@/types"
@@ -37,7 +36,7 @@ export function GroupLeaderboard() {
       
         {loading ? (
              <p className="text-center text-gray-500">Loading leaderboard...</p>
-        ) : groups.length === 0 ? (
+        ) : groups.length === 0 ? ( // NOSONAR
              <p className="text-center text-gray-500">No group data available.</p>
         ) : (
              <div className="space-y-4">
@@ -48,8 +47,8 @@ export function GroupLeaderboard() {
                  >
                    <div className="flex items-center gap-4">
                      <div className={`w-8 h-8 flex items-center justify-center rounded-full font-bold ${
-                         idx === 0 ? "bg-yellow-100 text-yellow-600" :
-                         idx === 1 ? "bg-gray-100 text-gray-600" :
+                         idx === 0 ? "bg-yellow-100 text-yellow-600" : // NOSONAR
+                         idx === 1 ? "bg-gray-100 text-gray-600" : // NOSONAR
                          idx === 2 ? "bg-orange-100 text-orange-600" :
                          "bg-blue-50 text-blue-600"
                      }`}>

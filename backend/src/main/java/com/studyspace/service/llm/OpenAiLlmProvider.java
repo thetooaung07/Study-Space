@@ -98,7 +98,7 @@ public class OpenAiLlmProvider implements LlmProvider {
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("[OPENAI_PROVIDER][{}] API call failed: {}", caller, msg, e);
-            throw new RuntimeException("OpenAI service is currently unavailable. Please try again later.", e);
+            throw new IllegalStateException("OpenAI service is currently unavailable. Please try again later.", e);
         }
     }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, LayoutDashboard, PlayCircle, Users, History, Trophy, UserCircle } from "lucide-react";
+import { ChevronRight, LayoutDashboard, PlayCircle, Users, History, UserCircle } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 
 export default function QuickLinksPage() {

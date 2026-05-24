@@ -37,13 +37,15 @@ public class StudyGroupService {
     private final StudySessionRepository sessionRepository;
     private final SessionParticipantRepository participantRepository;
     private final com.studyspace.mapper.UserMapper userMapper;
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String GROUP_NOT_FOUND = "Group not found";
     
     public StudyGroupDTO createGroup(Long creatorId, CreateGroupRequest request) {
         log.info("Creating group '{}' for user ID: {}", request.getName(), creatorId);
         User creator = userRepository.findById(creatorId)
             .orElseThrow(() -> {
                 log.error("Failed to create group - user not found: {}", creatorId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         
         StudyGroup group = StudyGroup.builder()
@@ -66,14 +68,14 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public StudyGroupDTO getGroupById(Long id) {
         StudyGroup group = groupRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         return convertToDTO(group);
     }
     
     @Transactional(readOnly = true)
     public StudyGroupDTO getGroupByInviteCode(String inviteCode) {
         StudyGroup group = groupRepository.findByInviteCode(inviteCode)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         return convertToDTO(group);
     }
     
@@ -101,9 +103,9 @@ public class StudyGroupService {
     
     public void addMember(Long groupId, Long userId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
         
         if (!group.getMembers().contains(user)) {
             group.getMembers().add(user);
@@ -114,9 +116,9 @@ public class StudyGroupService {
     
     public void removeMember(Long groupId, Long userId, Long requesterId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         User userToRemove = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
         
         if (requesterId != null) {
              boolean isSelfRemoval = requesterId.equals(userId);
@@ -137,7 +139,7 @@ public class StudyGroupService {
     
     public StudyGroupDTO updateGroup(Long groupId, CreateGroupRequest request) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
             
         group.setName(request.getName());
         group.setDescription(request.getDescription());
@@ -150,10 +152,10 @@ public class StudyGroupService {
     
     public void transferOwnership(Long groupId, Long newOwnerId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
             
         User newOwner = userRepository.findById(newOwnerId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
             
         // Check if new owner is a member
         if (!group.getMembers().contains(newOwner)) {
@@ -166,7 +168,7 @@ public class StudyGroupService {
 
     public void deleteGroup(Long groupId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
             
         if (group.getGroupType() == GroupType.PUBLIC) {
             // Public group: cannot delete if there are other members (excluding creator if they are leaving, but here we are deleting)
@@ -194,7 +196,7 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public GroupStatsDTO getGroupStats(Long groupId, LocalDateTime cutoffDate, Integer minimumMinutes) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
 
         // Get all sessions that belong to THIS group (not all member sessions)
         List<StudySession> groupSessions = sessionRepository
@@ -255,7 +257,7 @@ public class StudyGroupService {
     public List<GroupMemberStatsDTO> getGroupMemberLeaderboard(Long groupId, LocalDateTime since, Integer minMinutes) {
         // Validate group exists
         groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         
         // Use the complex JPQL query
         return participantRepository.findGroupMemberStatsByGroupId(groupId, since, minMinutes);
@@ -299,7 +301,7 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException("Group not found"));
+            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
         
         List<StudySession> sessions = sessionRepository.findByStudyGroupId(groupId);
    

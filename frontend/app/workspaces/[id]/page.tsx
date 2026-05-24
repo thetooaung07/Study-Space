@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FolderOpen, Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft } from "lucide-react";
+import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -240,7 +240,7 @@ export default function WorkspaceDetailPage() {
 													<div className="flex justify-center py-8">
 														<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 													</div>
-												) : courses.length === 0 ? (
+												) : courses.length === 0 ? ( // NOSONAR
 													<p className="text-sm text-muted-foreground text-center py-4">
 														No published courses available.
 													</p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Clock, Users, BookOpen, Zap, Play, CalendarDays } from "lucide-react"
+import { Clock, Users, Play, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,7 +24,7 @@ interface JoinSessionModalProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function JoinSessionModal({ sessionId, open, onOpenChange }: JoinSessionModalProps) {
+export function JoinSessionModal({ sessionId, open, onOpenChange }: Readonly<JoinSessionModalProps>) {
   const router = useRouter()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)

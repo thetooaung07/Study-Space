@@ -1,7 +1,6 @@
 "use client";
 
-import { BookOpen, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookOpen } from "lucide-react";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { CourseForm } from "@/components/courses/course-form";

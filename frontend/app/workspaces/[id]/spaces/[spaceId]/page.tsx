@@ -29,13 +29,13 @@ import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { workspacesApi } from "@/lib/workspace-api";
 import { useAuth } from "@/context/auth-context";
-import type { WorkspaceSpace, WorkspaceSection, WorkspaceMaterial } from "@/types/workspaces";
+import type { WorkspaceSpace } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { ContextualChat } from "@/components/workspaces/contextual-chat";
 
-const MaterialIcon = ({ type }: { type: MaterialType }) => {
+const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 	const cls = "h-4 w-4 shrink-0";
 	switch (type) {
 		case "PDF":
@@ -50,6 +50,24 @@ const MaterialIcon = ({ type }: { type: MaterialType }) => {
 			return <File className={cls + " text-muted-foreground"} />;
 	}
 };
+
+const addMaterialToSpace = (space: WorkspaceSpace, sectionId: number, material: WorkspaceMaterial): WorkspaceSpace => ({
+	...space,
+	sections: space.sections.map(s => 
+		s.id === sectionId 
+			? { ...s, materials: [...s.materials, material] } 
+			: s
+	)
+});
+
+const removeMaterialFromSpace = (space: WorkspaceSpace, sectionId: number, materialId: number): WorkspaceSpace => ({
+	...space,
+	sections: space.sections.map(s => 
+		s.id === sectionId 
+			? { ...s, materials: s.materials.filter(m => m.id !== materialId) } 
+			: s
+	)
+});
 
 export default function SpaceManagePage() {
 	const { id: workspaceId, spaceId } = useParams<{ id: string; spaceId: string }>();
@@ -162,15 +180,7 @@ export default function SpaceManagePage() {
 				materialTitle.trim(),
 				selectedFile,
 			);
-			setSpace((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					sections: prev.sections.map((s) =>
-						s.id === uploadSectionId ? { ...s, materials: [...s.materials, material] } : s,
-					),
-				};
-			});
+			setSpace((prev) => (prev ? addMaterialToSpace(prev, uploadSectionId, material) : prev));
 			setUploadSectionId(null);
 			setMaterialTitle("");
 			setSelectedFile(null);
@@ -187,17 +197,9 @@ export default function SpaceManagePage() {
 		setDeleteMaterialError("");
 		try {
 			await workspacesApi.deleteMaterial(deleteMaterialConfig.materialId, user.id);
-			setSpace((prev) => {
-				if (!prev) return prev;
-				return {
-					...prev,
-					sections: prev.sections.map((s) =>
-						s.id === deleteMaterialConfig.sectionId
-							? { ...s, materials: s.materials.filter((m) => m.id !== deleteMaterialConfig.materialId) }
-							: s,
-					),
-				};
-			});
+			setSpace((prev) =>
+				prev ? removeMaterialFromSpace(prev, deleteMaterialConfig.sectionId, deleteMaterialConfig.materialId) : prev
+			);
 			setDeleteMaterialConfig(null);
 		} catch (e: any) {
 			setDeleteMaterialError(e.message ?? "Failed to delete material.");

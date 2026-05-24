@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock, Users, Play, RefreshCcw, CloudCog } from "lucide-react";
+import { Clock, Users, Play, RefreshCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -9,7 +9,6 @@ import { StudySessionDTO } from "@/types";
 import { JoinSessionModal } from "@/components/sessions/join-session-modal";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
 import { computeDuration } from "@/lib/utils";
 
 export function ActiveSessions() {

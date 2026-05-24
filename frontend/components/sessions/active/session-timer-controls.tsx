@@ -17,7 +17,7 @@ export function SessionTimerControls({
 	participantsList,
 	onPauseToggle,
 	onRaiseHand,
-}: SessionTimerControlsProps) {
+}: Readonly<SessionTimerControlsProps>) {
 	const formatTime = (seconds: number) => {
 		const h = Math.floor(seconds / 3600);
 		const m = Math.floor((seconds % 3600) / 60);

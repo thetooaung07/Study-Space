@@ -11,7 +11,7 @@ interface CourseCatalogProps {
   as?: "student" | "instructor";
 }
 
-export function CourseCatalog({ courses, as = "student" }: CourseCatalogProps) {
+export function CourseCatalog({ courses, as = "student" }: Readonly<CourseCatalogProps>) {
   const [query, setQuery] = useState("");
 
   const filtered = courses.filter(

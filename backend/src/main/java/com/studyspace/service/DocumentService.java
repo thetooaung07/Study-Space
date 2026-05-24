@@ -37,7 +37,7 @@ public class DocumentService {
             }
         } catch (IOException e) {
             log.error("Failed to extract text from '{}': {}", documentUrl, e.getMessage());
-            throw new RuntimeException("Failed to read document: " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to read document: " + e.getMessage(), e);
         }
     }
 

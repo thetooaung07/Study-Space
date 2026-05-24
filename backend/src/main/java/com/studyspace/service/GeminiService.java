@@ -96,7 +96,7 @@ public class GeminiService {
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("[GEMINI] generateEmbedding() failed: {}", msg, e);
-            throw new RuntimeException("Failed to generate embedding: " + msg, e);
+            throw new IllegalStateException("Failed to generate embedding: " + msg, e);
         }
     }
 
@@ -123,7 +123,7 @@ public class GeminiService {
         } catch (Exception e) {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("[GEMINI] generateMultimodal() failed: {}", msg, e);
-            throw new RuntimeException("Multimodal extraction failed: " + msg, e);
+            throw new IllegalStateException("Multimodal extraction failed: " + msg, e);
         }
     }
 
@@ -183,9 +183,9 @@ public class GeminiService {
                 String retryMsg = m.find()
                         ? "Rate limit reached. Please wait " + Math.ceil(Double.parseDouble(m.group(1))) + " seconds and try again."
                         : "Rate limit reached. Please wait a moment and try again.";
-                throw new RuntimeException(retryMsg, e);
+                throw new IllegalStateException(retryMsg, e);
             }
-            throw new RuntimeException("AI service is currently unavailable. Please try again later.", e);
+            throw new IllegalStateException("AI service is currently unavailable. Please try again later.", e);
         }
     }
 

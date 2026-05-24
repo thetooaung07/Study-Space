@@ -12,7 +12,7 @@ interface StatCardProps {
   positive?: boolean
 }
 
-export function StatCard({ icon: Icon, label, value, trend, positive = false }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, trend, positive = false }: Readonly<StatCardProps>) {
   return (
     <Card className="p-6">
       <div className="flex items-start justify-between">

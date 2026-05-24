@@ -4,7 +4,7 @@ interface StatusBadgeProps {
   status: "OFFLINE" | "BREAK" | "STUDYING"
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ status }: Readonly<StatusBadgeProps>) {
   const statusConfig = {
     OFFLINE: { bg: "bg-gray-500/20", text: "text-gray-600", label: "Offline" },
     BREAK: { bg: "bg-yellow-500/20", text: "text-yellow-600", label: "On Break" },

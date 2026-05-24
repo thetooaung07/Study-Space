@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Trophy, Medal, Crown, Flame, Calendar, Users } from "lucide-react"
+import { Trophy, Crown, Flame } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
 // import { api } from "@/lib/api" // Assuming api client exists, using fetch for now or mock if preferred
 
 // Mock data for initial invalidation issues or fallback

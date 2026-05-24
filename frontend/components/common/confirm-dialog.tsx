@@ -27,7 +27,7 @@ export function ConfirmDialog({
 	loading = false,
 	error,
 	variant = "default",
-}: ConfirmDialogProps) {
+}: Readonly<ConfirmDialogProps>) {
 	return (
 		<Dialog
 			open={open}

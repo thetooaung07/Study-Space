@@ -30,11 +30,11 @@ public class AuthService {
         log.info("Registration attempt for email: {}", request.getEmail());
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("Registration failed - email already exists: {}", request.getEmail());
-            throw new RuntimeException("Email already exists");
+            throw new IllegalStateException("Email already exists");
         }
         if (userRepository.existsByUsername(request.getUsername())) {
             log.warn("Registration failed - username already exists: {}", request.getUsername());
-            throw new RuntimeException("Username already exists");
+            throw new IllegalStateException("Username already exists");
         }
 
         var user = User.builder()

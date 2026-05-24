@@ -27,6 +27,8 @@ public class LocalFileStorageService implements FileStorageService {
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
+    
+    private static final String UPLOADS_PREFIX = "/uploads/";
 
     @Override
     public String store(MultipartFile file, String folder) {
@@ -44,7 +46,7 @@ public class LocalFileStorageService implements FileStorageService {
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             // Return a relative URL path served by Spring static resources
-            return "/uploads/" + folder + "/" + fileName;
+            return UPLOADS_PREFIX + folder + "/" + fileName;
         } catch (IOException ex) {
             throw new RuntimeException("Failed to store file: " + ex.getMessage(), ex);
         }
@@ -54,7 +56,7 @@ public class LocalFileStorageService implements FileStorageService {
     public void delete(String fileUrl) {
         try {
             // Convert URL like /uploads/courses/file.pdf → absolute path under uploadDir
-            String relativePath = fileUrl.replace("/uploads/", "");
+            String relativePath = fileUrl.replace(UPLOADS_PREFIX, "");
             Path filePath = Paths.get(uploadDir, relativePath).toAbsolutePath().normalize();
             File file = filePath.toFile();
             if (file.exists()) {
@@ -69,7 +71,7 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String copy(String sourceFileUrl, String targetFolder) {
         try {
-            String relativePath = sourceFileUrl.replace("/uploads/", "");
+            String relativePath = sourceFileUrl.replace(UPLOADS_PREFIX, "");
             Path sourcePath = Paths.get(uploadDir, relativePath).toAbsolutePath().normalize();
 
             // Determine extension from source
@@ -86,7 +88,7 @@ public class LocalFileStorageService implements FileStorageService {
             Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             log.info("Copied file from {} to {}", sourcePath, targetPath);
-            return "/uploads/" + targetFolder + "/" + newFileName;
+            return UPLOADS_PREFIX + targetFolder + "/" + newFileName;
         } catch (IOException ex) {
             throw new RuntimeException("Failed to copy file: " + ex.getMessage(), ex);
         }

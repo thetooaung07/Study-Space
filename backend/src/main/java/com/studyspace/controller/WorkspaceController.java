@@ -39,8 +39,7 @@ public class WorkspaceController {
     public ResponseEntity<org.springframework.data.domain.Page<StudentWorkspaceDTO>> getPublicWorkspaces(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(pageable));
+        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")

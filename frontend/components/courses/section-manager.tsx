@@ -5,8 +5,7 @@ import {
 	Plus,
 	Pencil,
 	Trash2,
-	GripVertical,
-	Loader2,
+		Loader2,
 	ChevronDown,
 	ChevronRight,
 	Upload,
@@ -15,8 +14,7 @@ import {
 	Film,
 	Presentation,
 	File,
-	ExternalLink,
-} from "lucide-react";
+	} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,10 +22,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
-import type { CourseSection, CourseMaterial, MaterialType } from "@/types/courses";
+import type { CourseSection, MaterialType } from "@/types/courses";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-function MatIcon({ type }: { type: MaterialType }) {
+function MatIcon({ type }: Readonly<{ type: MaterialType }>) {
 	const cls = "h-4 w-4 shrink-0";
 	switch (type) {
 		case "PDF":
@@ -51,7 +49,7 @@ interface SectionManagerProps {
 	onSectionsChange?: (sections: CourseSection[]) => void;
 }
 
-export function SectionManager({ courseId, userId, initialSections, onSectionsChange }: SectionManagerProps) {
+export function SectionManager({ courseId, userId, initialSections, onSectionsChange }: Readonly<SectionManagerProps>) {
 	const [sections, setSections] = useState<CourseSection[]>(initialSections);
 	const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set(initialSections.map((s) => s.id)));
 	// title/description edit

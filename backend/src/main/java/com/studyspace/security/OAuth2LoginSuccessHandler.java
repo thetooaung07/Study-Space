@@ -26,6 +26,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final String FRONTEND_URL = "http://localhost:3000/auth/callback";
+    private static final String ATTR_LOGIN = "login";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -35,65 +36,12 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String name = oAuth2User.getAttribute("name");
         log.debug("OAuth2 user attributes - email: {}, name: {}", email, name);
         
-        // Avatar Logic
-        Object avatarUrlObj = oAuth2User.getAttribute("avatar_url"); // GitHub
-        String initialAvatarUrl = avatarUrlObj != null ? avatarUrlObj.toString() : null;
-        if (initialAvatarUrl == null) {
-            Object pictureObj = oAuth2User.getAttribute("picture"); // Google
-            if (pictureObj != null) {
-                initialAvatarUrl = pictureObj.toString();
-            }
-        }
-        final String avatarUrl = initialAvatarUrl;
-
-        // Email Fallback Logic
-        String finalEmail;
-        if (email != null) {
-            finalEmail = email;
-        } else {
-            String login = oAuth2User.getAttribute("login"); // GitHub username
-            if (login != null) {
-                finalEmail = login + "@github.com";
-            } else {
-                 finalEmail = oAuth2User.getName() + "@google.com";
-            }
-        }
-        
-        // Username Fallback Logic
-        String login = oAuth2User.getAttribute("login");
-        String finalUsername;
-        if (login != null) {
-             finalUsername = login;
-        } else if (email != null) {
-             finalUsername = email.split("@")[0];
-        } else {
-             finalUsername = "user_" + UUID.randomUUID().toString().substring(0, 8);
-        }
+        final String avatarUrl = extractAvatarUrl(oAuth2User);
+        final String finalEmail = determineEmail(oAuth2User, email);
+        final String finalUsername = determineUsername(oAuth2User, email);
 
         User user = userRepository.findByEmail(finalEmail)
-                .orElseGet(() -> {
-                    log.info("Creating new OAuth user: {}", finalEmail);
-                    User newUser = new User();
-                    newUser.setEmail(finalEmail);
-                    newUser.setUsername(finalUsername); 
-                    newUser.setFullName(name != null ? name : finalUsername);
-                    newUser.setProfilePictureUrl(avatarUrl);
-                    newUser.setCurrentStatus(com.studyspace.types.UserStatus.ONLINE);
-                    
-                    // Determine provider
-                    if (oAuth2User.getAttribute("gravatar_id") != null || oAuth2User.getAttribute("login") != null) {
-                         newUser.setAuthProvider(com.studyspace.types.AuthProvider.GITHUB);
-                         log.debug("OAuth provider detected: GITHUB");
-                    } else {
-                         newUser.setAuthProvider(com.studyspace.types.AuthProvider.GOOGLE);
-                         log.debug("OAuth provider detected: GOOGLE");
-                    }
-                    
-                    newUser.setPassword(""); 
-                    User saved = userRepository.save(newUser);
-                    log.info("New OAuth user created with ID: {}", saved.getId());
-                    return saved;
-                });
+                .orElseGet(() -> createNewUser(oAuth2User, finalEmail, finalUsername, name, avatarUrl));
 
         UserDetails userDetails = new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
@@ -110,5 +58,54 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         log.debug("Redirecting to: {}", FRONTEND_URL);
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+
+    private String extractAvatarUrl(OAuth2User oAuth2User) {
+        Object avatarUrlObj = oAuth2User.getAttribute("avatar_url"); // GitHub
+        if (avatarUrlObj != null) {
+            return avatarUrlObj.toString();
+        }
+        Object pictureObj = oAuth2User.getAttribute("picture"); // Google
+        if (pictureObj != null) {
+            return pictureObj.toString();
+        }
+        return null;
+    }
+
+    private String determineEmail(OAuth2User oAuth2User, String email) {
+        if (email != null) return email;
+        String login = oAuth2User.getAttribute(ATTR_LOGIN);
+        if (login != null) return login + "@github.com";
+        return oAuth2User.getName() + "@google.com";
+    }
+
+    private String determineUsername(OAuth2User oAuth2User, String email) {
+        String login = oAuth2User.getAttribute(ATTR_LOGIN);
+        if (login != null) return login;
+        if (email != null) return email.split("@")[0];
+        return "user_" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private User createNewUser(OAuth2User oAuth2User, String email, String username, String name, String avatarUrl) {
+        log.info("Creating new OAuth user: {}", email);
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setUsername(username); 
+        newUser.setFullName(name != null ? name : username);
+        newUser.setProfilePictureUrl(avatarUrl);
+        newUser.setCurrentStatus(com.studyspace.types.UserStatus.ONLINE);
+        
+        if (oAuth2User.getAttribute("gravatar_id") != null || oAuth2User.getAttribute(ATTR_LOGIN) != null) {
+             newUser.setAuthProvider(com.studyspace.types.AuthProvider.GITHUB);
+             log.debug("OAuth provider detected: GITHUB");
+        } else {
+             newUser.setAuthProvider(com.studyspace.types.AuthProvider.GOOGLE);
+             log.debug("OAuth provider detected: GOOGLE");
+        }
+        
+        newUser.setPassword(""); 
+        User saved = userRepository.save(newUser);
+        log.info("New OAuth user created with ID: {}", saved.getId());
+        return saved;
     }
 }

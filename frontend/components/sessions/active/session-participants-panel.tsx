@@ -13,7 +13,7 @@ export function SessionParticipantsPanel({
 	participantsList,
 	creatorId,
 	handRaisedUsers,
-}: SessionParticipantsPanelProps) {
+}: Readonly<SessionParticipantsPanelProps>) {
 	return (
 		<Card className="p-4 lg:p-5 backdrop-blur-md bg-white/60 border-white/20 shrink-0">
 			<div className="flex items-center justify-between mb-4">

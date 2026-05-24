@@ -272,7 +272,7 @@ public class WorkspaceService {
 
     private void assertOwner(StudentWorkspace workspace, Long userId) {
         if (!workspace.getOwner().getId().equals(userId)) {
-            throw new RuntimeException("Forbidden: only the workspace owner can modify this.");
+            throw new IllegalStateException("Forbidden: only the workspace owner can modify this.");
         }
     }
 

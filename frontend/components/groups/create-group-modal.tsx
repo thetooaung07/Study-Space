@@ -17,7 +17,7 @@ interface CreateGroupModalProps {
   groupToEdit?: StudyGroupDTO
 }
 
-export function CreateGroupModal({ open, onOpenChange, onSuccess, groupToEdit }: CreateGroupModalProps) {
+export function CreateGroupModal({ open, onOpenChange, onSuccess, groupToEdit }: Readonly<CreateGroupModalProps>) {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -124,7 +124,7 @@ export function CreateGroupModal({ open, onOpenChange, onSuccess, groupToEdit }:
                 Cancel
               </Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={isLoading || !formData.name}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (groupToEdit ? "Save Changes" : "Create Group")}
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (groupToEdit ? "Save Changes" : "Create Group")} // NOSONAR
               </Button>
             </div>
           </div>

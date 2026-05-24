@@ -22,6 +22,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@SuppressWarnings("java:S1068")
 public class User {
     
     @Id

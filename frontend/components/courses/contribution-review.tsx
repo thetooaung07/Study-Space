@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2, Check, X, FileText, Presentation, Film, FileImage, File, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { contributionsApi } from "@/lib/workspace-api";
 import type { ContributionProposal } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 
-const MaterialIcon = ({ type }: { type?: MaterialType }) => {
+const MaterialIcon = ({ type }: Readonly<{ type?: MaterialType }>) => {
 	const cls = "h-4 w-4 shrink-0";
 	switch (type) {
 		case "PDF":
@@ -39,7 +39,7 @@ interface ContributionReviewProps {
 	onUpdated: (updated: ContributionProposal) => void;
 }
 
-export function ContributionReview({ courseId, userId, proposals, onUpdated }: ContributionReviewProps) {
+export function ContributionReview({ courseId, userId, proposals, onUpdated }: Readonly<ContributionReviewProps>) {
 	const [reviewingId, setReviewingId] = useState<number | null>(null);
 	const [reviewMessage, setReviewMessage] = useState("");
 	const [actionLoading, setActionLoading] = useState(false);

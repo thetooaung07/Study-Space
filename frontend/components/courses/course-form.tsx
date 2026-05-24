@@ -18,7 +18,7 @@ interface CourseFormProps {
   instructorId: number;
 }
 
-export function CourseForm({ course, instructorId }: CourseFormProps) {
+export function CourseForm({ course, instructorId }: Readonly<CourseFormProps>) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

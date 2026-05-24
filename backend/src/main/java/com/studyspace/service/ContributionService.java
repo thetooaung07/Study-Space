@@ -40,7 +40,7 @@ public class ContributionService {
         boolean hasNewSectionTitle = request.getProposedSectionTitle() != null
                 && !request.getProposedSectionTitle().isBlank();
         if (!hasExistingSection && !hasNewSectionTitle) {
-            throw new RuntimeException("Provide either a targetSectionId or a proposedSectionTitle.");
+            throw new IllegalStateException("Provide either a targetSectionId or a proposedSectionTitle.");
         }
 
         CourseSection targetSection = hasExistingSection
@@ -90,11 +90,11 @@ public class ContributionService {
 
         // Verify the reviewing user is the course instructor
         if (!proposal.getTargetCourse().getInstructor().getId().equals(instructorId)) {
-            throw new RuntimeException("Forbidden: only the course instructor can review proposals.");
+            throw new IllegalStateException("Forbidden: only the course instructor can review proposals.");
         }
 
         if (proposal.getStatus() != ProposalStatus.PENDING) {
-            throw new RuntimeException("This proposal has already been reviewed.");
+            throw new IllegalStateException("This proposal has already been reviewed.");
         }
 
         proposal.setStatus(request.getStatus());
@@ -122,7 +122,7 @@ public class ContributionService {
             }
 
             if (targetSection == null) {
-                throw new RuntimeException("No target section available for this proposal.");
+                throw new IllegalStateException("No target section available for this proposal.");
             }
 
             // Copy the file so the course has its own copy
@@ -152,7 +152,7 @@ public class ContributionService {
     public List<ContributionProposalDTO> getProposalsForCourse(Long courseId, Long instructorId) {
         Course course = findCourse(courseId);
         if (!course.getInstructor().getId().equals(instructorId)) {
-            throw new RuntimeException("Forbidden: only the course instructor can view proposals.");
+            throw new IllegalStateException("Forbidden: only the course instructor can view proposals.");
         }
         return proposalRepository.findByTargetCourseId(courseId)
                 .stream().map(this::toDTO).collect(Collectors.toList());

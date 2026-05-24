@@ -32,13 +32,16 @@ public class StudySessionService {
     private final StudyGroupRepository groupRepository;
     private final GamificationService gamificationService;
     private final SessionNotificationService notificationService;
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String SESSION_NOT_FOUND = "Session not found";
+    private static final String PARTICIPANT_NOT_FOUND = "Participant not found";
     
     public StudySessionDTO createSession(Long userId, CreateSessionRequest request) {
         log.info("Creating session for user ID: {} with title: {}", userId, request.getTitle());
         User creator = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Failed to create session - user not found: {}", userId);
-                return new RuntimeException("User not found");
+                return new RuntimeException(USER_NOT_FOUND);
             });
         
         StudySession session = StudySession.builder()
@@ -100,7 +103,7 @@ public class StudySessionService {
         StudySession session = sessionRepository.findById(id)
             .orElseThrow(() -> {
                 log.warn("Session not found: {}", id);
-                return new RuntimeException("Session not found");
+                return new RuntimeException(SESSION_NOT_FOUND);
             });
         return convertToDTO(session);
     }
@@ -151,7 +154,7 @@ public class StudySessionService {
     
     public StudySessionDTO endSession(Long sessionId) {
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
         
         // If already completed, just return DTO
         if (session.getStatus() == SessionStatus.COMPLETED) {
@@ -208,9 +211,9 @@ public class StudySessionService {
     public void addParticipant(Long sessionId, Long userId) {
       
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
         
         // log.info("Adding participant - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
 
@@ -279,7 +282,7 @@ public class StudySessionService {
     public void removeParticipant(Long sessionId, Long userId, Integer studyMinutes) {
         // log.info("Removing participant - Session: {}, User ID: {}", sessionId, userId);
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-            .orElseThrow(() -> new RuntimeException("Participant not found"));
+            .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
         
         // If already left, do nothing
         if (participant.getLeftAt() != null) {
@@ -413,7 +416,7 @@ public class StudySessionService {
     @Transactional
     public void pauseParticipant(Long sessionId, Long userId) {
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new RuntimeException("Participant not found"));
+                .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
                 
         if (participant.getLastPausedAt() != null) {
             return; // Already paused
@@ -443,7 +446,7 @@ public class StudySessionService {
     @Transactional
     public void resumeParticipant(Long sessionId, Long userId) {
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new RuntimeException("Participant not found"));
+                .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
                 
         if (participant.getLastPausedAt() == null) {
             return; // Not paused
@@ -479,7 +482,7 @@ public class StudySessionService {
     @Transactional
     public void deleteSession(Long id) {
         StudySession session = sessionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
             
         // Revert study minutes for all participants
         for (SessionParticipant participant : session.getParticipants()) {
@@ -498,10 +501,10 @@ public class StudySessionService {
     @Transactional
     public void transferHost(Long sessionId, Long newHostId) {
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException("Session not found"));
+            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
         
         User newHost = userRepository.findById(newHostId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
             
       
         session.setCreator(newHost);

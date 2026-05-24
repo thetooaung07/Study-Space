@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Chrome, Github, Apple, Mail, Lock, User, BookOpen, Eye, EyeOff } from "lucide-react";
+import { Chrome, Github, Mail, Lock, User, BookOpen, Eye, EyeOff } from "lucide-react";
 
 export function SignupForm() {
   const [name, setName] = useState("");

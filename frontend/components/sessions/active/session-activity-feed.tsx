@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,7 +15,7 @@ export function SessionActivityFeed({
 	message,
 	onMessageChange,
 	onSendMessage 
-}: SessionActivityFeedProps) {
+}: Readonly<SessionActivityFeedProps>) {
 
 	const handleSendAndClear = () => {
 		if (!message.trim()) return;

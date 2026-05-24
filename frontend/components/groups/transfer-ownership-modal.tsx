@@ -35,7 +35,7 @@ export function TransferOwnershipDialog({
   groupId,
   members,
   onTransferAndLeave,
-}: TransferOwnershipDialogProps) {
+}: Readonly<TransferOwnershipDialogProps>) {
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
 

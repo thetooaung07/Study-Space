@@ -83,7 +83,7 @@ public class DocumentVectorService {
             pdfBytes = fetchBytes(documentUrl);
         } catch (IOException e) {
             log.error("[DOC_VECTOR] Failed to fetch PDF from '{}': {}", documentUrl, e.getMessage());
-            throw new RuntimeException("Could not read document for ingestion: " + e.getMessage(), e);
+            throw new IllegalStateException("Could not read document for ingestion: " + e.getMessage(), e);
         }
 
         // Step 3 — extract text (with multimodal fallback for image-heavy PDFs)

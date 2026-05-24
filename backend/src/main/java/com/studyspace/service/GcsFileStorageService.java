@@ -49,7 +49,7 @@ public class GcsFileStorageService implements FileStorageService {
             log.info("Uploaded file to GCS: gs://{}/{}", bucketName, objectName);
             return signedUrl;
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to upload file to GCS: " + ex.getMessage(), ex);
+            throw new IllegalStateException("Failed to upload file to GCS: " + ex.getMessage(), ex);
         }
     }
 
@@ -97,7 +97,7 @@ public class GcsFileStorageService implements FileStorageService {
             log.info("Copied GCS object from {} to {}", sourceObjectName, targetObjectName);
             return signedUrl;
         } catch (Exception ex) {
-            throw new RuntimeException("Failed to copy file in GCS: " + ex.getMessage(), ex);
+            throw new IllegalStateException("Failed to copy file in GCS: " + ex.getMessage(), ex);
         }
     }
 }

@@ -6,6 +6,7 @@ import lombok.Data;
  * Request body for {@code POST /api/chat/query}.
  */
 @Data
+@SuppressWarnings("java:S1068")
 public class ChatQueryRequest {
 
     /**

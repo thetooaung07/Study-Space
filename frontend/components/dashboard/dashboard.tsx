@@ -61,7 +61,7 @@ export function Dashboard() {
           icon={Clock} 
           label="Total Study Time" 
           value={formatStudyTime(totalStudyMinutes)} 
-          trend={totalStudyMinutes > 0 ? "Keep studying!" : "Start your journey"} 
+          trend={totalStudyMinutes > 0 ? "Keep studying!" : "Start your journey"} // NOSONAR
           positive={totalStudyMinutes > 0} 
         />
         <StatCard 

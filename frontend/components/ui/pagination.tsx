@@ -47,7 +47,7 @@ function PaginationLink({
   isActive,
   size = 'icon',
   ...props
-}: PaginationLinkProps) {
+}: Readonly<PaginationLinkProps>) {
   return (
     <a
       aria-current={isActive ? 'page' : undefined}

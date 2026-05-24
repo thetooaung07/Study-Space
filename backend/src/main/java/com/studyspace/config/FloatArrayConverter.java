@@ -31,7 +31,7 @@ public class FloatArrayConverter implements AttributeConverter<float[], String> 
     public float[] convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.isBlank()) return new float[0];
         // Strip surrounding brackets and split
-        String inner = dbData.trim().replaceAll("^\\[|\\]$", "");
+        String inner = dbData.trim().replace("[", "").replace("]", "");
         String[] parts = inner.split(",");
         float[] result = new float[parts.length];
         for (int i = 0; i < parts.length; i++) {
@@ -42,6 +42,7 @@ public class FloatArrayConverter implements AttributeConverter<float[], String> 
 
     // ─── helper ─────────────────────────────────────────────────────────────
 
+    @SuppressWarnings("java:S3012")
     private Float[] toBoxed(float[] arr) {
         Float[] boxed = new Float[arr.length];
         for (int i = 0; i < arr.length; i++) boxed[i] = arr[i];

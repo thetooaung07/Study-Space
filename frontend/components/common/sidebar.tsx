@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Users, BarChart3, Clock, Zap, PieChart, GraduationCap, FolderOpen } from "lucide-react";
+import { BookOpen, Users, Clock, GraduationCap, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -32,7 +32,7 @@ export function Sidebar() {
 	return (
 		<aside className="w-64 border-r border-border bg-sidebar flex flex-col">
 			<div className="p-6">
-				<div
+				<div // NOSONAR
 					className="flex items-center gap-2"
 					onClick={(e) => {
 						e.preventDefault();

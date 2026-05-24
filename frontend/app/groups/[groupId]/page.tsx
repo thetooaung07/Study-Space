@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { TransferOwnershipDialog } from "@/components/groups/transfer-ownership-modal"
-import { Settings, MessageSquare, Share2, Bell, BarChart3, Plus, Globe, Lock, Clock, Users, Play, CloudCog, UserPlus, Trash2, LogOut } from "lucide-react"
+import { Share2, Bell, BarChart3, Plus, Globe, Lock, Clock, Users, Play, UserPlus, Trash2, LogOut } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -377,9 +377,9 @@ export default function GroupDetailPage() {
                               <p className="text-sm text-muted-foreground">Hosted by {session.creator?.fullName || session.creator?.username || `User #${session.creatorId}`}</p>
                               <div className="text-xs text-muted-foreground mt-1">
                                 {session.status === 'ACTIVE' ? (
-                                  <span>Started: {new Date(session.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                  <span>Started: Readonly<{new Date(session.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}>)}</span>
                                 ) : (
-                                  <span>Ended: {new Date(session.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {session.endTime ? new Date(session.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Now'}</span>
+                                  <span>Ended: Readonly<{new Date(session.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}>)} - {session.endTime ? new Date(session.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Now'}</span>
                                 )}
                               </div>
                             </div>

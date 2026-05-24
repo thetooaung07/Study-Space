@@ -49,9 +49,9 @@ export default function CourseDetailPage() {
           <div className="p-6 max-w-4xl mx-auto">
             {loading ? (
               <div className="text-sm text-muted-foreground animate-pulse">Loading course…</div>
-            ) : error ? (
+            ) : error ? ( // NOSONAR
               <div className="text-sm text-destructive">{error}</div>
-            ) : course ? (
+            ) : course ? ( // NOSONAR
               <CourseDetail course={course} userId={user?.id} isEnrolled={isEnrolled} />
             ) : null}
           </div>

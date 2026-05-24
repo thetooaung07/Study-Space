@@ -59,7 +59,7 @@ public class ChatController {
                 request.getQuestion() != null ? request.getQuestion().length() : 0);
 
         if (request.getQuestion() == null || request.getQuestion().isBlank()) {
-            throw new RuntimeException("Question must not be empty.");
+            throw new IllegalStateException("Question must not be empty.");
         }
 
         // ── Phase 4: RAG ingestion + retrieval ──────────────────────────────

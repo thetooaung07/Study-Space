@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Users, CheckCircle2, XCircle, Clock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -15,7 +14,7 @@ import {
 import { coursesApi } from "@/lib/courses-api";
 import type { CourseEnrollment, EnrollmentStatus } from "@/types/courses";
 
-const StatusBadge = ({ status }: { status: EnrollmentStatus }) => {
+const StatusBadge = ({ status }: Readonly<{ status: EnrollmentStatus }>) => {
   const styles: Record<EnrollmentStatus, string> = {
     ACTIVE: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -48,7 +47,7 @@ export function EnrollmentTable({
   instructorId,
   enrollments,
   onUpdated,
-}: EnrollmentTableProps) {
+}: Readonly<EnrollmentTableProps>) {
   const [loading, setLoading] = useState<number | null>(null);
 
   const update = async (enrollmentId: number, status: EnrollmentStatus) => {

@@ -10,11 +10,9 @@ import {
 	Presentation,
 	FileImage,
 	File,
-	ExternalLink,
-	Users,
+		Users,
 	GraduationCap,
-	CheckCircle2,
-	Loader2,
+		Loader2,
 	GitFork,
 	FolderOpen,
 	Plus,
@@ -27,16 +25,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { workspacesApi } from "@/lib/workspace-api";
 import { coursesApi } from "@/lib/courses-api";
-import { UserRole } from "@/types";
-import type { Course, CourseSection, CourseMaterial, MaterialType } from "@/types/courses";
+import type { Course, MaterialType } from "@/types/courses";
 import type { StudentWorkspace } from "@/types/workspaces";
 import { useRouter } from "next/navigation";
 
-const MaterialIcon = ({ type }: { type: MaterialType }) => {
+const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 	const cls = "h-4 w-4 shrink-0";
 	switch (type) {
 		case "PDF":
@@ -52,6 +48,69 @@ const MaterialIcon = ({ type }: { type: MaterialType }) => {
 	}
 };
 
+const CourseSectionItem = ({ section, idx, isExpanded, toggleExpanded }: any) => (
+	<div className="border border-border rounded-lg overflow-hidden">
+		<button
+			className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-accent transition-colors"
+			onClick={() => toggleExpanded(section.id)}
+		>
+			{isExpanded ? (
+				<ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+			) : (
+				<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+			)}
+			<span className="text-xs text-muted-foreground w-5 text-right shrink-0">
+				{idx + 1}.
+			</span>
+			<span className="font-medium text-sm flex-1">{section.title}</span>
+			<span className="text-xs text-muted-foreground shrink-0">
+				{section.materials.length} {section.materials.length === 1 ? "file" : "files"}
+			</span>
+		</button>
+
+		{isExpanded && (
+			<div className="border-t border-border bg-muted/20 px-4 py-3 space-y-2">
+				{section.description && (
+					<p className="text-xs text-muted-foreground">{section.description}</p>
+				)}
+				{section.materials.length === 0 ? (
+					<p className="text-xs text-muted-foreground italic">
+						No materials in this section.
+					</p>
+				) : (
+					<ul className="space-y-1">
+						{section.materials.map((m: any) => (
+							<li key={m.id} className="flex items-center gap-2 text-sm py-1">
+								<MaterialIcon type={m.fileType} />
+								<a
+									href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex-1 truncate text-card-foreground hover:text-primary hover:underline transition-colors"
+									title={m.title}
+								>
+									{m.title}
+								</a>
+								{m.uploadedAt && (
+									<span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+										{new Intl.DateTimeFormat("en-US", {
+											month: "short",
+											day: "numeric",
+											year: "numeric",
+											hour: "numeric",
+											minute: "2-digit",
+										}).format(new Date(m.uploadedAt))}
+									</span>
+								)}
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+		)}
+	</div>
+);
+
 interface CourseDetailProps {
 	course: Course;
 	/** Current user's ID — used for enrollment */
@@ -59,7 +118,7 @@ interface CourseDetailProps {
 	isEnrolled?: boolean;
 }
 
-export function CourseDetail({ course, userId, isEnrolled: initialEnrolled = false }: CourseDetailProps) {
+export function CourseDetail({ course, userId, isEnrolled: initialEnrolled = false }: Readonly<CourseDetailProps>) {
 	const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set([course.sections[0]?.id]));
 	const [enrolled, setEnrolled] = useState(initialEnrolled);
 	const [enrolling, setEnrolling] = useState(false);
@@ -477,66 +536,13 @@ export function CourseDetail({ course, userId, isEnrolled: initialEnrolled = fal
 					<p className="text-sm text-muted-foreground py-4">No sections added yet.</p>
 				) : (
 					course.sections.map((section, idx) => (
-						<div key={section.id} className="border border-border rounded-lg overflow-hidden">
-							<button
-								className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-accent transition-colors"
-								onClick={() => toggleExpanded(section.id)}
-							>
-								{expandedIds.has(section.id) ? (
-									<ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-								) : (
-									<ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-								)}
-								<span className="text-xs text-muted-foreground w-5 text-right shrink-0">
-									{idx + 1}.
-								</span>
-								<span className="font-medium text-sm flex-1">{section.title}</span>
-								<span className="text-xs text-muted-foreground shrink-0">
-									{section.materials.length} {section.materials.length === 1 ? "file" : "files"}
-								</span>
-							</button>
-
-							{expandedIds.has(section.id) && (
-								<div className="border-t border-border bg-muted/20 px-4 py-3 space-y-2">
-									{section.description && (
-										<p className="text-xs text-muted-foreground">{section.description}</p>
-									)}
-									{section.materials.length === 0 ? (
-										<p className="text-xs text-muted-foreground italic">
-											No materials in this section.
-										</p>
-									) : (
-										<ul className="space-y-1">
-											{section.materials.map((m) => (
-												<li key={m.id} className="flex items-center gap-2 text-sm py-1">
-													<MaterialIcon type={m.fileType} />
-													<a
-														href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="flex-1 truncate text-card-foreground hover:text-primary hover:underline transition-colors"
-														title={m.title}
-													>
-														{m.title}
-													</a>
-													{m.uploadedAt && (
-														<span className="text-xs text-muted-foreground shrink-0 tabular-nums">
-															{new Intl.DateTimeFormat("en-US", {
-																month: "short",
-																day: "numeric",
-																year: "numeric",
-																hour: "numeric",
-																minute: "2-digit",
-															}).format(new Date(m.uploadedAt))}
-														</span>
-													)}
-												</li>
-											))}
-										</ul>
-									)}
-								</div>
-							)}
-						</div>
+						<CourseSectionItem
+							key={section.id}
+							section={section}
+							idx={idx}
+							isExpanded={expandedIds.has(section.id)}
+							toggleExpanded={toggleExpanded}
+						/>
 					))
 				)}
 			</div>

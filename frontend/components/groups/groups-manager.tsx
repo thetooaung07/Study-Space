@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, Loader2 } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Plus, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CreateGroupModal } from "@/components/groups/create-group-modal"
 import { GroupCard } from "@/components/groups/group-card"

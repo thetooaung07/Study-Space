@@ -19,7 +19,7 @@ interface CreateGroupSessionModalProps {
   onSuccess?: (session?: any) => void
 }
 
-export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName, onSuccess }: CreateGroupSessionModalProps) {
+export function CreateGroupSessionModal({ open, onOpenChange, groupId, groupName, onSuccess }: Readonly<CreateGroupSessionModalProps>) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({

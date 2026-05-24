@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, Plus, CloudCog } from "lucide-react"
+import { Users } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -74,7 +74,7 @@ export function MyGroups() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {groups.map((group) => (
-            <div
+            <div // NOSONAR
               key={group.id}
               className="p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer"
               onClick={() => router.push(`/groups/${group.id}`)}

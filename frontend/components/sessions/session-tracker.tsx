@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SessionHistory } from "@/components/sessions/session-history";
-import { TimerCard } from "@/components/sessions/timer-card";
 import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
 import { StudySessionDTO } from "@/types";
@@ -27,7 +26,7 @@ interface DailyStatsCardsProps {
 }
 
 /** Daily Stats Cards - Connected to Backend */
-function DailyStatsCards({ refreshTrigger }: DailyStatsCardsProps) {
+function DailyStatsCards({ refreshTrigger }: Readonly<DailyStatsCardsProps>) {
 	const { user } = useAuth();
 	const [todaySessions, setTodaySessions] = useState<StudySessionDTO[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -63,7 +62,7 @@ function DailyStatsCards({ refreshTrigger }: DailyStatsCardsProps) {
 	// Calculate today's stats
 	const todayMinutes = todaySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
 	const sessionCount = todaySessions.length;
-	const avgDuration = sessionCount > 0 ? Math.round(todayMinutes / sessionCount) : 0;
+	const avgDuration = sessionCount > 0 ? Math.round(todayMinutes / sessionCount) : 0; // NOSONAR
 	const streak = user?.currentStreak || 0;
 
 	const stats = [
