@@ -193,4 +193,127 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isPublished").value(true));
     }
+
+    // ─── Missing Endpoint Tests ───────────────────────────────────────────────
+
+    @Test
+    void updateCourse_Returns200() throws Exception {
+        CreateCourseRequest request = new CreateCourseRequest();
+        request.setTitle("Updated Title");
+        
+        CourseDTO dto = CourseDTO.builder().id(1L).title("Updated Title").build();
+        when(courseService.updateCourse(eq(1L), eq(10L), any(CreateCourseRequest.class))).thenReturn(dto);
+
+        mockMvc.perform(put("/api/courses/1")
+                        .param("userId", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Title"));
+    }
+
+    @Test
+    void getMyCourses_Returns200() throws Exception {
+        CourseSummaryDTO summary = CourseSummaryDTO.builder().id(1L).title("My Course").build();
+        when(courseService.getMyCourses(10L)).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/courses/my").param("userId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void addSection_Returns201() throws Exception {
+        CreateSectionRequest request = new CreateSectionRequest();
+        request.setTitle("Section 1");
+
+        CourseSectionDTO dto = CourseSectionDTO.builder().id(1L).title("Section 1").build();
+        when(courseService.addSection(eq(1L), eq(10L), any(CreateSectionRequest.class))).thenReturn(dto);
+
+        mockMvc.perform(post("/api/courses/1/sections")
+                        .param("userId", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Section 1"));
+    }
+
+    @Test
+    void updateSection_Returns200() throws Exception {
+        CreateSectionRequest request = new CreateSectionRequest();
+        request.setTitle("Updated Section");
+
+        CourseSectionDTO dto = CourseSectionDTO.builder().id(2L).title("Updated Section").build();
+        when(courseService.updateSection(eq(2L), eq(10L), any(CreateSectionRequest.class))).thenReturn(dto);
+
+        mockMvc.perform(put("/api/courses/sections/2")
+                        .param("userId", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Section"));
+    }
+
+    @Test
+    void deleteSection_Returns204() throws Exception {
+        doNothing().when(courseService).deleteSection(2L, 10L);
+
+        mockMvc.perform(delete("/api/courses/sections/2").param("userId", "10"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void uploadMaterial_Returns201() throws Exception {
+        CourseMaterialDTO dto = CourseMaterialDTO.builder().id(3L).title("Slide 1").build();
+        
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
+        when(courseService.uploadMaterial(eq(2L), eq(10L), any(), eq("Slide 1"))).thenReturn(dto);
+
+        mockMvc.perform(multipart("/api/courses/sections/2/materials")
+                        .file(file)
+                        .param("userId", "10")
+                        .param("title", "Slide 1"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Slide 1"));
+    }
+
+    @Test
+    void deleteMaterial_Returns204() throws Exception {
+        doNothing().when(courseService).deleteMaterial(3L, 10L);
+
+        mockMvc.perform(delete("/api/courses/materials/3").param("userId", "10"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getEnrollments_Returns200() throws Exception {
+        CourseEnrollmentDTO dto = CourseEnrollmentDTO.builder().id(1L).studentId(2L).status(EnrollmentStatus.ACTIVE).build();
+        when(courseService.getEnrollments(1L, 10L)).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/courses/1/enrollments").param("userId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void updateEnrollmentStatus_Returns200() throws Exception {
+        CourseEnrollmentDTO dto = CourseEnrollmentDTO.builder().id(1L).status(EnrollmentStatus.ACTIVE).build();
+        when(courseService.updateEnrollmentStatus(1L, 10L, EnrollmentStatus.ACTIVE)).thenReturn(dto);
+
+        mockMvc.perform(patch("/api/courses/enrollments/1")
+                        .param("userId", "10")
+                        .param("status", "ACTIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void getMyEnrollments_Returns200() throws Exception {
+        CourseEnrollmentDTO dto = CourseEnrollmentDTO.builder().id(1L).status(EnrollmentStatus.ACTIVE).build();
+        when(courseService.getMyEnrollments(2L)).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/courses/my-enrollments").param("studentId", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
 }

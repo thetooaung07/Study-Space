@@ -146,4 +146,133 @@ class WorkspaceControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10));
     }
+
+    // ─── Missing Endpoint Tests ───────────────────────────────────────────────
+
+    @Test
+    @WithMockUser
+    void getSpaces() throws Exception {
+        WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
+        when(workspaceService.getSpacesByWorkspace(1L)).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/workspaces/1/spaces"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    void forkCourse() throws Exception {
+        WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
+        when(workspaceService.forkCourse(1L, 10L, 5L, "Fork")).thenReturn(dto);
+
+        mockMvc.perform(post("/api/workspaces/1/spaces/fork")
+                .param("userId", "10")
+                .param("courseId", "5")
+                .param("title", "Fork"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(10));
+    }
+
+    @Test
+    @WithMockUser
+    void getSpace() throws Exception {
+        WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
+        when(workspaceService.getSpaceById(10L)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/workspaces/spaces/10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10));
+    }
+
+    @Test
+    @WithMockUser
+    void updateSpace() throws Exception {
+        CreateSpaceRequest req = new CreateSpaceRequest();
+        req.setTitle("Updated");
+
+        WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
+        when(workspaceService.updateSpace(eq(10L), eq(1L), any(CreateSpaceRequest.class))).thenReturn(dto);
+
+        mockMvc.perform(put("/api/workspaces/spaces/10")
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10));
+    }
+
+    @Test
+    @WithMockUser
+    void deleteSpace() throws Exception {
+        mockMvc.perform(delete("/api/workspaces/spaces/10")
+                .param("userId", "1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser
+    void addSection() throws Exception {
+        com.studyspace.dto.CreateWorkspaceSectionRequest req = new com.studyspace.dto.CreateWorkspaceSectionRequest();
+        req.setTitle("Section");
+
+        com.studyspace.dto.WorkspaceSectionDTO dto = com.studyspace.dto.WorkspaceSectionDTO.builder().id(20L).build();
+        when(workspaceService.addSection(eq(10L), eq(1L), any())).thenReturn(dto);
+
+        mockMvc.perform(post("/api/workspaces/spaces/10/sections")
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(20));
+    }
+
+    @Test
+    @WithMockUser
+    void updateSection() throws Exception {
+        com.studyspace.dto.CreateWorkspaceSectionRequest req = new com.studyspace.dto.CreateWorkspaceSectionRequest();
+        req.setTitle("Updated Section");
+
+        com.studyspace.dto.WorkspaceSectionDTO dto = com.studyspace.dto.WorkspaceSectionDTO.builder().id(20L).build();
+        when(workspaceService.updateSection(eq(20L), eq(1L), any())).thenReturn(dto);
+
+        mockMvc.perform(put("/api/workspaces/sections/20")
+                .param("userId", "1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(20));
+    }
+
+    @Test
+    @WithMockUser
+    void deleteSection() throws Exception {
+        mockMvc.perform(delete("/api/workspaces/sections/20")
+                .param("userId", "1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser
+    void uploadMaterial() throws Exception {
+        com.studyspace.dto.WorkspaceMaterialDTO dto = com.studyspace.dto.WorkspaceMaterialDTO.builder().id(30L).build();
+        
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile("file", "test.pdf", "application/pdf", "content".getBytes());
+        when(workspaceService.uploadMaterial(eq(20L), eq(1L), any(), eq("Mat"))).thenReturn(dto);
+
+        mockMvc.perform(multipart("/api/workspaces/sections/20/materials")
+                .file(file)
+                .param("userId", "1")
+                .param("title", "Mat"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(30));
+    }
+
+    @Test
+    @WithMockUser
+    void deleteMaterial() throws Exception {
+        mockMvc.perform(delete("/api/workspaces/materials/30")
+                .param("userId", "1"))
+                .andExpect(status().isNoContent());
+    }
 }

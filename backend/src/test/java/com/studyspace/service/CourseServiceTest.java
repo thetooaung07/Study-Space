@@ -82,6 +82,31 @@ class CourseServiceTest {
     // ─── updateCourse ───────────────────────────────────────────────────────────
 
     @Test
+    void getCourseById_Success() {
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
+
+        CourseDTO result = courseService.getCourseById(10L);
+
+        assertNotNull(result);
+        assertEquals("Data Structures", result.getTitle());
+    }
+
+    @Test
+    void getMyCourses_Success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(instructor));
+        when(courseRepository.findByInstructor(instructor)).thenReturn(List.of(course));
+        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
+
+        List<CourseSummaryDTO> result = courseService.getMyCourses(1L);
+
+        assertEquals(1, result.size());
+        assertEquals("Data Structures", result.get(0).getTitle());
+    }
+
+    // ─── updateCourse ───────────────────────────────────────────────────────────
+
+    @Test
     void updateCourse_Success() {
         CreateCourseRequest request = new CreateCourseRequest();
         request.setTitle("Updated Title");
@@ -185,6 +210,32 @@ class CourseServiceTest {
     // ─── enrollStudent ───────────────────────────────────────────────────────────
 
     @Test
+    void deleteSection_Success() {
+        CourseSection section = CourseSection.builder()
+                .id(20L)
+                .course(course)
+                .build();
+        when(sectionRepository.findById(20L)).thenReturn(Optional.of(section));
+
+        courseService.deleteSection(20L, 1L);
+
+        verify(sectionRepository).delete(section);
+    }
+
+    @Test
+    void deleteSection_Forbidden_ThrowsException() {
+        CourseSection section = CourseSection.builder()
+                .id(20L)
+                .course(course)
+                .build();
+        when(sectionRepository.findById(20L)).thenReturn(Optional.of(section));
+
+        assertThrows(RuntimeException.class, () -> courseService.deleteSection(20L, 999L));
+    }
+
+    // ─── enrollStudent ───────────────────────────────────────────────────────────
+
+    @Test
     void enrollStudent_NewEnrollment_Success() {
         CourseEnrollment enrollment = CourseEnrollment.builder()
                 .id(30L)
@@ -226,6 +277,46 @@ class CourseServiceTest {
 
         assertNotNull(result);
         assertEquals(EnrollmentStatus.ACTIVE, droppedEnrollment.getStatus());
+    }
+
+    // ─── unenroll ───────────────────────────────────────────────────────────────
+
+    @Test
+    void updateEnrollmentStatus_Success() {
+        CourseEnrollment enrollment = CourseEnrollment.builder()
+                .id(30L)
+                .course(course)
+                .student(student)
+                .status(EnrollmentStatus.ACTIVE)
+                .build();
+
+        when(enrollmentRepository.findById(30L)).thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.save(any(CourseEnrollment.class))).thenReturn(enrollment);
+        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(1L);
+
+        CourseEnrollmentDTO result = courseService.updateEnrollmentStatus(30L, 1L, EnrollmentStatus.DROPPED);
+
+        assertNotNull(result);
+        assertEquals(EnrollmentStatus.DROPPED, result.getStatus());
+    }
+
+    @Test
+    void getEnrollments_Success() {
+        CourseEnrollment enrollment = CourseEnrollment.builder()
+                .id(30L)
+                .course(course)
+                .student(student)
+                .status(EnrollmentStatus.ACTIVE)
+                .build();
+
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(enrollmentRepository.findByCourseId(10L)).thenReturn(List.of(enrollment));
+        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(1L);
+
+        List<CourseEnrollmentDTO> result = courseService.getEnrollments(10L, 1L);
+
+        assertEquals(1, result.size());
+        assertEquals(EnrollmentStatus.ACTIVE, result.get(0).getStatus());
     }
 
     // ─── unenroll ───────────────────────────────────────────────────────────────
@@ -336,9 +427,32 @@ class CourseServiceTest {
         dto = courseService.uploadMaterial(20L, 1L, mockFile, "Title");
         assertEquals(com.studyspace.types.MaterialType.SLIDES, dto.getFileType());
 
+        // VIDEO
+        when(mockFile.getOriginalFilename()).thenReturn("test.mp4");
+        dto = courseService.uploadMaterial(20L, 1L, mockFile, "Title");
+        assertEquals(com.studyspace.types.MaterialType.VIDEO, dto.getFileType());
+
+        // IMAGE
+        when(mockFile.getOriginalFilename()).thenReturn("test.jpg");
+        dto = courseService.uploadMaterial(20L, 1L, mockFile, "Title");
+        assertEquals(com.studyspace.types.MaterialType.IMAGE, dto.getFileType());
+
         // Null filename
         when(mockFile.getOriginalFilename()).thenReturn(null);
         dto = courseService.uploadMaterial(20L, 1L, mockFile, "Title");
         assertEquals(com.studyspace.types.MaterialType.OTHER, dto.getFileType());
+    }
+
+    @Test
+    void deleteMaterial_Success() {
+        CourseSection section = CourseSection.builder().id(20L).course(course).build();
+        CourseMaterial material = CourseMaterial.builder().id(50L).fileUrl("url").section(section).build();
+
+        when(materialRepository.findById(50L)).thenReturn(Optional.of(material));
+
+        courseService.deleteMaterial(50L, 1L);
+
+        verify(fileStorageService).delete("url");
+        verify(materialRepository).delete(material);
     }
 }

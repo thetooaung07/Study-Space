@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -73,5 +75,20 @@ class OpenAiLlmProviderTest {
         OpenAiLlmProvider disabledProvider = new OpenAiLlmProvider("");
         String result = disabledProvider.generate("Test");
         assertEquals("OpenAI provider is not configured. Please set OPENAI_API_KEY.", result);
+    }
+
+    @Test
+    void testChat_ExceptionThrown_ThrowsRuntimeException() {
+        when(mockRestClient.post()
+                .uri("/chat/completions")
+                .body(any(Map.class))
+                .retrieve()
+                .body(Map.class)).thenThrow(new RuntimeException("Network Error"));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            openAiLlmProvider.generate("Test prompt");
+        });
+        
+        assertTrue(exception.getMessage().contains("OpenAI service is currently unavailable"));
     }
 }

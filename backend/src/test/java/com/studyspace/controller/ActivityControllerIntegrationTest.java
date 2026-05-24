@@ -102,4 +102,17 @@ class ActivityControllerIntegrationTest {
                         .param("limit", "10"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @WithMockUser
+    void createActivity_Success() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/activities")
+                        .param("sessionId", testSession.getId().toString())
+                        .param("userId", testUser.getId().toString())
+                        .param("type", "MESSAGE")
+                        .param("message", "hello world"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type", is("MESSAGE")))
+                .andExpect(jsonPath("$.message", is("hello world")));
+    }
 }
