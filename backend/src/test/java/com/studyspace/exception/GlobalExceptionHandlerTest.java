@@ -53,4 +53,44 @@ class GlobalExceptionHandlerTest {
         assertEquals("An unexpected error occurred", response.getBody().get("message"));
         assertNotNull(response.getBody().get("timestamp"));
     }
+
+    @Test
+    void handleValidationException_ShouldReturnBadRequestWithErrors() {
+        org.springframework.validation.BeanPropertyBindingResult bindingResult =
+                new org.springframework.validation.BeanPropertyBindingResult(new Object(), "request");
+        bindingResult.addError(
+                new org.springframework.validation.FieldError("request", "title", "Title is required"));
+
+        org.springframework.web.bind.MethodArgumentNotValidException ex =
+                mock(org.springframework.web.bind.MethodArgumentNotValidException.class);
+        when(ex.getBindingResult()).thenReturn(bindingResult);
+
+        ResponseEntity<Map<String, Object>> response =
+                exceptionHandler.handleValidationExceptions(ex, webRequest);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Validation failed", response.getBody().get("message"));
+        Object errors = response.getBody().get("errors");
+        assertNotNull(errors);
+        Object[] errorArray = (Object[]) errors;
+        assertTrue(errorArray.length >= 1);
+        assertTrue(errorArray[0].toString().contains("title"));
+    }
+
+    @Test
+    void handleNoResourceFoundException_ShouldReturn404() {
+        org.springframework.web.servlet.resource.NoResourceFoundException ex =
+                new org.springframework.web.servlet.resource.NoResourceFoundException(
+                        org.springframework.http.HttpMethod.GET, "/api/missing");
+
+        ResponseEntity<Map<String, Object>> response =
+                exceptionHandler.handleNoResourceFoundException(ex, webRequest);
+
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(404, response.getBody().get("status"));
+        String message = (String) response.getBody().get("message");
+        assertTrue(message.contains("/api/missing"));
+    }
 }

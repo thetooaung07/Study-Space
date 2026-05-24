@@ -77,7 +77,7 @@ class GamificationServiceTest {
         user.setId(1L);
         user.setUsername("testuser");
         user.setTotalStudyMinutes(90);
-        user.setLastStudyDate(DateTimeUtil.nowUtc().minusMinutes(30)); // Studied earlier today (same UTC day)
+        user.setLastStudyDate(DateTimeUtil.nowUtc()); // Studied earlier today (same UTC day)
         user.setCurrentStreak(3);
 
         StudySession session = new StudySession();

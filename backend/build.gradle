@@ -1,0 +1,132 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+    // Add SonarQube plugin
+    id "org.sonarqube" version "5.0.0.4638"
+    id "org.owasp.dependencycheck" version "12.1.6"
+}
+
+group = 'com.studyspace'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    
+    // OpenAPI documentation
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    
+    // pgvector JDBC type registration
+    implementation 'com.pgvector:pgvector:0.1.4'
+    
+    // JWT Dependencies
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    
+    // .env file support
+    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
+    
+    // Google Cloud Storage
+    implementation 'com.google.cloud:google-cloud-storage:2.40.0'
+    
+    // Apache PDFBox – PDF text extraction
+    implementation 'org.apache.pdfbox:pdfbox:3.0.1'
+    
+    // Google GenAI Java SDK – official Gemini client
+    implementation 'com.google.genai:google-genai:1.0.0'
+
+    // Lombok compile-time support
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // DevTools for rapid local development
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    // PostgreSQL database runtime driver
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'com.h2database:h2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    
+    // Expose environment variables from .env file to the test process
+    def envFile = file('.env')
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            if (line.trim() && !line.startsWith("#")) {
+                def parts = line.split('=', 2)
+                if (parts.length == 2) {
+                    environment parts[0].trim(), parts[1].trim()
+                }
+            }
+        }
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                "**/*Application*",
+                "**/config/**",
+                "**/dto/**"
+            ])
+        }))
+    }
+}
+
+dependencyCheck {
+    format = 'ALL'
+    nvd {
+        // Point to the custom datafeed provided by your university
+        datafeedUrl = 'https://mlejnjir.pages.fit/nvd/nvdcve-{0}.json.gz'
+    }
+    data {
+
+        directory = 'dependency-check-data'
+    }
+}
+
+test {
+    finalizedBy jacocoTestReport
+}

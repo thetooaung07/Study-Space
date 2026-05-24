@@ -10,6 +10,7 @@ import com.studyspace.repository.StudySessionRepository;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.mapper.UserMapper;
 import com.studyspace.types.SessionStatus;
+import com.studyspace.dto.UserDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -162,6 +163,7 @@ class StudySessionServiceTest {
         when(sessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(participantRepository.findByStudySessionIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+        when(userMapper.toDTO(any())).thenReturn(new UserDTO());
 
         sessionService.addParticipant(10L, 1L);
 
@@ -180,7 +182,8 @@ class StudySessionServiceTest {
 
         StudySession session = new StudySession();
         session.setId(10L);
-
+        session.setCreator(user);
+        
         SessionParticipant existingParticipant = new SessionParticipant();
         existingParticipant.setId(5L);
         existingParticipant.setUser(user);
@@ -188,10 +191,15 @@ class StudySessionServiceTest {
         existingParticipant.setLeftAt(com.studyspace.util.DateTimeUtil.nowUtc().minusHours(1));
         existingParticipant.setMinutesParticipated(30);
 
+        Set<SessionParticipant> participants = new HashSet<>();
+        participants.add(existingParticipant);
+        session.setParticipants(participants);
+
         when(sessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(participantRepository.findByStudySessionIdAndUserId(10L, 1L))
             .thenReturn(Optional.of(existingParticipant));
+        when(userMapper.toDTO(any())).thenReturn(new UserDTO());
 
         sessionService.addParticipant(10L, 1L);
 

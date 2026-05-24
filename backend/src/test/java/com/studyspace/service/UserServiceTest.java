@@ -129,6 +129,32 @@ class UserServiceTest {
     }
 
     @Test
+    void deleteUser_WithCreatedGroups() {
+        Long userId = 1L;
+        User user = new User();
+        user.setId(userId);
+        
+        StudyGroup group1 = new StudyGroup();
+        group1.setId(1L);
+        
+        User member = new User();
+        member.setId(2L);
+        member.setGroups(new HashSet<>(Set.of(group1)));
+        group1.setMembers(new HashSet<>(Set.of(user, member)));
+        
+        user.setGroups(new HashSet<>());
+        user.setCreatedGroups(new HashSet<>(Set.of(group1)));
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        userService.deleteUser(userId);
+
+        verify(userRepository).delete(user);
+        assertTrue(group1.getMembers().isEmpty());
+        assertTrue(member.getGroups().isEmpty());
+    }
+
+    @Test
     void deleteUser_NotFound() {
         Long userId = 99L;
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -161,6 +187,53 @@ class UserServiceTest {
         verify(userRepository).save(user);
         assertEquals("newuser", user.getUsername());
         assertEquals("New Name", user.getFullName());
+    }
+
+    @Test
+    void updateUser_DuplicateUsername_ThrowsException() {
+        Long userId = 1L;
+        User user = User.builder().id(userId).username("olduser").build();
+        User existingUser = User.builder().id(2L).username("newuser").build();
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setUsername("newuser");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByUsername("newuser")).thenReturn(Optional.of(existingUser));
+
+        assertThrows(RuntimeException.class, () -> userService.updateUser(userId, request));
+    }
+
+    @Test
+    void updateUser_DuplicateEmail_ThrowsException() {
+        Long userId = 1L;
+        User user = User.builder().id(userId).email("old@example.com").build();
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(true);
+
+        assertThrows(RuntimeException.class, () -> userService.updateUser(userId, request));
+    }
+
+    @Test
+    void updateUser_OAuthEmailChange_ThrowsException() {
+        Long userId = 1L;
+        User user = User.builder()
+                .id(userId)
+                .email("old@example.com")
+                .authProvider(AuthProvider.GOOGLE)
+                .build();
+
+        UpdateUserRequest request = new UpdateUserRequest();
+        request.setEmail("new@example.com");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+
+        assertThrows(RuntimeException.class, () -> userService.updateUser(userId, request));
     }
 
     @Test

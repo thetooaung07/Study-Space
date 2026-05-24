@@ -1,0 +1,196 @@
+package com.studyspace.controller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studyspace.dto.*;
+import com.studyspace.exception.GlobalExceptionHandler;
+import com.studyspace.service.CourseService;
+import com.studyspace.types.EnrollmentStatus;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+/**
+ * Standalone MockMvc unit tests for CourseController.
+ * Exercises HTTP status codes and JSON response shape without loading Spring context.
+ */
+@ExtendWith(MockitoExtension.class)
+class CourseControllerTest {
+
+    @Mock
+    private CourseService courseService;
+
+    @InjectMocks
+    private CourseController courseController;
+
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(courseController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        objectMapper = new ObjectMapper();
+    }
+
+    // ─── POST /api/courses ────────────────────────────────────────────────────────
+
+    @Test
+    void createCourse_Returns201WithBody() throws Exception {
+        CreateCourseRequest request = new CreateCourseRequest();
+        request.setTitle("Algorithms");
+
+        CourseDTO dto = CourseDTO.builder()
+                .id(1L).title("Algorithms").instructorId(10L).isPublished(false).build();
+
+        when(courseService.createCourse(eq(10L), any(CreateCourseRequest.class))).thenReturn(dto);
+
+        mockMvc.perform(post("/api/courses")
+                        .param("instructorId", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.title").value("Algorithms"));
+    }
+
+    @Test
+    void createCourse_MissingTitle_Returns400() throws Exception {
+        CreateCourseRequest request = new CreateCourseRequest();
+        request.setTitle(""); // blank title
+
+        mockMvc.perform(post("/api/courses")
+                        .param("instructorId", "10")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andExpect(jsonPath("$.errors").isArray());
+    }
+
+
+    @Test
+    void createCourse_ServiceThrowsException_Returns4xx() throws Exception {
+        when(courseService.createCourse(anyLong(), any(CreateCourseRequest.class)))
+                .thenThrow(new RuntimeException("Instructor not found"));
+
+        CreateCourseRequest request = new CreateCourseRequest();
+        request.setTitle("Bad Course");
+
+        mockMvc.perform(post("/api/courses")
+                        .param("instructorId", "99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().is4xxClientError());
+    }
+
+    // ─── GET /api/courses ─────────────────────────────────────────────────────────
+
+    @Test
+    void getAllPublishedCourses_Returns200WithList() throws Exception {
+        CourseSummaryDTO summary = CourseSummaryDTO.builder()
+                .id(1L).title("Algorithms").isPublished(true).build();
+
+        when(courseService.getAllPublishedCourses()).thenReturn(List.of(summary));
+
+        mockMvc.perform(get("/api/courses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].title").value("Algorithms"));
+    }
+
+    // ─── GET /api/courses/{id} ────────────────────────────────────────────────────
+
+    @Test
+    void getCourse_ById_Returns200() throws Exception {
+        CourseDTO dto = CourseDTO.builder().id(5L).title("OS").instructorId(1L).isPublished(true).build();
+
+        when(courseService.getCourseById(5L)).thenReturn(dto);
+
+        mockMvc.perform(get("/api/courses/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("OS"));
+    }
+
+    @Test
+    void getCourse_NotFound_Returns4xx() throws Exception {
+        when(courseService.getCourseById(999L))
+                .thenThrow(new RuntimeException("Course not found: 999"));
+
+        mockMvc.perform(get("/api/courses/999"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    // ─── DELETE /api/courses/{id} ─────────────────────────────────────────────────
+
+    @Test
+    void deleteCourse_Returns204() throws Exception {
+        doNothing().when(courseService).deleteCourse(1L, 10L);
+
+        mockMvc.perform(delete("/api/courses/1").param("userId", "10"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteCourse_ForbiddenUser_Returns4xx() throws Exception {
+        doThrow(new RuntimeException("Forbidden: only the instructor can modify this course."))
+                .when(courseService).deleteCourse(1L, 99L);
+
+        mockMvc.perform(delete("/api/courses/1").param("userId", "99"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    // ─── POST /api/courses/{id}/enroll ────────────────────────────────────────────
+
+    @Test
+    void enrollStudent_Returns201() throws Exception {
+        CourseEnrollmentDTO enrollment = CourseEnrollmentDTO.builder()
+                .id(100L)
+                .courseId(1L)
+                .studentId(2L)
+                .status(EnrollmentStatus.ACTIVE)
+                .build();
+
+        when(courseService.enrollStudent(1L, 2L)).thenReturn(enrollment);
+
+        mockMvc.perform(post("/api/courses/1/enroll").param("studentId", "2"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    // ─── DELETE /api/courses/{id}/enroll ─────────────────────────────────────────
+
+    @Test
+    void unenroll_Returns204() throws Exception {
+        doNothing().when(courseService).unenroll(1L, 2L);
+
+        mockMvc.perform(delete("/api/courses/1/enroll").param("studentId", "2"))
+                .andExpect(status().isNoContent());
+    }
+
+    // ─── PATCH /api/courses/{id}/publish ─────────────────────────────────────────
+
+    @Test
+    void togglePublish_Returns200() throws Exception {
+        CourseDTO dto = CourseDTO.builder().id(1L).title("Algorithms").isPublished(true).build();
+
+        when(courseService.togglePublish(1L, 10L)).thenReturn(dto);
+
+        mockMvc.perform(patch("/api/courses/1/publish").param("userId", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isPublished").value(true));
+    }
+}
