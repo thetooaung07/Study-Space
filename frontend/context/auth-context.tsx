@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
 import { UserDTO, UserRole } from "@/types";
 import { api } from "@/lib/api";
 import { useRouter, usePathname } from "next/navigation";
@@ -92,9 +92,18 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 
 	const isAuthenticated = !!user;
 
+	let content = children;
+	if (isLoading) content = <FullPageLoader />;
+	else if (!isAuthenticated && !isAuthRoute) content = null;
+
+	const contextValue = useMemo(
+		() => ({ user, isAuthenticated, isLoading, login, logout, updateUser }),
+		[user, isAuthenticated, isLoading, login, logout, updateUser]
+	);
+
 	return (
-		<AuthContext.Provider value={{ user, isAuthenticated, isLoading, login, logout, updateUser }}>
-			{isLoading ? <FullPageLoader /> : !isAuthenticated && !isAuthRoute ? null : children} // NOSONAR
+		<AuthContext.Provider value={contextValue}>
+			{content}
 		</AuthContext.Provider>
 	);
 }

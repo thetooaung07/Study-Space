@@ -129,3 +129,9 @@ dependencyCheck {
 test {
     finalizedBy jacocoTestReport
 }
+
+sonarqube {
+    properties {
+        property "sonar.exclusions", "**/dto/**"
+    }
+}

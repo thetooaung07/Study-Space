@@ -47,7 +47,16 @@ const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 	}
 };
 
-const WorkspaceSectionCard = ({ section, isChecked, isProposed, toggleSectionCheck, toggleLeft, expandedLeft, selectedMaterials, toggleMaterial }: any) => (
+const WorkspaceSectionCard = ({
+	section,
+	isChecked,
+	isProposed,
+	toggleSectionCheck,
+	toggleLeft,
+	expandedLeft,
+	selectedMaterials,
+	toggleMaterial,
+}: Readonly<any>) => (
 	<div
 		className={`border rounded-md overflow-hidden transition-colors ${
 			isProposed
@@ -78,9 +87,7 @@ const WorkspaceSectionCard = ({ section, isChecked, isProposed, toggleSectionChe
 				)}
 				<span className="text-xs font-semibold flex-1">{section.title}</span>
 			</button>
-			<span className="text-[10px] text-muted-foreground shrink-0">
-				{section.materials.length} files
-			</span>
+			<span className="text-[10px] text-muted-foreground shrink-0">{section.materials.length} files</span>
 		</label>
 
 		{expandedLeft.has(section.id) && (
@@ -113,18 +120,34 @@ const WorkspaceSectionCard = ({ section, isChecked, isProposed, toggleSectionChe
 	</div>
 );
 
-const CourseSectionCard = ({ section, disabled, isSelected, setTargetSectionId, toggleRight, expandedRight }: any) => (
+const CourseSectionCard = ({
+	section,
+	disabled,
+	isSelected,
+	setTargetSectionId,
+	toggleRight,
+	expandedRight,
+}: Readonly<any>) => (
 	<div
 		className={`border rounded-md overflow-hidden transition-colors ${
-			disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+			disabled ? "opacity-50" : ""
 		} ${isSelected ? "border-primary bg-primary/5" : "border-border"} ${
 			!disabled && !isSelected ? "hover:border-primary/40" : ""
 		}`}
-		onClick={() => {
-			if (!disabled) setTargetSectionId(section.id);
-		}}
 	>
-		<div className="flex items-center gap-2 px-3 py-2">
+		<label
+			className={`flex items-center gap-2 px-3 py-2 m-0 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+		>
+			<input
+				type="radio"
+				name="targetSection"
+				disabled={disabled}
+				checked={isSelected}
+				onChange={() => {
+					if (!disabled) setTargetSectionId(section.id);
+				}}
+				className="sr-only"
+			/>
 			<div
 				className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
 					isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
@@ -133,9 +156,10 @@ const CourseSectionCard = ({ section, disabled, isSelected, setTargetSectionId, 
 				{isSelected && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
 			</div>
 			<button
+				type="button"
 				className="flex-1 flex items-center gap-2 text-left"
 				onClick={(e) => {
-					e.stopPropagation();
+					e.preventDefault();
 					toggleRight(section.id);
 				}}
 			>
@@ -147,7 +171,7 @@ const CourseSectionCard = ({ section, disabled, isSelected, setTargetSectionId, 
 				<span className="text-xs font-medium flex-1">{section.title}</span>
 				<span className="text-[10px] text-muted-foreground">{section.materials.length} files</span>
 			</button>
-		</div>
+		</label>
 		{expandedRight.has(section.id) && (
 			<div className="border-t bg-muted/20 px-3 py-2 space-y-1">
 				{section.materials.map((m: any) => (
@@ -156,13 +180,94 @@ const CourseSectionCard = ({ section, disabled, isSelected, setTargetSectionId, 
 						<span className="truncate">{m.title}</span>
 					</div>
 				))}
-				{section.materials.length === 0 && (
-					<p className="text-[11px] text-muted-foreground italic">Empty</p>
-				)}
+				{section.materials.length === 0 && <p className="text-[11px] text-muted-foreground italic">Empty</p>}
 			</div>
 		)}
 	</div>
 );
+
+const ProposalSummary = ({ isWholeSectionMode, proposedSection, selectedItems, targetSection, course }: any) => {
+	if (!isWholeSectionMode && selectedItems.length === 0) return null;
+
+	return (
+		<div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-xs space-y-2">
+			<div className="flex gap-2">
+				<span className="text-muted-foreground shrink-0 w-16">
+					{isWholeSectionMode ? "Section" : "Merging"}
+				</span>
+				<div className="flex flex-wrap gap-1">
+					{isWholeSectionMode && (
+						<span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-400/30 px-1.5 py-0.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+							<FolderPlus className="h-3 w-3" />
+							{proposedSection!.title} ({proposedSection!.materials.length} files)
+						</span>
+					)}
+					{!isWholeSectionMode && selectedItems.length === 0 && (
+						<span className="text-muted-foreground italic">No materials selected</span>
+					)}
+					{!isWholeSectionMode &&
+						selectedItems.length > 0 &&
+						selectedItems.map((m: any) => (
+							<span
+								key={m.id}
+								className="inline-flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[11px]"
+							>
+								<MaterialIcon type={m.fileType} />
+								<span className="truncate max-w-[140px]">{m.title}</span>
+							</span>
+						))}
+				</div>
+			</div>
+
+			<div className="flex items-center gap-2 text-muted-foreground">
+				<div className="flex-1 border-t border-dashed border-border" />
+				<ArrowRight className="h-3.5 w-3.5 shrink-0" />
+				<div className="flex-1 border-t border-dashed border-border" />
+			</div>
+
+			<div className="flex gap-2">
+				<span className="text-muted-foreground shrink-0 w-16">Into</span>
+				{isWholeSectionMode && (
+					<div>
+						<p className="font-medium text-emerald-600 dark:text-emerald-400">
+							New section in {course.title}
+						</p>
+						<p className="text-muted-foreground">Will be created upon instructor approval</p>
+					</div>
+				)}
+				{!isWholeSectionMode && targetSection && (
+					<div>
+						<p className="font-medium text-foreground">{targetSection.title}</p>
+						<p className="text-muted-foreground">
+							{course.title} · {targetSection.materials.length} existing material
+							{targetSection.materials.length !== 1 ? "s" : ""}
+						</p>
+					</div>
+				)}
+				{!isWholeSectionMode && !targetSection && (
+					<span className="text-muted-foreground italic">No section selected</span>
+				)}
+			</div>
+		</div>
+	);
+};
+
+// ── Pure helper: derive the status hint shown above the submit button ─────────
+function getStatusMessage(
+	isWholeSectionMode: boolean,
+	proposedSectionMaterialCount: number,
+	proposedSectionTitle: string,
+	selectedMaterialsSize: number,
+	targetSectionId: number | null,
+): string {
+	if (isWholeSectionMode) {
+		if (proposedSectionMaterialCount === 0) return "The selected section is empty — add materials first.";
+		return `"${proposedSectionTitle}" with ${proposedSectionMaterialCount} file${proposedSectionMaterialCount !== 1 ? "s" : ""} ready to propose.`;
+	}
+	if (selectedMaterialsSize === 0) return "Select materials or use Propose as New Section on any section.";
+	if (!targetSectionId) return "Pick a target section on the right.";
+	return `${selectedMaterialsSize} material${selectedMaterialsSize !== 1 ? "s" : ""} ready to propose.`;
+}
 
 export default function ProposalPage() {
 	const { id: workspaceId, spaceId } = useParams<{ id: string; spaceId: string }>();
@@ -266,7 +371,6 @@ export default function ProposalPage() {
 		}
 	};
 
-	// Derived: whole-section mode is active whenever a section is fully checked
 	const isWholeSectionMode = checkedSectionId !== null;
 	// The workspace section being proposed (derived, no extra state)
 	const proposedSection = space?.sections.find((s) => s.id === checkedSectionId) ?? null;
@@ -284,7 +388,7 @@ export default function ProposalPage() {
 				targetCourseId: course.id,
 				...(isWholeSectionMode
 					? { proposedSectionTitle: proposedSection!.title }
-					: Readonly<{ targetSectionId: targetSectionId! }>),
+					: { targetSectionId: targetSectionId! }),
 				sourceMaterialIds: isWholeSectionMode
 					? proposedSection!.materials.map((m) => m.id)
 					: Array.from(selectedMaterials),
@@ -366,6 +470,14 @@ export default function ProposalPage() {
 
 	const targetSection = course.sections.find((s) => s.id === targetSectionId);
 
+	const statusMessage = getStatusMessage(
+		isWholeSectionMode,
+		proposedSection?.materials.length ?? 0,
+		proposedSection?.title ?? "",
+		selectedMaterials.size,
+		targetSectionId,
+	);
+
 	// ── Main render ────────────────────────────────────────────────────────────
 	return (
 		<div className="flex h-screen bg-background">
@@ -406,7 +518,7 @@ export default function ProposalPage() {
 												className="text-xs h-7"
 												onClick={selectAll}
 											>
-												Select All // NOSONAR
+												Select All {/* NOSONAR */}
 											</Button>
 											<Button
 												variant="ghost"
@@ -540,82 +652,17 @@ export default function ProposalPage() {
 
 								{/* Proposal summary */}
 								{(selectedItems.length > 0 || isWholeSectionMode) && (
-									<div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-xs space-y-2">
-										<div className="flex gap-2">
-											<span className="text-muted-foreground shrink-0 w-16">
-												{isWholeSectionMode ? "Section" : "Merging"} // NOSONAR
-											</span>
-											<div className="flex flex-wrap gap-1">
-												{isWholeSectionMode ? (
-													<span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 border border-emerald-400/30 px-1.5 py-0.5 text-[11px] text-emerald-600 dark:text-emerald-400">
-														<FolderPlus className="h-3 w-3" />
-														{proposedSection!.title} ({proposedSection!.materials.length}{" "}
-														files)
-													</span>
-												) : selectedItems.length === 0 ? (
-													<span className="text-muted-foreground italic">
-														No materials selected
-													</span>
-												) : (
-													selectedItems.map((m) => (
-														<span
-															key={m.id}
-															className="inline-flex items-center gap-1 rounded bg-background border border-border px-1.5 py-0.5 text-[11px]"
-														>
-															<MaterialIcon type={m.fileType} />
-															<span className="truncate max-w-[140px]">{m.title}</span>
-														</span>
-													))
-												)}
-											</div>
-										</div>
-
-										<div className="flex items-center gap-2 text-muted-foreground">
-											<div className="flex-1 border-t border-dashed border-border" />
-											<ArrowRight className="h-3.5 w-3.5 shrink-0" />
-											<div className="flex-1 border-t border-dashed border-border" />
-										</div>
-
-										<div className="flex gap-2">
-											<span className="text-muted-foreground shrink-0 w-16">Into</span>
-											{isWholeSectionMode ? (
-												<div>
-													<p className="font-medium text-emerald-600 dark:text-emerald-400">
-														New section in {course.title}
-													</p>
-													<p className="text-muted-foreground">
-														Will be created upon instructor approval
-													</p>
-												</div>
-											) : targetSection ? ( // NOSONAR
-												<div>
-													<p className="font-medium text-foreground">{targetSection.title}</p>
-													<p className="text-muted-foreground">
-														{course.title} · {targetSection.materials.length} existing
-														material{targetSection.materials.length !== 1 ? "s" : ""}
-													</p>
-												</div>
-											) : (
-												<span className="text-muted-foreground italic">
-													No section selected
-												</span>
-											)}
-										</div>
-									</div>
+									<ProposalSummary
+										isWholeSectionMode={isWholeSectionMode}
+										proposedSection={proposedSection}
+										selectedItems={selectedItems}
+										targetSection={targetSection}
+										course={course}
+									/>
 								)}
 
 								<div className="flex items-center justify-between">
-									<p className="text-xs text-muted-foreground">
-										{isWholeSectionMode
-											? proposedSection!.materials.length === 0
-												? "The selected section is empty — add materials first."
-												: `"${proposedSection!.title}" with ${proposedSection!.materials.length} file${proposedSection!.materials.length !== 1 ? "s" : ""} ready to propose.` // NOSONAR
-											: selectedMaterials.size === 0
-												? "Select materials or use Propose as New Section on any section."
-												: !targetSectionId
-													? "Pick a target section on the right."
-													: `${selectedMaterials.size} material${selectedMaterials.size !== 1 ? "s" : ""} ready to propose.`} // NOSONAR
-									</p>
+									<p className="text-xs text-muted-foreground">{statusMessage}</p>
 									<Button onClick={handleSubmit} disabled={submitting || !canSubmit}>
 										{submitting ? (
 											<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />

@@ -317,38 +317,38 @@ export function CourseDetail({ course, userId, isEnrolled: initialEnrolled = fal
 
 													{/* Workspace list */}
 													<div className="space-y-2 max-h-56 overflow-y-auto mt-3 pr-0.5">
-														{loadingWorkspaces ? (
+														{loadingWorkspaces && (
 															<div className="flex items-center justify-center py-8">
 																<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
 															</div>
-														) : workspaces.length === 0 ? (
+														)}
+														{!loadingWorkspaces && workspaces.length === 0 && (
 															<p className="text-sm text-center py-4 text-muted-foreground">
 																No workspaces yet. Create one below.
 															</p>
-														) : (
-															workspaces.map((ws) => (
-																<Card
-																	key={ws.id}
-																	className="cursor-pointer hover:border-primary/50 transition-colors"
-																	onClick={() => handleSelectWorkspace(ws)}
-																>
-																	<CardContent className="p-3 flex items-center justify-between">
-																		<div className="flex items-center gap-2">
-																			<FolderOpen className="h-4 w-4 text-primary" />
-																			<span className="text-sm font-medium">
-																				{ws.name}
-																			</span>
-																		</div>
-																		<Badge
-																			variant="secondary"
-																			className="text-[10px]"
-																		>
-																			{ws.spaceCount} spaces
-																		</Badge>
-																	</CardContent>
-																</Card>
-															))
 														)}
+														{!loadingWorkspaces && workspaces.length > 0 && workspaces.map((ws) => (
+															<Card
+																key={ws.id}
+																className="cursor-pointer hover:border-primary/50 transition-colors"
+																onClick={() => handleSelectWorkspace(ws)}
+															>
+																<CardContent className="p-3 flex items-center justify-between">
+																	<div className="flex items-center gap-2">
+																		<FolderOpen className="h-4 w-4 text-primary" />
+																		<span className="text-sm font-medium">
+																			{ws.name}
+																		</span>
+																	</div>
+																	<Badge
+																		variant="secondary"
+																		className="text-[10px]"
+																	>
+																		{ws.spaceCount} spaces
+																	</Badge>
+																</CardContent>
+															</Card>
+														))}
 													</div>
 
 													{/* Create new workspace inline */}

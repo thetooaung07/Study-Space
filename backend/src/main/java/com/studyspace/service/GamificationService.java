@@ -34,8 +34,7 @@ public class GamificationService {
      * Updates streaks and checks for achievements.
      */
     public void processSessionCompletion(User user, int sessionMinutes, StudySession session) {
-        // log.info("Processing stats for user: {} (ID: {}), session minutes: {}", 
-            // user.getUsername(), user.getId(), sessionMinutes);
+
         
         updateStreak(user);
         checkAchievements(user, sessionMinutes, session);

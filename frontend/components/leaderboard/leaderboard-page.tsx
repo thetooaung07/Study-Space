@@ -19,12 +19,11 @@ const MOCK_LEADERBOARD = [
 export function LeaderboardPage() {
   const [timeRange, setTimeRange] = useState("weekly")
   const [leaderboardData, setLeaderboardData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+
 
   useEffect(() => {
     // Fetch real data
     const fetchData = async () => {
-      setLoading(true)
       try {
         // Replace with actual API call
         // const res = await api.get(\`/analytics/leaderboard?range=\${timeRange}\`)
@@ -33,11 +32,9 @@ export function LeaderboardPage() {
         // Simulating API loading for now with mock
         setTimeout(() => {
              setLeaderboardData(MOCK_LEADERBOARD)
-             setLoading(false)
         }, 500)
       } catch (error) {
         console.error("Failed to fetch leaderboard", error)
-        setLoading(false)
       }
     }
     fetchData()

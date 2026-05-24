@@ -19,8 +19,7 @@ export function ActiveSessions() {
 	const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
-	// Join by ID state
-	const [joinId, setJoinId] = useState("");
+
 
 	const { user } = useAuth();
 	const router = useRouter();
@@ -65,12 +64,7 @@ export function ActiveSessions() {
 		OTHER: "from-gray-500/20 to-gray-600/20",
 	};
 
-	const handleJoinById = () => {
-		if (joinId) {
-			setSelectedSessionId(parseInt(joinId));
-			setIsModalOpen(true);
-		}
-	};
+
 
 	const handleDetailsClick = (sessionId: number) => {
 		router.push(`/sessions/active/${sessionId}`);

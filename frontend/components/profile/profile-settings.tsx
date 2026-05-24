@@ -27,7 +27,7 @@ import {
 
 
 export function ProfileSettings() {
-  const { user, login, updateUser, logout } = useAuth()
+  const { user, updateUser, logout } = useAuth()
   const router = useRouter()
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")

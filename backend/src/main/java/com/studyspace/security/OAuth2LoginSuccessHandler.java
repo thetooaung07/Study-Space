@@ -25,7 +25,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-    private final String FRONTEND_URL = "http://localhost:3000/auth/callback";
+    private static final String FRONTEND_URL = "http://localhost:3000/auth/callback";
     private static final String ATTR_LOGIN = "login";
 
     @Override

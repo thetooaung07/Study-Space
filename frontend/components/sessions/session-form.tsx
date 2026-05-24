@@ -71,8 +71,9 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 
 			<div className="space-y-4">
 				<div>
-					<label className="text-sm font-medium text-foreground block mb-2">Session Title</label>
+					<label htmlFor="title" className="text-sm font-medium text-foreground block mb-2">Session Title</label>
 					<input
+						id="title"
 						type="text"
 						placeholder="e.g., Calculus Chapter 5 Review"
 						value={formData.title}
@@ -83,8 +84,9 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 
 				<div className="grid grid-cols-3 gap-4">
 					<div>
-						<label className="text-sm font-medium text-foreground block mb-2">Subject</label>
+						<label htmlFor="subject" className="text-sm font-medium text-foreground block mb-2">Subject</label>
 						<select
+							id="subject"
 							value={formData.subject}
 							onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
 							className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -97,8 +99,9 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 						</select>
 					</div>
 					<div>
-						<label className="text-sm font-medium text-foreground block mb-2">Session Type</label>
+						<label htmlFor="sessionType" className="text-sm font-medium text-foreground block mb-2">Session Type</label>
 						<select
+							id="sessionType"
 							value={formData.sessionType}
 							onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
 							className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -111,8 +114,9 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 						</select>
 					</div>
 					<div>
-						<label className="text-sm font-medium text-foreground block mb-2">Visibility</label>
+						<label htmlFor="visibility" className="text-sm font-medium text-foreground block mb-2">Visibility</label>
 						<select
+							id="visibility"
 							value={formData.visibility}
 							onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
 							className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -124,8 +128,9 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 				</div>
 
 				<div>
-					<label className="text-sm font-medium text-foreground block mb-2">Description (Optional)</label>
+					<label htmlFor="description" className="text-sm font-medium text-foreground block mb-2">Description (Optional)</label>
 					<textarea
+						id="description"
 						placeholder="Add notes about what you'll study..."
 						value={formData.description}
 						onChange={(e) => setFormData({ ...formData, description: e.target.value })}

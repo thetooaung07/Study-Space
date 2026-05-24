@@ -12,6 +12,8 @@ import com.studyspace.repository.*;
 import com.studyspace.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -41,7 +43,7 @@ public class StudySessionService {
         User creator = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Failed to create session - user not found: {}", userId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         
         StudySession session = StudySession.builder()
@@ -49,7 +51,7 @@ public class StudySessionService {
             .description(request.getDescription())
             .subject(request.getSubject())
             .creator(creator)
-            .isGroupSession(request.getIsGroupSession() != null ? request.getIsGroupSession() : false)
+            .isGroupSession(Boolean.TRUE.equals(request.getIsGroupSession()))
             .status(SessionStatus.ACTIVE)
             .startTime(DateTimeUtil.nowUtc())
             .visibility(request.getVisibility() != null ? request.getVisibility() : com.studyspace.types.SessionVisibility.PUBLIC)
@@ -66,7 +68,7 @@ public class StudySessionService {
         
         if (request.getStudyGroupId() != null) {
             StudyGroup group = groupRepository.findById(request.getStudyGroupId())
-                .orElseThrow(() -> new RuntimeException("Study group not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Study group not found"));
             session.setStudyGroup(group);
             session.setIsGroupSession(true);
         }
@@ -103,7 +105,7 @@ public class StudySessionService {
         StudySession session = sessionRepository.findById(id)
             .orElseThrow(() -> {
                 log.warn("Session not found: {}", id);
-                return new RuntimeException(SESSION_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND);
             });
         return convertToDTO(session);
     }
@@ -154,7 +156,7 @@ public class StudySessionService {
     
     public StudySessionDTO endSession(Long sessionId) {
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
         
         // If already completed, just return DTO
         if (session.getStatus() == SessionStatus.COMPLETED) {
@@ -211,11 +213,11 @@ public class StudySessionService {
     public void addParticipant(Long sessionId, Long userId) {
       
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
         
-        // log.info("Adding participant - Session: {}, User: {} (ID: {})", sessionId, user.getUsername(), userId);
+
 
      
         var existingParticipant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId);
@@ -280,9 +282,9 @@ public class StudySessionService {
      * @param studyMinutes The study minutes to record for the participant
      */
     public void removeParticipant(Long sessionId, Long userId, Integer studyMinutes) {
-        // log.info("Removing participant - Session: {}, User ID: {}", sessionId, userId);
+
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-            .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PARTICIPANT_NOT_FOUND));
         
         // If already left, do nothing
         if (participant.getLeftAt() != null) {
@@ -416,7 +418,7 @@ public class StudySessionService {
     @Transactional
     public void pauseParticipant(Long sessionId, Long userId) {
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PARTICIPANT_NOT_FOUND));
                 
         if (participant.getLastPausedAt() != null) {
             return; // Already paused
@@ -446,7 +448,7 @@ public class StudySessionService {
     @Transactional
     public void resumeParticipant(Long sessionId, Long userId) {
         SessionParticipant participant = participantRepository.findByStudySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new RuntimeException(PARTICIPANT_NOT_FOUND));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PARTICIPANT_NOT_FOUND));
                 
         if (participant.getLastPausedAt() == null) {
             return; // Not paused
@@ -482,7 +484,7 @@ public class StudySessionService {
     @Transactional
     public void deleteSession(Long id) {
         StudySession session = sessionRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
             
         // Revert study minutes for all participants
         for (SessionParticipant participant : session.getParticipants()) {
@@ -501,10 +503,10 @@ public class StudySessionService {
     @Transactional
     public void transferHost(Long sessionId, Long newHostId) {
         StudySession session = sessionRepository.findById(sessionId)
-            .orElseThrow(() -> new RuntimeException(SESSION_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, SESSION_NOT_FOUND));
         
         User newHost = userRepository.findById(newHostId)
-            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
             
       
         session.setCreator(newHost);

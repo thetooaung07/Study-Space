@@ -48,7 +48,7 @@ public class LocalFileStorageService implements FileStorageService {
             // Return a relative URL path served by Spring static resources
             return UPLOADS_PREFIX + folder + "/" + fileName;
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to store file: " + ex.getMessage(), ex);
+            throw new IllegalStateException("Failed to store file: " + ex.getMessage(), ex);
         }
     }
 
@@ -58,12 +58,11 @@ public class LocalFileStorageService implements FileStorageService {
             // Convert URL like /uploads/courses/file.pdf → absolute path under uploadDir
             String relativePath = fileUrl.replace(UPLOADS_PREFIX, "");
             Path filePath = Paths.get(uploadDir, relativePath).toAbsolutePath().normalize();
-            File file = filePath.toFile();
-            if (file.exists()) {
-                file.delete();
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
                 log.info("Deleted local file: {}", filePath);
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             log.warn("Could not delete local file {}: {}", fileUrl, ex.getMessage());
         }
     }
@@ -90,7 +89,7 @@ public class LocalFileStorageService implements FileStorageService {
             log.info("Copied file from {} to {}", sourcePath, targetPath);
             return UPLOADS_PREFIX + targetFolder + "/" + newFileName;
         } catch (IOException ex) {
-            throw new RuntimeException("Failed to copy file: " + ex.getMessage(), ex);
+            throw new IllegalStateException("Failed to copy file: " + ex.getMessage(), ex);
         }
     }
 }

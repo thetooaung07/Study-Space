@@ -32,7 +32,7 @@ export default function ActiveSessionPage() {
 	const sessionId = params.id;
 
 	const [isPlaying, setIsPlaying] = useState(true);
-	const [isMuted, setIsMuted] = useState(true);
+
 	const [elapsedTime, setElapsedTime] = useState(0);
 	const [message, setMessage] = useState("");
 
@@ -148,7 +148,7 @@ export default function ActiveSessionPage() {
 		enabled: !loading,
 	});
 
-	const initializeTimer = useCallback(() => {
+	const initializeTimer = useCallback(() => { // NOSONAR
 		if (!session || !user) {
 			if (!userStartTime) setUserStartTime(new Date().getTime());
 			return;

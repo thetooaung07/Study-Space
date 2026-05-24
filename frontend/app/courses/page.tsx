@@ -43,17 +43,17 @@ export default function CoursesPage() {
 							enrollments
 								.filter((e) => e.status === "ACTIVE")
 								.map((e) => ({
-								id: e.courseId,
-								title: e.courseTitle,
-								description: "",
-								instructorId: 0,
-								instructorName: "",
-								isPublished: true,
-								createdAt: e.enrolledAt,
-								enrollmentCount: e.enrollmentCount,
-								sectionCount: e.sectionCount,
-							}))
-						)
+									id: e.courseId,
+									title: e.courseTitle,
+									description: "",
+									instructorId: 0,
+									instructorName: "",
+									isPublished: true,
+									createdAt: e.enrolledAt,
+									enrollmentCount: e.enrollmentCount,
+									sectionCount: e.sectionCount,
+								})),
+						),
 					)
 					.catch((e) => setError(e.message))
 					.finally(() => setLoading(false));
@@ -66,6 +66,28 @@ export default function CoursesPage() {
 				.finally(() => setLoading(false));
 		}
 	}, [activeTab, user]);
+
+	const renderContent = () => {
+		if (loading) {
+			return <div className="text-sm text-muted-foreground animate-pulse mt-4">Loading courses…</div>;
+		}
+		if (error) {
+			return <div className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-md mt-4">{error}</div>;
+		}
+		return (
+			<>
+				<TabsContent value="all" className="m-0 mt-4">
+					<CourseCatalog courses={courses} as="student" />
+				</TabsContent>
+				<TabsContent value="my" className="m-0 mt-4">
+					<CourseCatalog
+						courses={courses}
+						as={user?.role === UserRole.INSTRUCTOR ? "instructor" : "student"}
+					/>
+				</TabsContent>
+			</>
+		);
+	};
 
 	return (
 		<div className="flex h-screen bg-background">
@@ -82,7 +104,9 @@ export default function CoursesPage() {
 									Course Catalog
 								</h1>
 								<p className="text-sm text-muted-foreground mt-1">
-									{user?.role === UserRole.INSTRUCTOR ? "Browse available courses or manage your own." : "Browse available courses."}
+									{user?.role === UserRole.INSTRUCTOR
+										? "Browse available courses or manage your own."
+										: "Browse available courses."}
 								</p>
 							</div>
 							{user?.role === UserRole.INSTRUCTOR && (
@@ -103,26 +127,14 @@ export default function CoursesPage() {
 							<TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
 								<TabsTrigger value="all">All Courses</TabsTrigger>
 								<TabsTrigger value="my">
-									{user?.role === UserRole.INSTRUCTOR ? "My Courses (Instructor)" : "Enrolled Courses"} // NOSONAR
+									{user?.role === UserRole.INSTRUCTOR
+										? "My Courses (Instructor)"
+										: "Enrolled Courses"}{" "}
+									{/* NOSONAR */}
 								</TabsTrigger>
 							</TabsList>
 
-							{loading ? (
-								<div className="text-sm text-muted-foreground animate-pulse mt-4">Loading courses…</div>
-							) : error ? (
-								<div className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-md mt-4">
-									{error}
-								</div>
-							) : (
-								<>
-									<TabsContent value="all" className="m-0 mt-4">
-										<CourseCatalog courses={courses} as="student" />
-									</TabsContent>
-									<TabsContent value="my" className="m-0 mt-4">
-										<CourseCatalog courses={courses} as={user?.role === UserRole.INSTRUCTOR ? "instructor" : "student"} />
-									</TabsContent>
-								</>
-							)}
+							{renderContent()}
 						</Tabs>
 					</div>
 				</main>

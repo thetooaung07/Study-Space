@@ -47,15 +47,13 @@ const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 const highlightCode = (codeText: string): React.ReactNode[] => {
 	const COMMENT = "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)"; // NOSONAR
 	const STRING = "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|`(?:\\\\.|[^`\\\\])*`)";
-	const KEYWORD = "(\\b(?:public|private|protected|class|interface|enum|extends|implements|void|return|import|package|const|let|var|function|new|if|else|for|while|switch|case|default|try|catch|finally|throw|throws|static|final|volatile|transient|synchronized|abstract|native|strictfp|export|from|as|await|async|yield|debugger|super|this|typeof|instanceof|in|of|delete|null|true|false)\\b)";
+	const KEYWORD =
+		"(\\b(?:public|private|protected|class|interface|enum|extends|implements|void|return|import|package|const|let|var|function|new|if|else|for|while|switch|case|default|try|catch|finally|throw|throws|static|final|volatile|transient|synchronized|abstract|native|strictfp|export|from|as|await|async|yield|debugger|super|this|typeof|instanceof|in|of|delete|null|true|false)\\b)";
 	const CLASS_NAME = "(\\b(?:[A-Z]\\w+)\\b)";
 	const FUNCTION_CALL = "(\\b\\w+)(?=\\()";
 	const NUMBER = "(\\b\\d+(?:\\.\\d+)?\\b)";
 
-	const regex = new RegExp(
-		[COMMENT, STRING, KEYWORD, CLASS_NAME, FUNCTION_CALL, NUMBER].join("|"),
-		"g"
-	);
+	const regex = new RegExp([COMMENT, STRING, KEYWORD, CLASS_NAME, FUNCTION_CALL, NUMBER].join("|"), "g");
 
 	const parts: React.ReactNode[] = [];
 	let lastIndex = 0;
@@ -63,21 +61,13 @@ const highlightCode = (codeText: string): React.ReactNode[] => {
 
 	while ((match = regex.exec(codeText)) !== null) {
 		const matchIndex = match.index;
-		
+
 		// Add plain text before match
 		if (matchIndex > lastIndex) {
 			parts.push(codeText.slice(lastIndex, matchIndex));
 		}
 
-		const [
-			full,
-			comment,
-			string,
-			keyword,
-			className,
-			func,
-			number
-		] = match;
+		const [full, comment, string, keyword, className, func, number] = match;
 
 		let classNameSpan = "";
 		if (comment) classNameSpan = "text-neutral-450 dark:text-neutral-500 italic";
@@ -91,7 +81,7 @@ const highlightCode = (codeText: string): React.ReactNode[] => {
 			parts.push(
 				<span key={matchIndex} className={classNameSpan}>
 					{full}
-				</span>
+				</span>,
 			);
 		} else {
 			parts.push(full);
@@ -111,15 +101,33 @@ const highlightCode = (codeText: string): React.ReactNode[] => {
 
 import type { Components } from "react-markdown";
 
-const H1 = ({ children }: any) => <h1 className="text-base font-bold mt-3 mb-1.5 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h1>;
-const H2 = ({ children }: any) => <h2 className="text-sm font-bold mt-3 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h2>;
-const H3 = ({ children }: any) => <h3 className="text-sm font-semibold mt-2.5 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h3>;
-const P = ({ children }: any) => <p className="mb-2 last:mb-0 leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</p>;
-const Strong = ({ children }: any) => <strong className="font-bold text-neutral-950 dark:text-neutral-50">{children}</strong>;
+const H1 = ({ children }: any) => (
+	<h1 className="text-base font-bold mt-3 mb-1.5 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h1>
+);
+const H2 = ({ children }: any) => (
+	<h2 className="text-sm font-bold mt-3 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h2>
+);
+const H3 = ({ children }: any) => (
+	<h3 className="text-sm font-semibold mt-2.5 mb-1 first:mt-0 text-neutral-900 dark:text-neutral-50">{children}</h3>
+);
+const P = ({ children }: any) => (
+	<p className="mb-2 last:mb-0 leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</p>
+);
+const Strong = ({ children }: any) => (
+	<strong className="font-bold text-neutral-950 dark:text-neutral-50">{children}</strong>
+);
 const Em = ({ children }: any) => <em className="italic text-neutral-600 dark:text-neutral-400">{children}</em>;
-const Ul = ({ children }: any) => <ul className="list-disc list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">{children}</ul>;
-const Ol = ({ children }: any) => <ol className="list-decimal list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">{children}</ol>;
-const Li = ({ children }: any) => <li className="leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</li>;
+const Ul = ({ children }: any) => (
+	<ul className="list-disc list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">{children}</ul>
+);
+const Ol = ({ children }: any) => (
+	<ol className="list-decimal list-outside pl-4 mb-2 space-y-0.5 text-neutral-850 dark:text-neutral-200">
+		{children}
+	</ol>
+);
+const Li = ({ children }: any) => (
+	<li className="leading-relaxed text-neutral-850 dark:text-neutral-200">{children}</li>
+);
 
 const markdownComponents: Components = {
 	// Headings
@@ -200,10 +208,7 @@ const markdownComponents: Components = {
 };
 
 const MarkdownContent = ({ content }: Readonly<{ content: string }>) => (
-	<ReactMarkdown
-		remarkPlugins={[remarkGfm]}
-		components={markdownComponents}
-	>
+	<ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
 		{content}
 	</ReactMarkdown>
 );
@@ -277,9 +282,18 @@ const getSenderName = (msg: Message, isMe: boolean, isAI: boolean, isError: bool
 
 const getBubbleClass = (isMe: boolean, isAI: boolean, isError: boolean) => {
 	const base = "px-3 py-2 rounded-lg text-sm max-w-[90%] ";
-	if (isMe) return base + "bg-accent text-accent-foreground border border-border shadow-sm rounded-tr-none leading-relaxed whitespace-pre-wrap";
-	if (isAI) return base + "bg-primary/5 dark:bg-primary/10 text-neutral-900 dark:text-neutral-50 border border-primary/20 rounded-tl-none shadow-xs";
-	if (isError) return base + "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-none leading-relaxed";
+	if (isMe)
+		return (
+			base +
+			"bg-accent text-accent-foreground border border-border shadow-sm rounded-tr-none leading-relaxed whitespace-pre-wrap"
+		);
+	if (isAI)
+		return (
+			base +
+			"bg-primary/5 dark:bg-primary/10 text-neutral-900 dark:text-neutral-50 border border-primary/20 rounded-tl-none shadow-xs"
+		);
+	if (isError)
+		return base + "bg-destructive/10 text-destructive border border-destructive/20 rounded-tl-none leading-relaxed";
 	return base + "bg-muted text-muted-foreground border border-transparent text-xs italic leading-relaxed";
 };
 
@@ -302,6 +316,15 @@ const ChatMessageItem = ({
 	const senderName = getSenderName(msg, isMe, isAI, isError);
 	const bubbleClass = getBubbleClass(isMe, isAI, isError);
 
+	let content;
+	if (!isAI) {
+		content = renderMessageText(msg.text);
+	} else if (streamingId === msg.id) {
+		content = <StreamingMessage text={msg.text} onDone={() => setStreamingId(null)} />;
+	} else {
+		content = <MarkdownContent content={msg.text} />;
+	}
+
 	return (
 		<div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
 			{!isSystem && (
@@ -309,23 +332,11 @@ const ChatMessageItem = ({
 					{isAI && <Sparkles className="h-3 w-3 text-primary" />}
 					{isError && <AlertCircle className="h-3 w-3 text-destructive" />}
 					<span className="text-xs font-medium">{senderName}</span>
-					<span className="text-[10px] text-muted-foreground">
-						{format(msg.timestamp, "HH:mm")}
-					</span>
+					<span className="text-[10px] text-muted-foreground">{format(msg.timestamp, "HH:mm")}</span>
 				</div>
 			)}
 
-			<div className={bubbleClass}>
-				{isAI ? (
-					streamingId === msg.id ? (
-						<StreamingMessage text={msg.text} onDone={() => setStreamingId(null)} />
-					) : (
-						<MarkdownContent content={msg.text} />
-					)
-				) : (
-					renderMessageText(msg.text)
-				)}
-			</div>
+			<div className={bubbleClass}>{content}</div>
 
 			{isAI && msg.contextDocumentTitle && (
 				<p className="text-[10px] text-muted-foreground mt-1 px-1 flex items-center gap-1">
@@ -428,9 +439,10 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		}
 
 		if (selection.focusNode.nodeType === Node.TEXT_NODE) {
-			const text = selection.focusNode.textContent || "";
+			const text = selection.focusNode.textContent ?? "";
 			const textBeforeCursor = text.slice(0, selection.focusOffset);
-			const match = textBeforeCursor.match(/(?:^|\s)@([^\s]*)$/);
+			const regex = /(?:^|\s)@([^\s]*)$/;
+			const match = regex.exec(textBeforeCursor);
 			if (match) {
 				setTagQuery(match[1]);
 				return;
@@ -477,9 +489,10 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		}
 
 		if (selection.focusNode.nodeType === Node.TEXT_NODE) {
-			const text = selection.focusNode.textContent || "";
+			const text = selection.focusNode.textContent ?? "";
 			const cursorOffset = selection.focusOffset;
-			const match = text.slice(0, cursorOffset).match(/(?:^|\s)(@([^\s]*))$/);
+			const regex = /(?:^|\s)(@([^\s]*))$/;
+			const match = regex.exec(text.slice(0, cursorOffset));
 			if (match) {
 				const atString = match[1];
 				const matchIndex = cursorOffset - atString.length;
@@ -556,7 +569,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 						documentTitle = el.dataset.materialTitle;
 					}
 				} else {
-					question += el.textContent || "";
+					question += el.textContent ?? "";
 				}
 			}
 		}
@@ -659,7 +672,8 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 						}
 					}}
 				>
-					{material ? <MaterialIcon type={material.fileType} /> : <Link2 className="h-3 w-3" />} // NOSONAR
+					{material ? <MaterialIcon type={material.fileType} /> : <Link2 className="h-3 w-3" />}{" "}
+					{/* NOSONAR */}
 					<span className="truncate max-w-[150px]">{matTitle}</span>
 				</Badge>,
 			);
@@ -677,6 +691,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		<div className="flex flex-col h-full bg-card relative border-l border-border" style={{ width: `${width}px` }}>
 			{/* Resize handle */}
 			<div
+				role="button"
 				className="absolute left-[-4px] top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/50 z-10 transition-colors"
 				onMouseDown={handleMouseDown}
 			/>
@@ -733,7 +748,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 						<div className="bg-popover border border-border rounded-md shadow-md overflow-hidden">
 							{filteredMaterials.length === 0 ? (
 								<div className="p-3 text-xs text-muted-foreground text-center">
-									No materials found for &ldquo;{tagQuery}&rdquo; // NOSONAR
+									No materials found for &ldquo;{tagQuery}&rdquo; {/* NOSONAR */}
 								</div>
 							) : (
 								<div className="max-h-48 overflow-y-auto">
@@ -761,12 +776,14 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 								</div>
 							)}
 						</div>
-					</div> // NOSONAR
+					</div>
 				)}
 
 				<div className="flex flex-col border border-input rounded-xl p-1 bg-background focus-within:ring-3/50 focus-within:ring-ring/50 focus-within:border-ring/50 shadow-xs">
 					{/* Text Input area */}
 					<div
+						role="textbox"
+						aria-multiline="true"
 						ref={inputRef}
 						contentEditable={!isLoading}
 						onInput={handleInput}
@@ -794,7 +811,12 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 							{isModelMenuOpen && (
 								<>
 									{/* Overlay to handle click-away */}
-									<div className="fixed inset-0 z-20" onClick={() => setIsModelMenuOpen(false)} />
+									<button
+										type="button"
+										aria-label="Close model menu overlay"
+										className="fixed inset-0 z-20 cursor-default w-full h-full bg-transparent border-none p-0 m-0"
+										onClick={() => setIsModelMenuOpen(false)}
+									/>
 
 									<div className="absolute bottom-full left-0 mb-1.5 w-48 bg-popover border border-border rounded-lg shadow-md p-1 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
 										<button

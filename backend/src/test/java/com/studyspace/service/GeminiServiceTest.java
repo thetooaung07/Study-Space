@@ -101,15 +101,6 @@ class GeminiServiceTest {
         assertEquals("Extracted visual text", result.text());
     }
 
-    @Test
-    void testAskGeminiWithContext() throws Exception {
-        when(mockModels.generateContent(eq("gemini-3-flash-preview"), any(String.class), any()))
-                .thenReturn(mockResponse);
-        when(mockResponse.text()).thenReturn("Legacy answer");
-
-        String result = geminiService.askGeminiWithContext("Some context", "Question");
-        assertEquals("Legacy answer", result);
-    }
 
     @Test
     void testCallApi_RateLimitException_ParsedCorrectly() throws Exception {

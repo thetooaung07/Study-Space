@@ -117,13 +117,13 @@ export function ContributionReview({ courseId, userId, proposals, onUpdated }: R
 											<MaterialIcon type={p.sourceMaterialType as MaterialType} />
 											<span
 												className="text-sm font-medium truncate max-w-[200px]"
-												title={p.sourceMaterialTitle}
+												title={p.sourceMaterialTitle ?? "Untitled"}
 											>
-												{p.sourceMaterialTitle || "Untitled"}
+												{p.sourceMaterialTitle ?? "Untitled"}
 											</span>
 											{p.sourceMaterialId && (
 												<a
-													href={`http://localhost:8080/api/files/download?materialId=${p.sourceMaterialId}&type=WORKSPACE&token=${typeof window !== "undefined" ? localStorage.getItem("token") || "" : ""}`}
+													href={`http://localhost:8080/api/files/download?materialId=${p.sourceMaterialId}&type=WORKSPACE&token=${typeof window !== "undefined" ? (localStorage.getItem("token") ?? "") : ""}`}
 													target="_blank"
 													rel="noopener noreferrer"
 													className="text-[10px] text-primary hover:underline"
@@ -140,9 +140,9 @@ export function ContributionReview({ courseId, userId, proposals, onUpdated }: R
 										<div className="flex items-center gap-2">
 											<p
 												className="text-sm font-medium truncate"
-												title={p.targetSectionTitle || p.proposedSectionTitle || "New Section"}
+												title={p.targetSectionTitle ?? p.proposedSectionTitle ?? "New Section"}
 											>
-												{p.targetSectionTitle || p.proposedSectionTitle || "New Section"}
+												{p.targetSectionTitle ?? p.proposedSectionTitle ?? "New Section"}
 											</p>
 											{!p.targetSectionId && (
 												<Badge

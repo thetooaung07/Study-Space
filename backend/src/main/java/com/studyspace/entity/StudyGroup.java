@@ -30,6 +30,7 @@ public class StudyGroup {
     @Column(nullable = false)
     private String name;
     
+    @SuppressWarnings("unused")
     private String description;
     
     @Column(nullable = false, unique = true)

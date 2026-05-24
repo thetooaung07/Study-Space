@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,10 +90,10 @@ class StudyGroupServiceTest {
         when(userRepository.findById(99L)).thenReturn(Optional.of(nonMember));
 
         // Execute & Verify
-        RuntimeException exception = assertThrows(RuntimeException.class, 
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, 
             () -> groupService.transferOwnership(10L, 99L));
         
-        assertEquals("New owner must be a member of the group", exception.getMessage());
+        assertEquals("New owner must be a member of the group", exception.getReason());
         verify(groupRepository, never()).save(any());
     }
 
@@ -195,10 +196,10 @@ class StudyGroupServiceTest {
         when(userRepository.findById(3L)).thenReturn(Optional.of(member2));
 
         // Execute - member1 tries to kick member2 (not allowed)
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
             () -> groupService.removeMember(10L, 3L, 2L));
         
-        assertEquals("Not authorized to remove this member", exception.getMessage());
+        assertEquals("Not authorized to remove this member", exception.getReason());
         verify(groupRepository, never()).save(any());
     }
 
@@ -219,10 +220,10 @@ class StudyGroupServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(creator));
 
         // Execute - creator tries to kick themselves (edge case)
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
             () -> groupService.removeMember(10L, 1L, 1L));
         
-        assertEquals("Cannot kick the group creator", exception.getMessage());
+        assertEquals("Cannot kick the group creator", exception.getReason());
         verify(groupRepository, never()).save(any());
     }
 
@@ -435,10 +436,10 @@ class StudyGroupServiceTest {
 
         when(groupRepository.findById(10L)).thenReturn(Optional.of(group));
 
-        RuntimeException exception = assertThrows(RuntimeException.class,
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
             () -> groupService.deleteGroup(10L));
         
-        assertTrue(exception.getMessage().contains("Cannot delete a public group with active members"));
+        assertTrue(exception.getReason().contains("Cannot delete a public group with active members"));
         verify(groupRepository, never()).delete(any());
     }
 

@@ -8,6 +8,8 @@ import com.studyspace.types.UserStatus;
 import com.studyspace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
@@ -29,11 +31,11 @@ public class UserService {
         log.info("Creating user with email: {}", request.getEmail());
         if (userRepository.existsByUsername(request.getUsername())) {
             log.warn("User creation failed - username already exists: {}", request.getUsername());
-            throw new RuntimeException("Username already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already exists");
         }
         if (userRepository.existsByEmail(request.getEmail())) {
             log.warn("User creation failed - email already exists: {}", request.getEmail());
-            throw new RuntimeException("Email already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
         
         User user = User.builder()
@@ -56,7 +58,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("User not found with ID: {}", userId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
             
         if (request.getUsername() != null) {
@@ -65,7 +67,7 @@ public class UserService {
                  // Check if username exists and belongs to SOMEONE ELSE
                  userRepository.findByUsername(newUsername).ifPresent(existingUser -> {
                      if (!existingUser.getId().equals(user.getId())) {
-                         throw new RuntimeException("Username already exists");
+                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already exists");
                      }
                  });
              }
@@ -74,10 +76,10 @@ public class UserService {
         
         if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
              if (userRepository.existsByEmail(request.getEmail())) {
-                  throw new RuntimeException("Email already exists");
+                  throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
              }
              if (user.getAuthProvider() != com.studyspace.types.AuthProvider.LOCAL) {
-                 throw new RuntimeException("You cannot change your email as you are logged in via " + user.getAuthProvider());
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot change your email as you are logged in via " + user.getAuthProvider());
              }
              user.setEmail(request.getEmail());
         }
@@ -99,17 +101,17 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Password change failed - user not found: {}", userId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
             
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             log.warn("Password change failed - invalid current password for user ID: {}", userId);
-            throw new RuntimeException("Invalid current password");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid current password");
         }
         
         if (user.getAuthProvider() != com.studyspace.types.AuthProvider.LOCAL) {
             log.warn("Password change failed - OAuth user cannot change password: {}", userId);
-            throw new RuntimeException("You cannot change your password as you are logged in via " + user.getAuthProvider());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot change your password as you are logged in via " + user.getAuthProvider());
         }
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -123,7 +125,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 log.warn("User not found with ID: {}", id);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         return convertToDTO(user);
     }
@@ -134,7 +136,7 @@ public class UserService {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> {
                 log.warn("User not found with username: {}", username);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         return convertToDTO(user);
     }
@@ -154,7 +156,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Status update failed - user not found: {}", userId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         user.setCurrentStatus(status);
         log.debug("User ID: {} status updated to {}", userId, status);
@@ -166,7 +168,7 @@ public class UserService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> {
                 log.error("Add study minutes failed - user not found: {}", userId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         int newTotal = user.getTotalStudyMinutes() + minutes;
         user.setTotalStudyMinutes(newTotal);
@@ -194,7 +196,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> {
                 log.error("Delete user failed - user not found: {}", id);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         
         Set<StudyGroup> groupsToUpdate = new HashSet<>(user.getGroups());

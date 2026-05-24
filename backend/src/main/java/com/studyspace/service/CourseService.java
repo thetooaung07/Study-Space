@@ -119,7 +119,7 @@ public class CourseService {
         assertInstructor(section.getCourse(), requestingUserId);
 
         String fileUrl = fileStorageService.store(file, "courses");
-        MaterialType fileType = detectFileType(file.getOriginalFilename(), file.getContentType());
+        MaterialType fileType = detectFileType(file.getOriginalFilename());
 
         CourseMaterial material = CourseMaterial.builder()
                 .title(title)
@@ -215,7 +215,7 @@ public class CourseService {
         }
     }
 
-    private MaterialType detectFileType(String filename, String contentType) {
+    private MaterialType detectFileType(String filename) {
         if (filename == null) return MaterialType.OTHER;
         String lower = filename.toLowerCase();
         if (lower.endsWith(".pdf")) return MaterialType.PDF;

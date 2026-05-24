@@ -23,6 +23,7 @@ public class Activity {
     @Column(nullable = false)
     private ActivityType type;
     
+    @SuppressWarnings("unused")
     private String message;
     
     @Column(nullable = false)

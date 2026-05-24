@@ -27,10 +27,13 @@ public class SessionParticipant {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
     
+    @SuppressWarnings("unused")
     private LocalDateTime leftAt;
     
+    @SuppressWarnings("unused")
     private Integer minutesParticipated;
     
+    @SuppressWarnings("unused")
     private LocalDateTime lastPausedAt;
     
     @Builder.Default

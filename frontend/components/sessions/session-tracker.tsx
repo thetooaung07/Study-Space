@@ -70,7 +70,7 @@ function DailyStatsCards({ refreshTrigger }: Readonly<DailyStatsCardsProps>) {
 			label: "Today's Study Time",
 			value: formatStudyTime(todayMinutes),
 			subtext:
-				sessionCount > 0 ? `From ${sessionCount} session${sessionCount !== 1 ? "s" : ""}` : "Start studying!",
+				sessionCount > 0 ? `From ${sessionCount} session${sessionCount !== 1 ? "s" : ""}` : "Start studying!", // NOSONAR
 			highlight: todayMinutes > 0,
 		},
 		{

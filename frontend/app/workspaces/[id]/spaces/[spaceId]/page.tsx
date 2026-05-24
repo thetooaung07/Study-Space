@@ -29,7 +29,7 @@ import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { workspacesApi } from "@/lib/workspace-api";
 import { useAuth } from "@/context/auth-context";
-import type { WorkspaceSpace } from "@/types/workspaces";
+import type { WorkspaceSpace, WorkspaceMaterial } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";

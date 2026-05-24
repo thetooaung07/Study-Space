@@ -40,8 +40,8 @@ export function SessionActivityFeed({
 							className="p-3 rounded-lg backdrop-blur-sm bg-white/40 border border-white/30"
 						>
 							<p className="text-xs lg:text-sm text-gray-900">
-								<span className="font-semibold">{activity.userName || "Unknown"}</span>{" "}
-								<span className="text-gray-600">{activity.message || activity.type}</span>
+								<span className="font-semibold">{activity.userName ?? "Unknown"}</span>{" "}
+								<span className="text-gray-600">{activity.message ?? activity.type}</span>
 							</p>
 							<p className="text-[10px] lg:text-xs text-gray-500 mt-1">
 								{new Date(activity.timestamp).toLocaleTimeString()}

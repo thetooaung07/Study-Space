@@ -127,30 +127,7 @@ public class GeminiService {
         }
     }
 
-    /**
-     * Legacy convenience method retained for backward compatibility.
-     * New code should use {@link #generate(String)} via {@link MemoryManager}.
-     *
-     * @deprecated Use {@link MemoryManager#handleQuery} instead.
-     */
-    @Deprecated
-    public String askGeminiWithContext(String context, String userQuestion) {
-        log.warn("[GEMINI] askGeminiWithContext() called (legacy path) — prefer MemoryManager.handleQuery()");
-        StringBuilder sb = new StringBuilder();
-        sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n\n");
-        if (context != null && !context.isBlank()) {
-            sb.append("Use the following document content as context to answer the student's question. ");
-            sb.append("Only rely on this context if it is relevant; otherwise answer from your general knowledge.\n\n");
-            sb.append("--- DOCUMENT CONTEXT ---\n");
-            String safeContext = context.length() > 10_000
-                    ? context.substring(0, 10_000) + "\n[...document truncated...]"
-                    : context;
-            sb.append(safeContext);
-            sb.append("\n--- END OF DOCUMENT CONTEXT ---\n\n");
-        }
-        sb.append("Student's question: ").append(userQuestion);
-        return callApi(sb.toString(), "askGeminiWithContext(legacy)");
-    }
+
 
     // ─── Private helpers ─────────────────────────────────────────────────────
 

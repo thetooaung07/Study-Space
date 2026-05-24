@@ -20,6 +20,8 @@ import com.studyspace.util.DateTimeUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -45,7 +47,7 @@ public class StudyGroupService {
         User creator = userRepository.findById(creatorId)
             .orElseThrow(() -> {
                 log.error("Failed to create group - user not found: {}", creatorId);
-                return new RuntimeException(USER_NOT_FOUND);
+                return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         
         StudyGroup group = StudyGroup.builder()
@@ -68,14 +70,14 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public StudyGroupDTO getGroupById(Long id) {
         StudyGroup group = groupRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         return convertToDTO(group);
     }
     
     @Transactional(readOnly = true)
     public StudyGroupDTO getGroupByInviteCode(String inviteCode) {
         StudyGroup group = groupRepository.findByInviteCode(inviteCode)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         return convertToDTO(group);
     }
     
@@ -103,9 +105,9 @@ public class StudyGroupService {
     
     public void addMember(Long groupId, Long userId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
         
         if (!group.getMembers().contains(user)) {
             group.getMembers().add(user);
@@ -116,19 +118,19 @@ public class StudyGroupService {
     
     public void removeMember(Long groupId, Long userId, Long requesterId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         User userToRemove = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
         
         if (requesterId != null) {
              boolean isSelfRemoval = requesterId.equals(userId);
              boolean isAdminRemoval = group.getCreator().getId().equals(requesterId);
         
              if (!isSelfRemoval && !isAdminRemoval) {
-                 throw new RuntimeException("Not authorized to remove this member");
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not authorized to remove this member");
              }
              if (isAdminRemoval && group.getCreator().getId().equals(userId)) {
-                 throw new RuntimeException("Cannot kick the group creator");
+                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot kick the group creator");
              }
         }
         
@@ -139,7 +141,7 @@ public class StudyGroupService {
     
     public StudyGroupDTO updateGroup(Long groupId, CreateGroupRequest request) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
             
         group.setName(request.getName());
         group.setDescription(request.getDescription());
@@ -152,14 +154,14 @@ public class StudyGroupService {
     
     public void transferOwnership(Long groupId, Long newOwnerId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
             
         User newOwner = userRepository.findById(newOwnerId)
-            .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND));
             
         // Check if new owner is a member
         if (!group.getMembers().contains(newOwner)) {
-            throw new RuntimeException("New owner must be a member of the group");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "New owner must be a member of the group");
         }
         
         group.setCreator(newOwner);
@@ -168,13 +170,13 @@ public class StudyGroupService {
 
     public void deleteGroup(Long groupId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
             
         if (group.getGroupType() == GroupType.PUBLIC) {
             // Public group: cannot delete if there are other members (excluding creator if they are leaving, but here we are deleting)
             // Rule: "Group will be only deleted if the last user wants to leave (meaning the group will become empty)"
             if (group.getMembers().size() > 1) {
-                throw new RuntimeException("Cannot delete a public group with active members. Please transfer ownership or wait until it is empty.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete a public group with active members. Please transfer ownership or wait until it is empty.");
             }
         } else if (group.getGroupType() == GroupType.INVITE_ONLY) {
              // Join-via-id: Creator offered options, but API just deletes.
@@ -196,7 +198,7 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public GroupStatsDTO getGroupStats(Long groupId, LocalDateTime cutoffDate, Integer minimumMinutes) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
 
         // Get all sessions that belong to THIS group (not all member sessions)
         List<StudySession> groupSessions = sessionRepository
@@ -257,7 +259,7 @@ public class StudyGroupService {
     public List<GroupMemberStatsDTO> getGroupMemberLeaderboard(Long groupId, LocalDateTime since, Integer minMinutes) {
         // Validate group exists
         groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         
         // Use the complex JPQL query
         return participantRepository.findGroupMemberStatsByGroupId(groupId, since, minMinutes);
@@ -271,14 +273,12 @@ public class StudyGroupService {
         // Calculate active members (members with sessions in the last 7 days)
         LocalDateTime oneWeekAgo = DateTimeUtil.nowUtc().minusDays(7);
         int activeMemberCount = (int) group.getMembers().stream()
-            .filter(member -> {
-                // Check if member has participated in any session in the last 7 days
-                return participantRepository.findByUserId(member.getId()).stream()
-                    .anyMatch(participant -> 
-                        participant.getJoinedAt() != null && 
-                        participant.getJoinedAt().isAfter(oneWeekAgo)
-                    );
-            })
+            .filter(member -> participantRepository.findByUserId(member.getId()).stream()
+                .anyMatch(participant -> 
+                    participant.getJoinedAt() != null && 
+                    participant.getJoinedAt().isAfter(oneWeekAgo)
+                )
+            )
             .count();
         
         // Calculate total sessions count for this group
@@ -301,7 +301,7 @@ public class StudyGroupService {
     @Transactional(readOnly = true)
     public StudyGroupDetailsDTO getGroupDetails(Long groupId, Long requestingUserId) {
         StudyGroup group = groupRepository.findById(groupId)
-            .orElseThrow(() -> new RuntimeException(GROUP_NOT_FOUND));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, GROUP_NOT_FOUND));
         
         List<StudySession> sessions = sessionRepository.findByStudyGroupId(groupId);
    
@@ -315,9 +315,7 @@ public class StudyGroupService {
                  }
                  return false;
              })
-             .map(session -> {
-                 return convertSessionToDTO(session);
-             })
+             .map(this::convertSessionToDTO)
              .collect(Collectors.toList());
 
         // Map members

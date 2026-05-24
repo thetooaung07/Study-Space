@@ -69,7 +69,7 @@ export function TransferSessionHostDialog({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={participant.profilePictureUrl || "/placeholder.svg"} />
+                      <AvatarImage src={participant.profilePictureUrl ?? "/placeholder.svg"} />
                       <AvatarFallback className="bg-primary/10 text-primary font-bold">
                         {participant.fullName
                           ? participant.fullName.charAt(0).toUpperCase()
@@ -87,7 +87,7 @@ export function TransferSessionHostDialog({
                         )}
                       </div>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="capitalize">{participant.currentStatus?.toLowerCase() || 'offline'}</span>
+                        <span className="capitalize">{participant.currentStatus?.toLowerCase() ?? 'offline'}</span>
                       </div>
                     </div>
                   </div>

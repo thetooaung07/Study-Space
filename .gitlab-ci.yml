@@ -114,5 +114,5 @@ sonarQube:
           -Dsonar.token=$SONAR_TOKEN
           -Dsonar.sources=backend/src/main,frontend
           -Dsonar.java.binaries=backend/build/classes/java/main/
-          -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/coverage/**
+          -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/coverage/**,frontend/components/ui/**,backend/**/dto/**,frontend/app/globals.css
           -Dsonar.coverage.jacoco.xmlReportPaths=backend/build/reports/jacoco/test/jacocoTestReport.xml

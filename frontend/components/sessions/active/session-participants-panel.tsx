@@ -34,7 +34,7 @@ export function SessionParticipantsPanel({
 						<div className="relative">
 							<Avatar className="h-8 w-8 lg:h-9 lg:w-9 shrink-0">
 								<AvatarImage
-									src={participant.profilePictureUrl || ""}
+									src={participant.profilePictureUrl ?? ""}
 									alt={participant.fullName}
 								/>
 								<AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-400 text-white text-xs font-semibold">

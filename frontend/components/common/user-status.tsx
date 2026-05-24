@@ -14,7 +14,6 @@ export function UserStatus() {
     const fetchUsers = async () => {
       try {
         const users = await api.get<UserDTO[]>("/users")
-        // TODO:Filter for "online" users, or just show first 5 for now as we don't have websocket status yet
         // Simulating "online" by just taking a slice
         setOnlineUsers(users.slice(0, 6)) 
       } catch (error) {
@@ -37,7 +36,7 @@ export function UserStatus() {
         {onlineUsers.length === 0 ? (
           <p className="text-sm text-muted-foreground">No users online.</p>
         ) : (
-          onlineUsers.map((user, idx) => {
+          onlineUsers.map((user) => {
             const isStudying = user.currentStatus === 'STUDYING'
             return (
               <div

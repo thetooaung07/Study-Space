@@ -8,7 +8,7 @@ import { UserStatus } from "@/components/common/user-status";
 import { TrendingContent } from "@/components/dashboard/trending-content";
 
 export function TrendingDashboard() {
-	const [filter, setFilter] = useState("all");
+
 	const [analytics, setAnalytics] = useState({
 		activeUsersNow: 0,
 		hotSessionsCount: 0,
