@@ -47,6 +47,12 @@ const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 	}
 };
 
+const getSectionClass = (isProposed: boolean, isChecked: boolean) => {
+	if (isProposed) return "border-emerald-500 bg-emerald-500/5";
+	if (isChecked) return "border-primary/50 bg-primary/5";
+	return "border-border";
+};
+
 const WorkspaceSectionCard = ({
 	section,
 	isChecked,
@@ -57,15 +63,7 @@ const WorkspaceSectionCard = ({
 	selectedMaterials,
 	toggleMaterial,
 }: Readonly<any>) => (
-	<div
-		className={`border rounded-md overflow-hidden transition-colors ${
-			isProposed
-				? "border-emerald-500 bg-emerald-500/5"
-				: isChecked
-					? "border-primary/50 bg-primary/5"
-					: "border-border"
-		}`}
-	>
+	<div className={`border rounded-md overflow-hidden transition-colors ${getSectionClass(isProposed, isChecked)}`}>
 		<label className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent/50 transition-colors">
 			<input
 				type="checkbox"
@@ -184,6 +182,66 @@ const CourseSectionCard = ({
 			</div>
 		)}
 	</div>
+);
+
+// ── Shared page shell (Sidebar + Header + main slot) ─────────────────────
+const PageShell = ({ children }: Readonly<{ children: React.ReactNode }>) => (
+	<div className="flex h-screen bg-background">
+		<Sidebar />
+		<div className="flex flex-col flex-1 overflow-hidden">
+			<Header />
+			{children}
+		</div>
+	</div>
+);
+
+// ── Success card shown after a proposal is submitted ──────────────────────
+const SubmittedCard = ({
+	isWholeSectionMode,
+	proposedSection,
+	selectedMaterials,
+	course,
+	workspaceId,
+	spaceId,
+}: Readonly<{
+	isWholeSectionMode: boolean;
+	proposedSection: WorkspaceSection | null;
+	selectedMaterials: Set<number>;
+	course: Course;
+	workspaceId: string;
+	spaceId: string;
+}>) => (
+	<main className="flex-1 flex items-center justify-center">
+		<Card className="max-w-md">
+			<CardContent className="p-8 text-center space-y-4">
+				<div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
+					<Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+				</div>
+				<h2 className="text-xl font-bold text-foreground">Proposal Submitted!</h2>
+				<p className="text-sm text-muted-foreground">
+					{isWholeSectionMode ? (
+						<>
+							Section <strong>"{proposedSection!.title}"</strong> proposed as a new section in{" "}
+							<strong>{course.title}</strong>. The instructor will review it.
+						</>
+					) : (
+						<>
+							{selectedMaterials.size} material{selectedMaterials.size !== 1 ? "s" : ""} proposed to{" "}
+							<strong>{course.title}</strong>. The instructor will review your contribution.
+						</>
+					)}
+				</p>
+				<div className="flex gap-2 justify-center pt-2">
+					<Button variant="outline" asChild>
+						<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}`}>Back to Space</Link>
+					</Button>
+					<Button asChild>
+						<Link href="/workspaces">My Workspaces</Link>
+					</Button>
+				</div>
+			</CardContent>
+		</Card>
+	</main>
 );
 
 const ProposalSummary = ({ isWholeSectionMode, proposedSection, selectedItems, targetSection, course }: any) => {
@@ -405,15 +463,11 @@ export default function ProposalPage() {
 	// ── Loading ────────────────────────────────────────────────────────────────
 	if (loading) {
 		return (
-			<div className="flex h-screen bg-background">
-				<Sidebar />
-				<div className="flex flex-col flex-1 overflow-hidden">
-					<Header />
-					<main className="flex-1 flex items-center justify-center">
-						<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-					</main>
-				</div>
-			</div>
+			<PageShell>
+				<main className="flex-1 flex items-center justify-center">
+					<Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+				</main>
+			</PageShell>
 		);
 	}
 
@@ -422,44 +476,16 @@ export default function ProposalPage() {
 	// ── Success ────────────────────────────────────────────────────────────────
 	if (submitted) {
 		return (
-			<div className="flex h-screen bg-background">
-				<Sidebar />
-				<div className="flex flex-col flex-1 overflow-hidden">
-					<Header />
-					<main className="flex-1 flex items-center justify-center">
-						<Card className="max-w-md">
-							<CardContent className="p-8 text-center space-y-4">
-								<div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-									<Check className="h-6 w-6 text-green-600 dark:text-green-400" />
-								</div>
-								<h2 className="text-xl font-bold text-foreground">Proposal Submitted!</h2>
-								<p className="text-sm text-muted-foreground">
-									{isWholeSectionMode ? (
-										<>
-											Section <strong>"{proposedSection!.title}"</strong> proposed as a new
-											section in <strong>{course.title}</strong>. The instructor will review it.
-										</>
-									) : (
-										<>
-											{selectedMaterials.size} material{selectedMaterials.size !== 1 ? "s" : ""}{" "}
-											proposed to <strong>{course.title}</strong>. The instructor will review your
-											contribution.
-										</>
-									)}
-								</p>
-								<div className="flex gap-2 justify-center pt-2">
-									<Button variant="outline" asChild>
-										<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}`}>Back to Space</Link>
-									</Button>
-									<Button asChild>
-										<Link href="/workspaces">My Workspaces</Link>
-									</Button>
-								</div>
-							</CardContent>
-						</Card>
-					</main>
-				</div>
-			</div>
+			<PageShell>
+				<SubmittedCard
+					isWholeSectionMode={isWholeSectionMode}
+					proposedSection={proposedSection}
+					selectedMaterials={selectedMaterials}
+					course={course}
+					workspaceId={workspaceId as string}
+					spaceId={spaceId as string}
+				/>
+			</PageShell>
 		);
 	}
 
@@ -480,203 +506,186 @@ export default function ProposalPage() {
 
 	// ── Main render ────────────────────────────────────────────────────────────
 	return (
-		<div className="flex h-screen bg-background">
-			<Sidebar />
-			<div className="flex flex-col flex-1 overflow-hidden">
-				<Header />
-				<main className="flex-1 overflow-auto">
-					<div className="p-6 max-w-7xl mx-auto space-y-4">
-						{/* Page header */}
-						<div>
-							<Button variant="ghost" size="sm" className="mb-2" asChild>
-								<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}`}>
-									<ArrowLeft className="mr-1.5 h-4 w-4" />
-									Back to Space
-								</Link>
-							</Button>
-							<h1 className="text-2xl font-bold text-foreground">Propose Contribution</h1>
-							<p className="text-sm text-muted-foreground mt-1">
-								Select individual materials (left) and a target section (right), or use{" "}
-								<strong>Propose as New Section</strong> on any workspace section to contribute the whole
-								section.
-							</p>
-						</div>
+		<PageShell>
+			<main className="flex-1 overflow-auto">
+				<div className="p-6 max-w-7xl mx-auto space-y-4">
+					{/* Page header */}
+					<div>
+						<Button variant="ghost" size="sm" className="mb-2" asChild>
+							<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}`}>
+								<ArrowLeft className="mr-1.5 h-4 w-4" />
+								Back to Space
+							</Link>
+						</Button>
+						<h1 className="text-2xl font-bold text-foreground">Propose Contribution</h1>
+						<p className="text-sm text-muted-foreground mt-1">
+							Select individual materials (left) and a target section (right), or use{" "}
+							<strong>Propose as New Section</strong> on any workspace section to contribute the whole
+							section.
+						</p>
+					</div>
 
-						{/* Two-panel layout */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-							{/* ── LEFT — Student's workspace ─────────────────────────────── */}
-							<Card>
-								<CardHeader className="pb-3">
-									<div className="flex items-center justify-between">
-										<CardTitle className="text-sm font-semibold">
-											Your Workspace: {space.title}
-										</CardTitle>
-										<div className="flex gap-1">
-											<Button
-												variant="ghost"
-												size="sm"
-												className="text-xs h-7"
-												onClick={selectAll}
+					{/* Two-panel layout */}
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+						{/* ── LEFT — Student's workspace ─────────────────────────────── */}
+						<Card>
+							<CardHeader className="pb-3">
+								<div className="flex items-center justify-between">
+									<CardTitle className="text-sm font-semibold">
+										Your Workspace: {space.title}
+									</CardTitle>
+									<div className="flex gap-1">
+										<Button variant="ghost" size="sm" className="text-xs h-7" onClick={selectAll}>
+											Select All {/* NOSONAR */}
+										</Button>
+										<Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearAll}>
+											Clear
+										</Button>
+									</div>
+								</div>
+								<Badge variant="secondary" className="text-xs w-fit">
+									{selectedMaterials.size} material{selectedMaterials.size !== 1 ? "s" : ""} selected
+								</Badge>
+							</CardHeader>
+
+							<CardContent className="space-y-2 max-h-[500px] overflow-auto">
+								{space.sections.map((section) => {
+									const isChecked = checkedSectionId === section.id;
+									const isProposed = isWholeSectionMode && proposedSection?.id === section.id;
+									return (
+										<WorkspaceSectionCard
+											key={section.id}
+											section={section}
+											isChecked={isChecked}
+											isProposed={isProposed}
+											toggleSectionCheck={toggleSectionCheck}
+											toggleLeft={toggleLeft}
+											expandedLeft={expandedLeft}
+											selectedMaterials={selectedMaterials}
+											toggleMaterial={toggleMaterial}
+										/>
+									);
+								})}
+							</CardContent>
+						</Card>
+
+						{/* ── RIGHT — Target course ──────────────────────────────────── */}
+						<Card>
+							<CardHeader className="pb-3">
+								<CardTitle className="text-sm font-semibold">Target Course: {course.title}</CardTitle>
+								<p className="text-xs text-muted-foreground">
+									Select the section where you want your materials to appear.
+								</p>
+							</CardHeader>
+
+							<CardContent className="space-y-1 max-h-[500px] overflow-auto">
+								{/* Existing sections to target */}
+								{course.sections.map((section) => {
+									const disabled = isWholeSectionMode;
+									const isSelected = targetSectionId === section.id;
+									return (
+										<CourseSectionCard
+											key={section.id}
+											section={section}
+											disabled={disabled}
+											isSelected={isSelected}
+											setTargetSectionId={setTargetSectionId}
+											toggleRight={toggleRight}
+											expandedRight={expandedRight}
+										/>
+									);
+								})}
+
+								{/* When whole section is checked, it forces the "New Section" option (now at bottom) */}
+								{isWholeSectionMode && (
+									<div
+										className={`border rounded-md overflow-hidden transition-colors border-emerald-500 bg-emerald-500/10 mt-1`}
+									>
+										<div className="flex items-center gap-2 px-3 py-2">
+											<div
+												className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 border-emerald-500 bg-emerald-500`}
 											>
-												Select All {/* NOSONAR */}
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="text-xs h-7"
-												onClick={clearAll}
-											>
-												Clear
-											</Button>
+												<Check className="h-2.5 w-2.5 text-primary-foreground" />
+											</div>
+											<div className="flex-1 flex items-center gap-2 text-left">
+												<FolderPlus className="h-4 w-4 text-emerald-500 shrink-0" />
+												<span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-1">
+													Propose "{proposedSection!.title}" as new section
+												</span>
+												<Badge
+													variant="outline"
+													className="text-[9px] border-emerald-400/50 text-emerald-600 dark:text-emerald-400"
+												>
+													New
+												</Badge>
+											</div>
+										</div>
+										<div className="border-t bg-muted/20 px-3 py-2 space-y-1">
+											{proposedSection!.materials.length === 0 ? (
+												<p className="text-[11px] text-muted-foreground italic">
+													Empty section
+												</p>
+											) : (
+												proposedSection!.materials.map((m) => (
+													<div
+														key={m.id}
+														className="flex items-center gap-2 py-1 text-xs text-foreground"
+													>
+														<Check className="h-3 w-3 text-emerald-500 shrink-0" />
+														<MaterialIcon type={m.fileType} />
+														<span className="truncate">{m.title}</span>
+													</div>
+												))
+											)}
+											<p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50 mt-1">
+												Will be added to <strong>{course.title}</strong> upon approval.
+											</p>
 										</div>
 									</div>
-									<Badge variant="secondary" className="text-xs w-fit">
-										{selectedMaterials.size} material{selectedMaterials.size !== 1 ? "s" : ""}{" "}
-										selected
-									</Badge>
-								</CardHeader>
-
-								<CardContent className="space-y-2 max-h-[500px] overflow-auto">
-									{space.sections.map((section) => {
-										const isChecked = checkedSectionId === section.id;
-										const isProposed = isWholeSectionMode && proposedSection?.id === section.id;
-										return (
-											<WorkspaceSectionCard
-												key={section.id}
-												section={section}
-												isChecked={isChecked}
-												isProposed={isProposed}
-												toggleSectionCheck={toggleSectionCheck}
-												toggleLeft={toggleLeft}
-												expandedLeft={expandedLeft}
-												selectedMaterials={selectedMaterials}
-												toggleMaterial={toggleMaterial}
-											/>
-										);
-									})}
-								</CardContent>
-							</Card>
-
-							{/* ── RIGHT — Target course ──────────────────────────────────── */}
-							<Card>
-								<CardHeader className="pb-3">
-									<CardTitle className="text-sm font-semibold">
-										Target Course: {course.title}
-									</CardTitle>
-									<p className="text-xs text-muted-foreground">
-										Select the section where you want your materials to appear.
-									</p>
-								</CardHeader>
-
-								<CardContent className="space-y-1 max-h-[500px] overflow-auto">
-									{/* Existing sections to target */}
-									{course.sections.map((section) => {
-										const disabled = isWholeSectionMode;
-										const isSelected = targetSectionId === section.id;
-										return (
-											<CourseSectionCard
-												key={section.id}
-												section={section}
-												disabled={disabled}
-												isSelected={isSelected}
-												setTargetSectionId={setTargetSectionId}
-												toggleRight={toggleRight}
-												expandedRight={expandedRight}
-											/>
-										);
-									})}
-
-									{/* When whole section is checked, it forces the "New Section" option (now at bottom) */}
-									{isWholeSectionMode && (
-										<div
-											className={`border rounded-md overflow-hidden transition-colors border-emerald-500 bg-emerald-500/10 mt-1`}
-										>
-											<div className="flex items-center gap-2 px-3 py-2">
-												<div
-													className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 border-emerald-500 bg-emerald-500`}
-												>
-													<Check className="h-2.5 w-2.5 text-primary-foreground" />
-												</div>
-												<div className="flex-1 flex items-center gap-2 text-left">
-													<FolderPlus className="h-4 w-4 text-emerald-500 shrink-0" />
-													<span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex-1">
-														Propose "{proposedSection!.title}" as new section
-													</span>
-													<Badge
-														variant="outline"
-														className="text-[9px] border-emerald-400/50 text-emerald-600 dark:text-emerald-400"
-													>
-														New
-													</Badge>
-												</div>
-											</div>
-											<div className="border-t bg-muted/20 px-3 py-2 space-y-1">
-												{proposedSection!.materials.length === 0 ? (
-													<p className="text-[11px] text-muted-foreground italic">
-														Empty section
-													</p>
-												) : (
-													proposedSection!.materials.map((m) => (
-														<div
-															key={m.id}
-															className="flex items-center gap-2 py-1 text-xs text-foreground"
-														>
-															<Check className="h-3 w-3 text-emerald-500 shrink-0" />
-															<MaterialIcon type={m.fileType} />
-															<span className="truncate">{m.title}</span>
-														</div>
-													))
-												)}
-												<p className="text-[10px] text-muted-foreground pt-1 border-t border-border/50 mt-1">
-													Will be added to <strong>{course.title}</strong> upon approval.
-												</p>
-											</div>
-										</div>
-									)}
-								</CardContent>
-							</Card>
-						</div>
-
-						{/* ── Submit card ─────────────────────────────────────────────── */}
-						<Card>
-							<CardContent className="p-4 space-y-3">
-								<div className="space-y-2">
-									<Label className="text-sm">Message to instructor (optional)</Label>
-									<Textarea
-										placeholder="e.g. I found these additional resources helpful..."
-										value={message}
-										onChange={(e) => setMessage(e.target.value)}
-										rows={2}
-									/>
-								</div>
-
-								{/* Proposal summary */}
-								{(selectedItems.length > 0 || isWholeSectionMode) && (
-									<ProposalSummary
-										isWholeSectionMode={isWholeSectionMode}
-										proposedSection={proposedSection}
-										selectedItems={selectedItems}
-										targetSection={targetSection}
-										course={course}
-									/>
 								)}
-
-								<div className="flex items-center justify-between">
-									<p className="text-xs text-muted-foreground">{statusMessage}</p>
-									<Button onClick={handleSubmit} disabled={submitting || !canSubmit}>
-										{submitting ? (
-											<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-										) : (
-											<Send className="mr-1.5 h-4 w-4" />
-										)}
-										Submit Proposal
-									</Button>
-								</div>
 							</CardContent>
 						</Card>
 					</div>
-				</main>
-			</div>
-		</div>
+
+					{/* ── Submit card ─────────────────────────────────────────────── */}
+					<Card>
+						<CardContent className="p-4 space-y-3">
+							<div className="space-y-2">
+								<Label className="text-sm">Message to instructor (optional)</Label>
+								<Textarea
+									placeholder="e.g. I found these additional resources helpful..."
+									value={message}
+									onChange={(e) => setMessage(e.target.value)}
+									rows={2}
+								/>
+							</div>
+
+							{/* Proposal summary */}
+							{(selectedItems.length > 0 || isWholeSectionMode) && (
+								<ProposalSummary
+									isWholeSectionMode={isWholeSectionMode}
+									proposedSection={proposedSection}
+									selectedItems={selectedItems}
+									targetSection={targetSection}
+									course={course}
+								/>
+							)}
+
+							<div className="flex items-center justify-between">
+								<p className="text-xs text-muted-foreground">{statusMessage}</p>
+								<Button onClick={handleSubmit} disabled={submitting || !canSubmit}>
+									{submitting ? (
+										<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+									) : (
+										<Send className="mr-1.5 h-4 w-4" />
+									)}
+									Submit Proposal
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			</main>
+		</PageShell>
 	);
 }

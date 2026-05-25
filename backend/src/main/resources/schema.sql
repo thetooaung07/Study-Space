@@ -217,11 +217,14 @@ CREATE TABLE IF NOT EXISTS workspace_materials (
     original_file_name VARCHAR(500),
     is_reference       BOOLEAN DEFAULT false NOT NULL,
     is_hidden          BOOLEAN DEFAULT false NOT NULL,
-    section_id         BIGINT NOT NULL,
+    section_id         BIGINT,
     uploaded_at        TIMESTAMP NOT NULL,
-    UNIQUE (section_id, title),
-    FOREIGN KEY (section_id) REFERENCES workspace_sections(id)
+    FOREIGN KEY (section_id) REFERENCES workspace_sections(id) ON DELETE SET NULL
 );
+
+-- Migrate existing schema if section_id is still NOT NULL
+ALTER TABLE workspace_materials ALTER COLUMN section_id DROP NOT NULL;
+ALTER TABLE workspace_materials DROP CONSTRAINT IF EXISTS workspace_materials_section_id_title_key;
 
 CREATE TABLE IF NOT EXISTS contribution_proposals (
     id                     BIGSERIAL PRIMARY KEY,

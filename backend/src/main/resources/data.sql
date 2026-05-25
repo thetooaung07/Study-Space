@@ -181,7 +181,7 @@ VALUES
 ('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
 ('Linear Algebra Cheatsheet',   '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
 ('Assignment 1 Submission',     '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
-ON CONFLICT (section_id, title) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
 VALUES

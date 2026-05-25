@@ -21,6 +21,7 @@ public class WorkspaceService {
     private final WorkspaceSpaceRepository spaceRepository;
     private final WorkspaceSectionRepository sectionRepository;
     private final WorkspaceMaterialRepository materialRepository;
+    private final ContributionProposalRepository proposalRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
@@ -48,14 +49,9 @@ public class WorkspaceService {
     public void deleteWorkspace(Long workspaceId, Long userId) {
         StudentWorkspace workspace = findWorkspace(workspaceId);
         assertOwner(workspace, userId);
-        // Delete non-reference materials' files
         for (WorkspaceSpace space : workspace.getSpaces()) {
             for (WorkspaceSection section : space.getSections()) {
-                for (WorkspaceMaterial material : section.getMaterials()) {
-                    if (!Boolean.TRUE.equals(material.getIsReference())) {
-                        fileStorageService.delete(material.getFileUrl());
-                    }
-                }
+                purgeMaterials(section);
             }
         }
         workspaceRepository.delete(workspace);
@@ -153,13 +149,8 @@ public class WorkspaceService {
     public void deleteSpace(Long spaceId, Long userId) {
         WorkspaceSpace space = findSpace(spaceId);
         assertOwner(space.getWorkspace(), userId);
-        // Delete non-reference materials' files
         for (WorkspaceSection section : space.getSections()) {
-            for (WorkspaceMaterial material : section.getMaterials()) {
-                if (!Boolean.TRUE.equals(material.getIsReference())) {
-                    fileStorageService.delete(material.getFileUrl());
-                }
-            }
+            purgeMaterials(section);
         }
         spaceRepository.delete(space);
     }
@@ -197,12 +188,39 @@ public class WorkspaceService {
     public void deleteSection(Long sectionId, Long userId) {
         WorkspaceSection section = findSection(sectionId);
         assertOwner(section.getSpace().getWorkspace(), userId);
+        purgeMaterials(section);
+        sectionRepository.delete(section);
+    }
+
+    /**
+     * Processes every material in a section before the section (or its ancestor) is deleted.
+     * <p>
+     * Materials referenced by at least one contribution proposal are soft-deleted (isHidden)
+     * so the FK from {@code contribution_proposals.source_material_id} is never violated.
+     * All other materials are hard-deleted explicitly via the repository.
+     * Own uploads (isReference = false) also have their file removed from storage.
+     * <p>
+     * Note: {@code WorkspaceSection.materials} deliberately uses only PERSIST/MERGE cascade
+     * (no REMOVE, no orphanRemoval) so that Hibernate never auto-deletes materials during
+     * section deletion — deletions are always explicit here.
+     */
+    private void purgeMaterials(WorkspaceSection section) {
         for (WorkspaceMaterial material : section.getMaterials()) {
-            if (!Boolean.TRUE.equals(material.getIsReference())) {
-                fileStorageService.delete(material.getFileUrl());
+            boolean hasProposal = proposalRepository.existsBySourceMaterialId(material.getId());
+            if (hasProposal) {
+                // Detach from section so the section row can be deleted without a FK violation.
+                // The material row stays alive so contribution_proposals.source_material_id remains valid.
+                material.setIsHidden(true);
+                material.setSection(null);
+                materialRepository.save(material);
+            } else {
+                // Safe to remove entirely.
+                if (!Boolean.TRUE.equals(material.getIsReference())) {
+                    fileStorageService.delete(material.getFileUrl());
+                }
+                materialRepository.delete(material);
             }
         }
-        sectionRepository.delete(section);
     }
 
     // ─── Material Upload ────────────────────────────────────────────────────────
@@ -231,14 +249,18 @@ public class WorkspaceService {
                 .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
         assertOwner(material.getSection().getSpace().getWorkspace(), userId);
 
-        if (Boolean.TRUE.equals(material.getIsReference())) {
-            // Soft-delete: keep the row so contribution_proposals FK stays intact,
-            // but mark it hidden so it disappears from the student's view.
+        boolean hasProposal = proposalRepository.existsBySourceMaterialId(materialId);
+        if (hasProposal) {
+            // A contribution proposal FK references this row — cannot hard-delete.
+            // Soft-delete: hide it from the UI while keeping the row alive for FK integrity.
             material.setIsHidden(true);
             materialRepository.save(material);
         } else {
-            // Hard-delete: student's own upload — safe to remove file + row.
-            fileStorageService.delete(material.getFileUrl());
+            // No proposal references this material — safe to remove entirely.
+            if (!Boolean.TRUE.equals(material.getIsReference())) {
+                // Only delete the file for the student's own uploads; references share the course file.
+                fileStorageService.delete(material.getFileUrl());
+            }
             materialRepository.delete(material);
         }
     }

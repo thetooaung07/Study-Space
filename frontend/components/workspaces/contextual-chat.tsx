@@ -690,9 +690,10 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	return (
 		<div className="flex flex-col h-full bg-card relative border-l border-border" style={{ width: `${width}px` }}>
 			{/* Resize handle */}
-			<div
-				role="button"
-				className="absolute left-[-4px] top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/50 z-10 transition-colors"
+			<button
+				type="button"
+				aria-label="Resize chat panel"
+				className="absolute left-[-4px] top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/50 z-10 transition-colors bg-transparent border-none p-0"
 				onMouseDown={handleMouseDown}
 			/>
 
@@ -782,7 +783,8 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 				<div className="flex flex-col border border-input rounded-xl p-1 bg-background focus-within:ring-3/50 focus-within:ring-ring/50 focus-within:border-ring/50 shadow-xs">
 					{/* Text Input area */}
 					<div
-						role="textbox"
+						tabIndex={0}
+						aria-label="Ask a question"
 						aria-multiline="true"
 						ref={inputRef}
 						contentEditable={!isLoading}

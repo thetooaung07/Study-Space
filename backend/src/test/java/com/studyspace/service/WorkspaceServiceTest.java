@@ -29,6 +29,7 @@ class WorkspaceServiceTest {
     @Mock private CourseRepository courseRepository;
     @Mock private UserRepository userRepository;
     @Mock private FileStorageService fileStorageService;
+    @Mock private ContributionProposalRepository proposalRepository;
 
     @InjectMocks
     private WorkspaceService workspaceService;
@@ -219,10 +220,11 @@ class WorkspaceServiceTest {
 
         when(materialRepository.findById(51L)).thenReturn(Optional.of(refMaterial));
         when(materialRepository.save(any(WorkspaceMaterial.class))).thenReturn(refMaterial);
+        when(proposalRepository.existsBySourceMaterialId(51L)).thenReturn(true);
 
         workspaceService.deleteMaterial(51L, 1L);
 
-        // Reference materials are soft-deleted: file NOT removed, row marked hidden
+        // Materials with proposals are soft-deleted: file NOT removed, row marked hidden
         verify(fileStorageService, never()).delete(any());
         assertTrue(refMaterial.getIsHidden());
         verify(materialRepository).save(refMaterial);

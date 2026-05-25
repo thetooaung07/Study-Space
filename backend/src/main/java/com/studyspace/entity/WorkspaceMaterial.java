@@ -55,7 +55,7 @@ public class WorkspaceMaterial {
     private Boolean isHidden = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "section_id", nullable = false)
+    @JoinColumn(name = "section_id")
     private WorkspaceSection section;
 
     @Column(nullable = false, updatable = false)

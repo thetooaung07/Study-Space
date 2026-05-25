@@ -76,10 +76,8 @@ export function CreateGroupSessionModal({
 
 					<form onSubmit={handleSubmit} className="space-y-5">
 						{/* Session Visibility */}
-						<div role="group" aria-labelledby="visibility-label">
-							<span id="visibility-label" className="text-sm font-medium text-foreground block mb-3">
-								Session Visibility
-							</span>
+						<fieldset className="border-none p-0 m-0">
+							<legend className="text-sm font-medium text-foreground mb-3">Session Visibility</legend>
 							<div className="grid grid-cols-2 gap-3">
 								<button
 									type="button"
@@ -115,7 +113,7 @@ export function CreateGroupSessionModal({
 									<p className="text-xs text-muted-foreground text-left">Only visible to you</p>
 								</button>
 							</div>
-						</div>
+						</fieldset>
 
 						{/* Session Title */}
 						<div>

@@ -22,6 +22,7 @@ public class CourseService {
     private final CourseSectionRepository sectionRepository;
     private final CourseMaterialRepository materialRepository;
     private final CourseEnrollmentRepository enrollmentRepository;
+    private final ContributionProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
@@ -108,6 +109,11 @@ public class CourseService {
     public void deleteSection(Long sectionId, Long requestingUserId) {
         CourseSection section = findSection(sectionId);
         assertInstructor(section.getCourse(), requestingUserId);
+        
+        // Detach any contribution proposals targeting this section so it can be safely deleted.
+        // The proposals will fall back to targeting the course generically.
+        proposalRepository.clearTargetSectionId(sectionId);
+        
         sectionRepository.delete(section);
     }
 

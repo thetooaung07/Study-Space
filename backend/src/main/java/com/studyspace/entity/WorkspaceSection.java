@@ -40,7 +40,7 @@ public class WorkspaceSection {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "section", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @OrderBy("id ASC")
     @Builder.Default
     private List<WorkspaceMaterial> materials = new ArrayList<>();

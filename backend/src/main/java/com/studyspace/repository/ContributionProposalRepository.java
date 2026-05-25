@@ -17,4 +17,10 @@ public interface ContributionProposalRepository extends JpaRepository<Contributi
     List<ContributionProposal> findByTargetCourseIdAndStatus(Long courseId, ProposalStatus status);
 
     boolean existsBySourceMaterialIdAndStatus(Long materialId, ProposalStatus status);
+
+    boolean existsBySourceMaterialId(Long materialId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE ContributionProposal p SET p.targetSection = null WHERE p.targetSection.id = :sectionId")
+    void clearTargetSectionId(Long sectionId);
 }
