@@ -133,12 +133,8 @@ export default function ActiveSessionPage() {
 
 	const handleSessionEnded = useCallback(() => {
 		toast.info("Session has ended");
-		if (session?.studyGroupId) {
-			router.push(`/groups/${session.studyGroupId}`);
-		} else {
-			router.push("/dashboard");
-		}
-	}, [session?.studyGroupId, router]);
+		router.push("/dashboard");
+	}, [router]);
 
 	useSessionSocket({
 		sessionId: sessionId as string,
@@ -235,11 +231,7 @@ export default function ActiveSessionPage() {
 
 			await api.put(`/users/${user.id}/status?status=ONLINE`, {});
 
-			if (session?.studyGroupId) {
-				router.push(`/groups/${session.studyGroupId}`);
-			} else {
-				router.push("/dashboard");
-			}
+			router.push("/dashboard");
 		} catch (error) {
 			console.error("Failed to transfer and leave:", error);
 			toast.error("Failed to transfer host");
@@ -280,11 +272,7 @@ export default function ActiveSessionPage() {
 
 			await api.put(`/users/${user.id}/status?status=ONLINE`, {});
 
-			if (session.studyGroupId) {
-				router.push(`/groups/${session.studyGroupId}`);
-			} else {
-				router.push("/dashboard");
-			}
+			router.push("/dashboard");
 		} catch (error) {
 			console.error("Failed to leave session:", error);
 			toast.error("Failed to leave session");

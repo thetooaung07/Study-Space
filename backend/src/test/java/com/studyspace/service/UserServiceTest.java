@@ -4,7 +4,6 @@ import com.studyspace.dto.ChangePasswordRequest;
 import com.studyspace.dto.CreateUserRequest;
 import com.studyspace.dto.UpdateUserRequest;
 import com.studyspace.dto.UserDTO;
-import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.User;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.types.AuthProvider;
@@ -16,9 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -89,72 +86,6 @@ class UserServiceTest {
     }
 
     @Test
-    void deleteUser_Success() {
-        Long userId = 1L;
-        User user = new User();
-        user.setId(userId);
-        user.setGroups(new HashSet<>());
-        user.setCreatedGroups(new HashSet<>());
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        userService.deleteUser(userId);
-
-        verify(userRepository).delete(user);
-    }
-
-    @Test
-    void deleteUser_WithGroups() {
-        Long userId = 1L;
-        User user = new User();
-        user.setId(userId);
-        
-        StudyGroup group1 = new StudyGroup();
-        group1.setId(1L);
-        group1.setMembers(new HashSet<>(Set.of(user)));
-        
-        StudyGroup group2 = new StudyGroup();
-        group2.setId(2L);
-        group2.setMembers(new HashSet<>(Set.of(user)));
-        
-        user.setGroups(new HashSet<>(Set.of(group1, group2)));
-        user.setCreatedGroups(new HashSet<>());
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        userService.deleteUser(userId);
-
-        verify(userRepository).delete(user);
-        assertTrue(user.getGroups().isEmpty());
-    }
-
-    @Test
-    void deleteUser_WithCreatedGroups() {
-        Long userId = 1L;
-        User user = new User();
-        user.setId(userId);
-        
-        StudyGroup group1 = new StudyGroup();
-        group1.setId(1L);
-        
-        User member = new User();
-        member.setId(2L);
-        member.setGroups(new HashSet<>(Set.of(group1)));
-        group1.setMembers(new HashSet<>(Set.of(user, member)));
-        
-        user.setGroups(new HashSet<>());
-        user.setCreatedGroups(new HashSet<>(Set.of(group1)));
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
-        userService.deleteUser(userId);
-
-        verify(userRepository).delete(user);
-        assertTrue(group1.getMembers().isEmpty());
-        assertTrue(member.getGroups().isEmpty());
-    }
-
-    @Test
     void deleteUser_NotFound() {
         Long userId = 99L;
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
@@ -184,6 +115,7 @@ class UserServiceTest {
 
         UserDTO result = userService.updateUser(userId, request);
 
+        assertNotNull(result);
         verify(userRepository).save(user);
         assertEquals("newuser", user.getUsername());
         assertEquals("New Name", user.getFullName());
@@ -311,7 +243,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        UserDTO result = userService.updateUserStatus(userId, UserStatus.STUDYING);
+        userService.updateUserStatus(userId, UserStatus.STUDYING);
 
         verify(userRepository).save(user);
         assertEquals(UserStatus.STUDYING, user.getCurrentStatus());
@@ -328,7 +260,7 @@ class UserServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        UserDTO result = userService.addStudyMinutes(userId, 50);
+        userService.addStudyMinutes(userId, 50);
 
         verify(userRepository).save(user);
         assertEquals(150, user.getTotalStudyMinutes());

@@ -37,6 +37,13 @@ public class WorkspaceSpace {
     @JoinColumn(name = "forked_from_course_id")
     private Course forkedFromCourse;
 
+    @Column(unique = true)
+    private String inviteCode;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean sharingEnabled = false;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean isPublished = false;
@@ -51,6 +58,10 @@ public class WorkspaceSpace {
     @OrderBy("orderIndex ASC")
     @Builder.Default
     private List<WorkspaceSection> sections = new ArrayList<>();
+
+    @OneToMany(mappedBy = "space", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SpaceGuest> guests = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

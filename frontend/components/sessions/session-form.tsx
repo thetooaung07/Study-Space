@@ -22,13 +22,11 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 	const [formData, setFormData] = useState({
 		title: "",
 		subject: "MATH",
-		sessionType: "Group",
 		description: "",
 		visibility: "PUBLIC",
 	});
 
 	const subjects = ["MATH", "SCIENCE", "LANGUAGE", "HISTORY", "PROGRAMMING", "OTHER"];
-	const sessionTypes = ["Solo", "Group"];
 
 	const handleSubmit = async () => {
 		if (!user) return;
@@ -43,7 +41,6 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 				title: formData.title,
 				description: formData.description,
 				subject: formData.subject,
-				isGroupSession: formData.sessionType !== "Solo",
 				visibility: formData.visibility,
 			});
 
@@ -82,7 +79,7 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 					/>
 				</div>
 
-				<div className="grid grid-cols-3 gap-4">
+				<div className="grid grid-cols-2 gap-4">
 					<div>
 						<label htmlFor="subject" className="text-sm font-medium text-foreground block mb-2">Subject</label>
 						<select
@@ -94,21 +91,6 @@ export function SessionForm({ onClose, onSuccess }: Readonly<SessionFormProps>) 
 							{subjects.map((subject) => (
 								<option key={subject} value={subject}>
 									{subject}
-								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label htmlFor="sessionType" className="text-sm font-medium text-foreground block mb-2">Session Type</label>
-						<select
-							id="sessionType"
-							value={formData.sessionType}
-							onChange={(e) => setFormData({ ...formData, sessionType: e.target.value })}
-							className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-						>
-							{sessionTypes.map((type) => (
-								<option key={type} value={type}>
-									{type}
 								</option>
 							))}
 						</select>

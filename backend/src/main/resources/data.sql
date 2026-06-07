@@ -12,33 +12,17 @@ VALUES
 ON CONFLICT (username) DO NOTHING;
 
 
--- Insert Sample Study Groups
-INSERT INTO study_groups (name, description, invite_code, group_type, creator_id, created_at, updated_at)
-VALUES
-('Advanced Mathematics',   'A group for students tackling advanced calculus, linear algebra, and differential equations.',   'MATH2024', 'PUBLIC',      1, CURRENT_TIMESTAMP - INTERVAL '30 days', CURRENT_TIMESTAMP),
-('Programming Masters',    'Java, Python, and C++ programming enthusiasts. Code reviews, algorithm challenges.',              'PROG5678', 'PUBLIC',      2, CURRENT_TIMESTAMP - INTERVAL '25 days', CURRENT_TIMESTAMP),
-('Biology Study Circle',   'Focused on cellular biology, genetics, and molecular biology.',                                   'BIO1234',  'INVITE_ONLY', 3, CURRENT_TIMESTAMP - INTERVAL '20 days', CURRENT_TIMESTAMP),
-('History Nerds United',   'Medieval and modern history discussion group.',                                                   'HIST9999', 'PUBLIC',      4, CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP),
-('Language Learning Crew', 'Spanish, French, and German language practice.',                                                  'LANG5555', 'PUBLIC',      5, CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP)
-ON CONFLICT (invite_code) DO NOTHING;
-
-
--- Insert Group Members
-INSERT INTO group_members (user_id, group_id)
-VALUES (1,1),(2,1),(3,1),(4,1),(2,2),(1,2),(5,2),(3,3),(4,3),(5,3),(4,4),(1,4),(2,4),(5,5),(1,5),(3,5)
-ON CONFLICT (user_id, group_id) DO NOTHING;
-
 
 -- Insert Sample Study Sessions
-INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, is_group_session, room_code, status, visibility, user_id, study_group_id, created_at)
+INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, room_code, status, visibility, user_id, created_at)
 VALUES
-('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH',        CURRENT_TIMESTAMP - INTERVAL '48 hours', CURRENT_TIMESTAMP - INTERVAL '46 hours', 120, true,  'ROOM-1701100800001', 'COMPLETED', 'PUBLIC',   1, 1, CURRENT_TIMESTAMP - INTERVAL '48 hours'),
-('Java OOP Concepts',               'Reviewing inheritance, polymorphism, and abstraction',  'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '24 hours', CURRENT_TIMESTAMP - INTERVAL '22.5 hours', 90, true,  'ROOM-1701187200002', 'COMPLETED', 'PUBLIC',   2, 2, CURRENT_TIMESTAMP - INTERVAL '24 hours'),
-('Biology Lab Report Writing',      'How to write effective lab reports',                     'SCIENCE',     CURRENT_TIMESTAMP - INTERVAL '72 hours', CURRENT_TIMESTAMP - INTERVAL '71 hours', 60,  true,  'ROOM-1700928000003', 'COMPLETED', 'PUBLIC',   3, 3, CURRENT_TIMESTAMP - INTERVAL '72 hours'),
-('World War II Overview',           'Comprehensive review of major events, battles, and figures', 'HISTORY', CURRENT_TIMESTAMP - INTERVAL '120 hours', CURRENT_TIMESTAMP - INTERVAL '117.5 hours', 150, true, 'ROOM-1700755200004', 'COMPLETED', 'PUBLIC',  4, 4, CURRENT_TIMESTAMP - INTERVAL '120 hours'),
-('Spanish Conversation Practice',   'Informal Spanish speaking session for intermediate learners', 'LANGUAGE', CURRENT_TIMESTAMP - INTERVAL '96 hours', CURRENT_TIMESTAMP - INTERVAL '95.25 hours', 45, true, 'ROOM-1700841600005', 'COMPLETED', 'PUBLIC', 5, 5, CURRENT_TIMESTAMP - INTERVAL '96 hours'),
-('Linear Algebra Problem Set',      'Working through chapter 5 eigenvalue exercises',          'MATH',        CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '4.5 hours',   90,  false, 'ROOM-1701270000006', 'COMPLETED', 'PRIVATE',  1, NULL, CURRENT_TIMESTAMP - INTERVAL '6 hours'),
-('Genetics Quiz Prep',              'Final preparation for midterm exam on Mendelian genetics', 'SCIENCE',    CURRENT_TIMESTAMP - INTERVAL '8 hours', CURRENT_TIMESTAMP - INTERVAL '6 hours',     120, false, 'ROOM-1701316800007', 'COMPLETED', 'PUBLIC',   3, NULL, CURRENT_TIMESTAMP - INTERVAL '8 hours')
+('Calculus Integration Techniques', 'Deep dive into substitution and integration by parts', 'MATH',        CURRENT_TIMESTAMP - INTERVAL '48 hours', CURRENT_TIMESTAMP - INTERVAL '46 hours', 120, 'ROOM-1701100800001', 'COMPLETED', 'PUBLIC',   1, CURRENT_TIMESTAMP - INTERVAL '48 hours'),
+('Java OOP Concepts',               'Reviewing inheritance, polymorphism, and abstraction',  'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '24 hours', CURRENT_TIMESTAMP - INTERVAL '22.5 hours', 90,  'ROOM-1701187200002', 'COMPLETED', 'PUBLIC',   2, CURRENT_TIMESTAMP - INTERVAL '24 hours'),
+('Biology Lab Report Writing',      'How to write effective lab reports',                     'SCIENCE',     CURRENT_TIMESTAMP - INTERVAL '72 hours', CURRENT_TIMESTAMP - INTERVAL '71 hours', 60,   'ROOM-1700928000003', 'COMPLETED', 'PUBLIC',   3, CURRENT_TIMESTAMP - INTERVAL '72 hours'),
+('World War II Overview',           'Comprehensive review of major events, battles, and figures', 'HISTORY', CURRENT_TIMESTAMP - INTERVAL '120 hours', CURRENT_TIMESTAMP - INTERVAL '117.5 hours', 150, 'ROOM-1700755200004', 'COMPLETED', 'PUBLIC',  4, CURRENT_TIMESTAMP - INTERVAL '120 hours'),
+('Spanish Conversation Practice',   'Informal Spanish speaking session for intermediate learners', 'LANGUAGE', CURRENT_TIMESTAMP - INTERVAL '96 hours', CURRENT_TIMESTAMP - INTERVAL '95.25 hours', 45, 'ROOM-1700841600005', 'COMPLETED', 'PUBLIC', 5, CURRENT_TIMESTAMP - INTERVAL '96 hours'),
+('Linear Algebra Problem Set',      'Working through chapter 5 eigenvalue exercises',          'MATH',        CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '4.5 hours',   90,  'ROOM-1701270000006', 'COMPLETED', 'PRIVATE',  1, CURRENT_TIMESTAMP - INTERVAL '6 hours'),
+('Genetics Quiz Prep',              'Final preparation for midterm exam on Mendelian genetics', 'SCIENCE',    CURRENT_TIMESTAMP - INTERVAL '8 hours', CURRENT_TIMESTAMP - INTERVAL '6 hours',     120, 'ROOM-1701316800007', 'COMPLETED', 'PUBLIC',   3, CURRENT_TIMESTAMP - INTERVAL '8 hours')
 ON CONFLICT (room_code) DO NOTHING;
 
 
@@ -174,14 +158,17 @@ VALUES
 ON CONFLICT (space_id, title) DO NOTHING;
 
 INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
-VALUES
-('Cells Diagram',               '/uploads/workspaces/cells-diagram.pdf',                                     'PDF', 'cells-diagram.pdf',                false, false, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
-('DNA Structure Overview',      '/uploads/courses/dna-structure.pdf',                                        'PDF', 'dna-structure.pdf',                true,  false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
-('Alice Extra DNA Notes',       '/uploads/workspaces/extra-dna-notes.pdf',                                   'PDF', 'extra-dna-notes.pdf',              false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
-('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
-('Linear Algebra Cheatsheet',   '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
-('Assignment 1 Submission',     '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
-ON CONFLICT DO NOTHING;
+SELECT * FROM (VALUES
+    (CAST('Cells Diagram' AS VARCHAR),               CAST('/uploads/workspaces/cells-diagram.pdf' AS VARCHAR),                                     CAST('PDF' AS VARCHAR), CAST('cells-diagram.pdf' AS VARCHAR),                false, false, CAST(1 AS BIGINT), CAST(CURRENT_TIMESTAMP - INTERVAL '5 days' AS TIMESTAMP)),
+    ('DNA Structure Overview',      '/uploads/courses/dna-structure.pdf',                                        'PDF', 'dna-structure.pdf',                true,  false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+    ('Alice Extra DNA Notes',       '/uploads/workspaces/extra-dna-notes.pdf',                                   'PDF', 'extra-dna-notes.pdf',              false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+    ('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    ('Linear Algebra Cheatsheet',   '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    ('Assignment 1 Submission',     '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
+) AS v(title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_materials wm WHERE wm.title = v.title AND wm.section_id = v.section_id
+);
 
 INSERT INTO contribution_proposals (status, message, target_course_id, target_section_id, source_material_id, student_id, contributor_display_name, created_at)
 VALUES

@@ -25,19 +25,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at          TIMESTAMP NOT NULL
 );
 
--- Study Groups Table
-CREATE TABLE IF NOT EXISTS study_groups (
-    id          BIGSERIAL PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT,
-    invite_code VARCHAR(255) NOT NULL UNIQUE,
-    group_type  VARCHAR(20) DEFAULT 'PUBLIC',
-    creator_id  BIGINT NOT NULL,
-    created_at  TIMESTAMP NOT NULL,
-    updated_at  TIMESTAMP NOT NULL,
-    FOREIGN KEY (creator_id) REFERENCES users(id)
-);
-
 -- Study Sessions Table
 CREATE TABLE IF NOT EXISTS study_sessions (
     id               BIGSERIAL PRIMARY KEY,
@@ -47,26 +34,12 @@ CREATE TABLE IF NOT EXISTS study_sessions (
     start_time       TIMESTAMP NOT NULL,
     end_time         TIMESTAMP,
     duration_minutes INTEGER,
-    is_group_session BOOLEAN DEFAULT false,
     room_code        VARCHAR(255) UNIQUE,
     status           VARCHAR(50) DEFAULT 'ACTIVE',
     visibility       VARCHAR(20) DEFAULT 'PUBLIC',
     user_id          BIGINT NOT NULL,
-    study_group_id   BIGINT,
     created_at       TIMESTAMP NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (study_group_id) REFERENCES study_groups(id)
-);
-
--- Group Members (Many-to-Many Junction Table)
-CREATE TABLE IF NOT EXISTS group_members (
-    user_id   BIGINT NOT NULL,
-    group_id  BIGINT NOT NULL,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    role      VARCHAR(50) DEFAULT 'MEMBER',
-    PRIMARY KEY (user_id, group_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (group_id) REFERENCES study_groups(id)
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Session Participants Table
@@ -101,11 +74,7 @@ CREATE TABLE IF NOT EXISTS activity (
 CREATE INDEX IF NOT EXISTS idx_user_username            ON users(username);
 CREATE INDEX IF NOT EXISTS idx_user_email               ON users(email);
 CREATE INDEX IF NOT EXISTS idx_study_session_creator    ON study_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_study_session_group      ON study_sessions(study_group_id);
 CREATE INDEX IF NOT EXISTS idx_study_session_room_code  ON study_sessions(room_code);
-CREATE INDEX IF NOT EXISTS idx_study_group_creator      ON study_groups(creator_id);
-CREATE INDEX IF NOT EXISTS idx_group_members_user       ON group_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_group_members_group      ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_session_participants_session ON session_participants(study_session_id);
 CREATE INDEX IF NOT EXISTS idx_session_participants_user    ON session_participants(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_session         ON activity(study_session_id);
@@ -246,13 +215,49 @@ CREATE TABLE IF NOT EXISTS contribution_proposals (
     FOREIGN KEY (source_material_id) REFERENCES workspace_materials(id)
 );
 
+-- Workspace sharing columns
+ALTER TABLE workspace_spaces
+    ADD COLUMN IF NOT EXISTS invite_code      VARCHAR(20) UNIQUE,
+    ADD COLUMN IF NOT EXISTS sharing_enabled  BOOLEAN NOT NULL DEFAULT false;
+
+-- Space guests (users who joined via invite code)
+CREATE TABLE IF NOT EXISTS space_guests (
+    id        BIGSERIAL PRIMARY KEY,
+    space_id  BIGINT NOT NULL,
+    user_id   BIGINT NOT NULL,
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (space_id, user_id),
+    FOREIGN KEY (space_id) REFERENCES workspace_spaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)  REFERENCES users(id)            ON DELETE CASCADE
+);
+
+-- Track who created each section / material (for own-delete enforcement)
+ALTER TABLE workspace_sections  ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id);
+ALTER TABLE workspace_materials ADD COLUMN IF NOT EXISTS created_by BIGINT REFERENCES users(id);
+
 CREATE INDEX IF NOT EXISTS idx_workspace_owner       ON student_workspaces(owner_id);
 CREATE INDEX IF NOT EXISTS idx_workspace_space_ws    ON workspace_spaces(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_workspace_space_fork  ON workspace_spaces(forked_from_course_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_space_invite ON workspace_spaces(invite_code);
 CREATE INDEX IF NOT EXISTS idx_workspace_req_space   ON workspace_sections(space_id);
 CREATE INDEX IF NOT EXISTS idx_workspace_mat_sec     ON workspace_materials(section_id);
 CREATE INDEX IF NOT EXISTS idx_proposal_student      ON contribution_proposals(student_id);
 CREATE INDEX IF NOT EXISTS idx_proposal_course       ON contribution_proposals(target_course_id);
+CREATE INDEX IF NOT EXISTS idx_space_guests_space    ON space_guests(space_id);
+CREATE INDEX IF NOT EXISTS idx_space_guests_user     ON space_guests(user_id);
+
+-- Space Chat Messages
+CREATE TABLE IF NOT EXISTS space_messages (
+    id          BIGSERIAL PRIMARY KEY,
+    content     TEXT NOT NULL,
+    space_id    BIGINT NOT NULL,
+    user_id     BIGINT NOT NULL,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (space_id) REFERENCES workspace_spaces(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)  REFERENCES users(id)            ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_space_messages_space  ON space_messages(space_id);
 
 -- ==========================================
 -- Conversational Memory Tables

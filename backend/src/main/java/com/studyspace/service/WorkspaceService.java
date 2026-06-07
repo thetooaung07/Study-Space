@@ -9,13 +9,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class WorkspaceService {
+
+    private static final String CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int CODE_LENGTH = 6;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final StudentWorkspaceRepository workspaceRepository;
     private final WorkspaceSpaceRepository spaceRepository;
@@ -24,6 +28,7 @@ public class WorkspaceService {
     private final ContributionProposalRepository proposalRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
+    private final SpaceGuestRepository guestRepository;
     private final FileStorageService fileStorageService;
 
     // ─── Workspace CRUD ─────────────────────────────────────────────────────────
@@ -60,14 +65,12 @@ public class WorkspaceService {
     @Transactional(readOnly = true)
     public List<StudentWorkspaceDTO> getMyWorkspaces(Long ownerId) {
         return workspaceRepository.findByOwnerId(ownerId)
-                .stream().map(this::toWorkspaceDTO).collect(Collectors.toList());
+                .stream().map(this::toWorkspaceDTO).toList();
     }
 
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<StudentWorkspaceDTO> getPublicWorkspaces(
             org.springframework.data.domain.Pageable pageable) {
-        // All workspaces are returned; visibility filtering can be added when the
-        // entity has a visibility field.
         return workspaceRepository.findAll(pageable).map(this::toWorkspaceDTO);
     }
 
@@ -86,13 +89,13 @@ public class WorkspaceService {
                 .description(request.getDescription())
                 .workspace(workspace)
                 .build();
-        return toSpaceDTO(spaceRepository.save(space));
+        return toSpaceDTO(spaceRepository.save(space), userId);
     }
 
     @Transactional(readOnly = true)
     public List<WorkspaceSpaceDTO> getSpacesByWorkspace(Long workspaceId) {
         return spaceRepository.findByWorkspaceId(workspaceId)
-                .stream().map(this::toSpaceDTO).collect(Collectors.toList());
+                .stream().map(s -> toSpaceDTO(s, s.getWorkspace().getOwner().getId())).toList();
     }
 
     /**
@@ -112,13 +115,13 @@ public class WorkspaceService {
                 .build();
         space = spaceRepository.save(space);
 
-        // Deep-copy sections and materials
         for (CourseSection courseSection : course.getSections()) {
             WorkspaceSection wsSection = WorkspaceSection.builder()
                     .title(courseSection.getTitle())
                     .description(courseSection.getDescription())
                     .orderIndex(courseSection.getOrderIndex())
                     .space(space)
+                    .createdBy(workspace.getOwner())
                     .build();
             wsSection = sectionRepository.save(wsSection);
 
@@ -128,14 +131,15 @@ public class WorkspaceService {
                         .fileUrl(courseMaterial.getFileUrl())
                         .fileType(courseMaterial.getFileType())
                         .originalFileName(courseMaterial.getOriginalFileName())
-                        .isReference(true) // Copy-on-write: initially just a reference
+                        .isReference(true)
                         .section(wsSection)
+                        .createdBy(workspace.getOwner())
                         .build();
                 materialRepository.save(wsMaterial);
             }
         }
 
-        return toSpaceDTO(spaceRepository.findById(space.getId()).orElseThrow());
+        return toSpaceDTO(spaceRepository.findById(space.getId()).orElseThrow(), userId);
     }
 
     public WorkspaceSpaceDTO updateSpace(Long spaceId, Long userId, CreateSpaceRequest request) {
@@ -143,7 +147,7 @@ public class WorkspaceService {
         assertOwner(space.getWorkspace(), userId);
         space.setTitle(request.getTitle());
         space.setDescription(request.getDescription());
-        return toSpaceDTO(spaceRepository.save(space));
+        return toSpaceDTO(spaceRepository.save(space), userId);
     }
 
     public void deleteSpace(Long spaceId, Long userId) {
@@ -156,20 +160,123 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
-    public WorkspaceSpaceDTO getSpaceById(Long spaceId) {
-        return toSpaceDTO(findSpace(spaceId));
+    public WorkspaceSpaceDTO getSpaceById(Long spaceId, Long requestingUserId) {
+        WorkspaceSpace space = findSpace(spaceId);
+        Long ownerId = space.getWorkspace().getOwner().getId();
+        boolean isOwner = ownerId.equals(requestingUserId);
+        boolean isGuest = guestRepository.existsBySpaceIdAndUserId(spaceId, requestingUserId);
+
+        if (!isOwner && !isGuest) {
+            throw new IllegalStateException("Forbidden: you do not have access to this space.");
+        }
+        return toSpaceDTO(space, requestingUserId);
+    }
+
+    // ─── Space Sharing ───────────────────────────────────────────────────────────
+
+    /** Owner enables sharing and gets the invite code (generates one if not yet set). */
+    public ShareSettingsDTO enableSharing(Long spaceId, Long userId) {
+        WorkspaceSpace space = findSpace(spaceId);
+        assertOwner(space.getWorkspace(), userId);
+        if (space.getInviteCode() == null) {
+            space.setInviteCode(generateCode());
+        }
+        space.setSharingEnabled(true);
+        spaceRepository.save(space);
+        return ShareSettingsDTO.builder()
+                .sharingEnabled(true)
+                .inviteCode(space.getInviteCode())
+                .guestCount(space.getGuests().size())
+                .build();
+    }
+
+    /** Owner disables sharing (code is preserved but unusable until re-enabled). */
+    public void disableSharing(Long spaceId, Long userId) {
+        WorkspaceSpace space = findSpace(spaceId);
+        assertOwner(space.getWorkspace(), userId);
+        space.setSharingEnabled(false);
+        spaceRepository.save(space);
+    }
+
+    /** Owner regenerates the invite code, invalidating the old one. */
+    public ShareSettingsDTO regenerateInviteCode(Long spaceId, Long userId) {
+        WorkspaceSpace space = findSpace(spaceId);
+        assertOwner(space.getWorkspace(), userId);
+        space.setInviteCode(generateCode());
+        space.setSharingEnabled(true);
+        spaceRepository.save(space);
+        return ShareSettingsDTO.builder()
+                .sharingEnabled(true)
+                .inviteCode(space.getInviteCode())
+                .guestCount(space.getGuests().size())
+                .build();
+    }
+
+    /** Any authenticated user joins a space by pasting the invite code. */
+    public WorkspaceSpaceDTO joinByCode(String inviteCode, Long userId) {
+        WorkspaceSpace space = spaceRepository.findByInviteCode(inviteCode.trim().toUpperCase())
+                .orElseThrow(() -> new RuntimeException("Invalid invitation code."));
+
+        if (!Boolean.TRUE.equals(space.getSharingEnabled())) {
+            throw new IllegalStateException("Sharing has been disabled for this space.");
+        }
+
+        Long ownerId = space.getWorkspace().getOwner().getId();
+        if (ownerId.equals(userId)) {
+            throw new IllegalStateException("You are already the owner of this space.");
+        }
+
+        if (guestRepository.existsBySpaceIdAndUserId(space.getId(), userId)) {
+            // Already a guest — just return the DTO (idempotent)
+            return toSpaceDTO(space, userId);
+        }
+
+        User user = findUser(userId);
+        SpaceGuest guest = SpaceGuest.builder()
+                .space(space)
+                .user(user)
+                .build();
+        guestRepository.save(guest);
+        return toSpaceDTO(space, userId);
+    }
+
+    /** Guest removes themselves from a shared space. */
+    public void leaveSpace(Long spaceId, Long userId) {
+        SpaceGuest guest = guestRepository.findBySpaceIdAndUserId(spaceId, userId)
+                .orElseThrow(() -> new RuntimeException("You are not a guest of this space."));
+        guestRepository.delete(guest);
+    }
+
+    /** Returns all spaces the user has joined as a guest. */
+    @Transactional(readOnly = true)
+    public List<WorkspaceSpaceDTO> getSharedSpaces(Long userId) {
+        return guestRepository.findByUserId(userId).stream()
+                .map(SpaceGuest::getSpace)
+                .map(s -> toSpaceDTO(s, userId))
+                .toList();
+    }
+
+    /** Owner removes a guest from their space. */
+    public void removeGuest(Long spaceId, Long guestUserId, Long requestingUserId) {
+        WorkspaceSpace space = findSpace(spaceId);
+        assertOwner(space.getWorkspace(), requestingUserId);
+        SpaceGuest guest = guestRepository.findBySpaceIdAndUserId(spaceId, guestUserId)
+                .orElseThrow(() -> new RuntimeException("User is not a guest of this space."));
+        guestRepository.delete(guest);
     }
 
     // ─── Section CRUD ───────────────────────────────────────────────────────────
 
     public WorkspaceSectionDTO addSection(Long spaceId, Long userId, CreateWorkspaceSectionRequest request) {
         WorkspaceSpace space = findSpace(spaceId);
-        assertOwner(space.getWorkspace(), userId);
+        assertOwnerOrGuest(space, userId);
+        User creator = findUser(userId);
         WorkspaceSection section = WorkspaceSection.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .orderIndex(request.getOrderIndex() != null ? request.getOrderIndex() : space.getSections().size())
                 .space(space)
+                .createdBy(creator)
                 .build();
         return toSectionDTO(sectionRepository.save(section));
     }
@@ -187,34 +294,29 @@ public class WorkspaceService {
 
     public void deleteSection(Long sectionId, Long userId) {
         WorkspaceSection section = findSection(sectionId);
-        assertOwner(section.getSpace().getWorkspace(), userId);
+        WorkspaceSpace space = section.getSpace();
+        Long ownerId = space.getWorkspace().getOwner().getId();
+        boolean isOwner = ownerId.equals(userId);
+        boolean isOwnSection = section.getCreatedBy() != null && section.getCreatedBy().getId().equals(userId);
+
+        if (!isOwner && !isOwnSection) {
+            throw new IllegalStateException("Forbidden: you can only delete your own sections.");
+        }
         purgeMaterials(section);
         sectionRepository.delete(section);
     }
 
     /**
      * Processes every material in a section before the section (or its ancestor) is deleted.
-     * <p>
-     * Materials referenced by at least one contribution proposal are soft-deleted (isHidden)
-     * so the FK from {@code contribution_proposals.source_material_id} is never violated.
-     * All other materials are hard-deleted explicitly via the repository.
-     * Own uploads (isReference = false) also have their file removed from storage.
-     * <p>
-     * Note: {@code WorkspaceSection.materials} deliberately uses only PERSIST/MERGE cascade
-     * (no REMOVE, no orphanRemoval) so that Hibernate never auto-deletes materials during
-     * section deletion — deletions are always explicit here.
      */
     private void purgeMaterials(WorkspaceSection section) {
         for (WorkspaceMaterial material : section.getMaterials()) {
             boolean hasProposal = proposalRepository.existsBySourceMaterialId(material.getId());
             if (hasProposal) {
-                // Detach from section so the section row can be deleted without a FK violation.
-                // The material row stays alive so contribution_proposals.source_material_id remains valid.
                 material.setIsHidden(true);
                 material.setSection(null);
                 materialRepository.save(material);
             } else {
-                // Safe to remove entirely.
                 if (!Boolean.TRUE.equals(material.getIsReference())) {
                     fileStorageService.delete(material.getFileUrl());
                 }
@@ -226,20 +328,22 @@ public class WorkspaceService {
     // ─── Material Upload ────────────────────────────────────────────────────────
 
     public WorkspaceMaterialDTO uploadMaterial(Long sectionId, Long userId,
-                                                MultipartFile file, String title) {
+                                               MultipartFile file, String title) {
         WorkspaceSection section = findSection(sectionId);
-        assertOwner(section.getSpace().getWorkspace(), userId);
+        assertOwnerOrGuest(section.getSpace(), userId);
 
         String fileUrl = fileStorageService.store(file, "workspaces");
         MaterialType fileType = detectFileType(file.getOriginalFilename());
+        User creator = findUser(userId);
 
         WorkspaceMaterial material = WorkspaceMaterial.builder()
                 .title(title)
                 .fileUrl(fileUrl)
                 .fileType(fileType)
                 .originalFileName(file.getOriginalFilename())
-                .isReference(false) // Student's own upload
+                .isReference(false)
                 .section(section)
+                .createdBy(creator)
                 .build();
         return toMaterialDTO(materialRepository.save(material));
     }
@@ -247,25 +351,28 @@ public class WorkspaceService {
     public void deleteMaterial(Long materialId, Long userId) {
         WorkspaceMaterial material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
-        assertOwner(material.getSection().getSpace().getWorkspace(), userId);
+
+        Long ownerId = material.getSection().getSpace().getWorkspace().getOwner().getId();
+        boolean isOwner = ownerId.equals(userId);
+        boolean isOwnMaterial = material.getCreatedBy() != null && material.getCreatedBy().getId().equals(userId);
+
+        if (!isOwner && !isOwnMaterial) {
+            throw new IllegalStateException("Forbidden: you can only delete your own materials.");
+        }
 
         boolean hasProposal = proposalRepository.existsBySourceMaterialId(materialId);
         if (hasProposal) {
-            // A contribution proposal FK references this row — cannot hard-delete.
-            // Soft-delete: hide it from the UI while keeping the row alive for FK integrity.
             material.setIsHidden(true);
             materialRepository.save(material);
         } else {
-            // No proposal references this material — safe to remove entirely.
             if (!Boolean.TRUE.equals(material.getIsReference())) {
-                // Only delete the file for the student's own uploads; references share the course file.
                 fileStorageService.delete(material.getFileUrl());
             }
             materialRepository.delete(material);
         }
     }
 
-    // ─── Helpers & Mappers ──────────────────────────────────────────────────────
+    // ─── Helpers & Auth ──────────────────────────────────────────────────────────
 
     private User findUser(Long id) {
         return userRepository.findById(id)
@@ -292,10 +399,27 @@ public class WorkspaceService {
                 .orElseThrow(() -> new RuntimeException("Section not found: " + id));
     }
 
+    /** Throws if the requesting user is not the workspace owner. */
     private void assertOwner(StudentWorkspace workspace, Long userId) {
         if (!workspace.getOwner().getId().equals(userId)) {
-            throw new IllegalStateException("Forbidden: only the workspace owner can modify this.");
+            throw new IllegalStateException("Forbidden: only the workspace owner can perform this action.");
         }
+    }
+
+    /** Allows both the workspace owner AND accepted guests to proceed. */
+    private void assertOwnerOrGuest(WorkspaceSpace space, Long userId) {
+        Long ownerId = space.getWorkspace().getOwner().getId();
+        if (ownerId.equals(userId)) return;
+        if (guestRepository.existsBySpaceIdAndUserId(space.getId(), userId)) return;
+        throw new IllegalStateException("Forbidden: you are not a member of this space.");
+    }
+
+    private String generateCode() {
+        StringBuilder sb = new StringBuilder("SPACE-");
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(RANDOM.nextInt(CODE_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     private MaterialType detectFileType(String filename) {
@@ -307,6 +431,8 @@ public class WorkspaceService {
         if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png")) return MaterialType.IMAGE;
         return MaterialType.OTHER;
     }
+
+    // ─── Mappers ─────────────────────────────────────────────────────────────────
 
     private StudentWorkspaceDTO toWorkspaceDTO(StudentWorkspace workspace) {
         return StudentWorkspaceDTO.builder()
@@ -321,7 +447,35 @@ public class WorkspaceService {
                 .build();
     }
 
-    private WorkspaceSpaceDTO toSpaceDTO(WorkspaceSpace space) {
+    private WorkspaceSpaceDTO toSpaceDTO(WorkspaceSpace space, Long requestingUserId) {
+        Long ownerId = space.getWorkspace().getOwner().getId();
+        boolean isOwner = ownerId.equals(requestingUserId);
+        boolean isGuest = !isOwner && guestRepository.existsBySpaceIdAndUserId(space.getId(), requestingUserId);
+
+        User owner = space.getWorkspace().getOwner();
+        List<com.studyspace.dto.SpaceMemberDTO> members = new java.util.ArrayList<>();
+        
+        // Add Owner
+        members.add(com.studyspace.dto.SpaceMemberDTO.builder()
+                .id(owner.getId())
+                .fullName(owner.getFullName())
+                .username(owner.getUsername())
+                .profilePictureUrl(owner.getProfilePictureUrl())
+                .role("OWNER")
+                .build());
+                
+        // Add Guests
+        space.getGuests().forEach(guest -> {
+            User u = guest.getUser();
+            members.add(com.studyspace.dto.SpaceMemberDTO.builder()
+                    .id(u.getId())
+                    .fullName(u.getFullName())
+                    .username(u.getUsername())
+                    .profilePictureUrl(u.getProfilePictureUrl())
+                    .role("GUEST")
+                    .build());
+        });
+
         return WorkspaceSpaceDTO.builder()
                 .id(space.getId())
                 .title(space.getTitle())
@@ -332,7 +486,12 @@ public class WorkspaceService {
                 .isPublished(space.getIsPublished())
                 .createdAt(space.getCreatedAt())
                 .updatedAt(space.getUpdatedAt())
-                .sections(space.getSections().stream().map(this::toSectionDTO).collect(Collectors.toList()))
+                .sections(space.getSections().stream().map(this::toSectionDTO).toList())
+                .sharingEnabled(space.getSharingEnabled())
+                .inviteCode(isOwner ? space.getInviteCode() : null) // only expose to owner
+                .guestCount(space.getGuests().size())
+                .isGuest(isGuest)
+                .members(members)
                 .build();
     }
 
@@ -343,11 +502,10 @@ public class WorkspaceService {
                 .description(section.getDescription())
                 .orderIndex(section.getOrderIndex())
                 .createdAt(section.getCreatedAt())
-                // Filter out soft-deleted reference materials from the student's view
                 .materials(section.getMaterials().stream()
                         .filter(m -> !Boolean.TRUE.equals(m.getIsHidden()))
                         .map(this::toMaterialDTO)
-                        .collect(Collectors.toList()))
+                        .toList())
                 .build();
     }
 

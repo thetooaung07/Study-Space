@@ -25,7 +25,6 @@ public class StudySessionDTO {
     private LocalDateTime endTime;
     
     private Integer durationMinutes;
-    private Boolean isGroupSession;
     private String roomCode;
     private SessionStatus status;
     
@@ -33,7 +32,6 @@ public class StudySessionDTO {
     private LocalDateTime createdAt;
     private Long creatorId;
     private UserDTO creator;
-    private Long studyGroupId;
     private Integer participantCount;
     private List<UserDTO> participants;
     private String duration;

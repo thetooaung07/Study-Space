@@ -383,38 +383,4 @@ class StudySessionServiceTest {
         assertEquals(1L, result.get(0).getId());
     }
 
-    @Test
-    void getGroupSessions_FiltersProperly() {
-        User user1 = new User(); user1.setId(1L);
-        User user2 = new User(); user2.setId(2L);
-
-        StudySession publicSession = new StudySession();
-        publicSession.setId(1L);
-        publicSession.setVisibility(com.studyspace.types.SessionVisibility.PUBLIC);
-        publicSession.setCreator(user2);
-        publicSession.setParticipants(new HashSet<>());
-
-        StudySession privateSessionMine = new StudySession();
-        privateSessionMine.setId(2L);
-        privateSessionMine.setVisibility(com.studyspace.types.SessionVisibility.PRIVATE);
-        privateSessionMine.setCreator(user1);
-        privateSessionMine.setParticipants(new HashSet<>());
-
-        StudySession privateSessionOther = new StudySession();
-        privateSessionOther.setId(3L);
-        privateSessionOther.setVisibility(com.studyspace.types.SessionVisibility.PRIVATE);
-        privateSessionOther.setCreator(user2);
-        privateSessionOther.setParticipants(new HashSet<>());
-
-        when(sessionRepository.findByStudyGroupId(10L)).thenReturn(
-            java.util.Arrays.asList(publicSession, privateSessionMine, privateSessionOther)
-        );
-        when(userMapper.toDTO(any())).thenReturn(new UserDTO());
-
-        List<com.studyspace.dto.StudySessionDTO> result = sessionService.getGroupSessions(10L, 1L);
-
-        assertEquals(2, result.size());
-        assertTrue(result.stream().anyMatch(s -> s.getId().equals(1L)));
-        assertTrue(result.stream().anyMatch(s -> s.getId().equals(2L)));
-    }
 }

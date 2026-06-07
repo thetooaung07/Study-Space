@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Clock, Trophy, Zap } from "lucide-react";
+import { Clock, Trophy, Zap, BookOpen } from "lucide-react";
 import { StatCard } from "@/components/common/stat-card";
 import { ActiveSessions } from "@/components/sessions/active-sessions";
-import { MyGroups } from "@/components/groups/my-groups";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { useAuth } from "@/context/auth-context";
 import { api } from "@/lib/api";
-import { StudyGroupDTO } from "@/types";
+import { StudySessionDTO } from "@/types";
 
 /** Format minutes to human-readable time */
 function formatStudyTime(minutes: number): string {
@@ -22,7 +21,7 @@ function formatStudyTime(minutes: number): string {
 
 export function Dashboard() {
 	const { user } = useAuth();
-	const [groupCount, setGroupCount] = useState(0);
+	const [sessionCount, setSessionCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -30,8 +29,8 @@ export function Dashboard() {
 			if (!user) return;
 
 			try {
-				const groups = await api.get<StudyGroupDTO[]>(`/groups/user/${user.id}`);
-				setGroupCount(groups.length);
+				const sessions = await api.get<StudySessionDTO[]>(`/sessions/user/${user.id}`);
+				setSessionCount(sessions.length);
 			} catch (error) {
 				console.error("Failed to fetch dashboard stats:", error);
 			} finally {
@@ -44,11 +43,6 @@ export function Dashboard() {
 
 	const totalStudyMinutes = user?.totalStudyMinutes || 0;
 	const streak = user?.currentStreak || 0;
-
-	let groupTrend = "Join a group!";
-	if (groupCount > 0) {
-		groupTrend = `${groupCount} group${groupCount === 1 ? "" : "s"} joined`;
-	}
 
 	return (
 		<div className="p-6 space-y-6">
@@ -70,11 +64,11 @@ export function Dashboard() {
 					positive={totalStudyMinutes > 0}
 				/>
 				<StatCard
-					icon={Users}
-					label="Study Groups"
-					value={loading ? "..." : groupCount.toString()}
-					trend={groupTrend}
-					positive={groupCount > 0}
+					icon={BookOpen}
+					label="My Sessions"
+					value={loading ? "..." : sessionCount.toString()}
+					trend={sessionCount > 0 ? `${sessionCount} session${sessionCount === 1 ? "" : "s"} total` : "Start your first session!"}
+					positive={sessionCount > 0}
 				/>
 				<StatCard
 					icon={Trophy}
@@ -94,10 +88,9 @@ export function Dashboard() {
 
 			{/* Main Content Grid */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				{/* Left Column - Active Sessions & Groups */}
+				{/* Left Column - Active Sessions */}
 				<div className="lg:col-span-2 space-y-6">
 					<ActiveSessions />
-					<MyGroups />
 				</div>
 
 				{/* Right Column - Activity Feed */}

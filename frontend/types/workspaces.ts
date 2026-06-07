@@ -24,17 +24,40 @@ export interface WorkspaceSection {
   materials: WorkspaceMaterial[];
 }
 
+export interface SpaceMember {
+	id: number;
+	fullName: string;
+	username: string;
+	profilePictureUrl: string;
+	role: "OWNER" | "GUEST";
+}
+
+export interface SpaceMessage {
+	id: number;
+	content: string;
+	spaceId: number;
+	userId: number;
+	userFullName: string;
+	userProfilePictureUrl: string;
+	createdAt: string;
+}
+
 export interface WorkspaceSpace {
-  id: number;
-  title: string;
-  description?: string;
-  workspaceId: number;
-  forkedFromCourseId?: number;
-  forkedFromCourseTitle?: string;
-  isPublished: boolean;
-  createdAt: string;
-  updatedAt: string;
-  sections: WorkspaceSection[];
+	id: number;
+	title: string;
+	description: string;
+	workspaceId: number;
+	forkedFromCourseId?: number;
+	forkedFromCourseTitle?: string;
+	isPublished: boolean;
+	createdAt: string;
+	updatedAt: string;
+	sections: WorkspaceSection[];
+	sharingEnabled: boolean;
+	inviteCode?: string;
+	guestCount: number;
+	isGuest: boolean;
+	members: SpaceMember[];
 }
 
 export interface StudentWorkspace {

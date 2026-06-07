@@ -39,7 +39,8 @@ public class WorkspaceController {
     public ResponseEntity<org.springframework.data.domain.Page<StudentWorkspaceDTO>> getPublicWorkspaces(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(org.springframework.data.domain.PageRequest.of(page, size)));
+        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(
+                org.springframework.data.domain.PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")
@@ -90,8 +91,10 @@ public class WorkspaceController {
     }
 
     @GetMapping("/spaces/{spaceId}")
-    public ResponseEntity<WorkspaceSpaceDTO> getSpace(@PathVariable Long spaceId) {
-        return ResponseEntity.ok(workspaceService.getSpaceById(spaceId));
+    public ResponseEntity<WorkspaceSpaceDTO> getSpace(
+            @PathVariable Long spaceId,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.getSpaceById(spaceId, userId));
     }
 
     @PutMapping("/spaces/{spaceId}")
@@ -107,6 +110,59 @@ public class WorkspaceController {
             @PathVariable Long spaceId,
             @RequestParam Long userId) {
         workspaceService.deleteSpace(spaceId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ─── Sharing Endpoints ──────────────────────────────────────────────────────
+
+    @PostMapping("/spaces/{spaceId}/sharing/enable")
+    public ResponseEntity<ShareSettingsDTO> enableSharing(
+            @PathVariable Long spaceId,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.enableSharing(spaceId, userId));
+    }
+
+    @PostMapping("/spaces/{spaceId}/sharing/disable")
+    public ResponseEntity<Void> disableSharing(
+            @PathVariable Long spaceId,
+            @RequestParam Long userId) {
+        workspaceService.disableSharing(spaceId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/spaces/{spaceId}/sharing/regenerate")
+    public ResponseEntity<ShareSettingsDTO> regenerateInviteCode(
+            @PathVariable Long spaceId,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.regenerateInviteCode(spaceId, userId));
+    }
+
+    @PostMapping("/spaces/join")
+    public ResponseEntity<WorkspaceSpaceDTO> joinByCode(
+            @RequestParam String code,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.joinByCode(code, userId));
+    }
+
+    @DeleteMapping("/spaces/{spaceId}/leave")
+    public ResponseEntity<Void> leaveSpace(
+            @PathVariable Long spaceId,
+            @RequestParam Long userId) {
+        workspaceService.leaveSpace(spaceId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/shared")
+    public ResponseEntity<List<WorkspaceSpaceDTO>> getSharedSpaces(@RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.getSharedSpaces(userId));
+    }
+
+    @DeleteMapping("/spaces/{spaceId}/guests/{guestUserId}")
+    public ResponseEntity<Void> removeGuest(
+            @PathVariable Long spaceId,
+            @PathVariable Long guestUserId,
+            @RequestParam Long userId) {
+        workspaceService.removeGuest(spaceId, guestUserId, userId);
         return ResponseEntity.noContent().build();
     }
 

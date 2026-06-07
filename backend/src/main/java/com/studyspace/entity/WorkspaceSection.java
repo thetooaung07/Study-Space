@@ -37,6 +37,10 @@ public class WorkspaceSection {
     @JoinColumn(name = "space_id", nullable = false)
     private WorkspaceSpace space;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

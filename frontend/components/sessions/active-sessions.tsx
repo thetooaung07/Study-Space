@@ -34,7 +34,7 @@ export function ActiveSessions() {
 			const allSessions = await api.get<StudySessionDTO[]>(`/sessions`);
 
 			const publicGroupSessions = allSessions.filter(
-				(s) => s.isGroupSession && s.visibility === "PUBLIC" && !userSessions.some((us) => us.id === s.id),
+				(s) => s.visibility === "PUBLIC" && !userSessions.some((us) => us.id === s.id),
 			);
 			const combinedSessions = [...userSessions, ...publicGroupSessions];
 			setSessions(combinedSessions.filter((s) => s.status === "ACTIVE"));

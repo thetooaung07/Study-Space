@@ -31,7 +31,6 @@ public class StudySessionService {
     private final UserRepository userRepository;
     private final SessionParticipantRepository participantRepository;
     private final ActivityRepository activityRepository;
-    private final StudyGroupRepository groupRepository;
     private final GamificationService gamificationService;
     private final SessionNotificationService notificationService;
     private static final String USER_NOT_FOUND = "User not found";
@@ -51,7 +50,6 @@ public class StudySessionService {
             .description(request.getDescription())
             .subject(request.getSubject())
             .creator(creator)
-            .isGroupSession(Boolean.TRUE.equals(request.getIsGroupSession()))
             .status(SessionStatus.ACTIVE)
             .startTime(DateTimeUtil.nowUtc())
             .visibility(request.getVisibility() != null ? request.getVisibility() : com.studyspace.types.SessionVisibility.PUBLIC)
@@ -60,17 +58,10 @@ public class StudySessionService {
         // Check if user already has an active session and end it
         List<StudySession> activeSessions = sessionRepository.findByCreatorId(userId).stream()
             .filter(s -> s.getStatus() == SessionStatus.ACTIVE)
-            .collect(Collectors.toList());
+            .toList();
             
         for (StudySession activeSession : activeSessions) {
             endSession(activeSession.getId());
-        }
-        
-        if (request.getStudyGroupId() != null) {
-            StudyGroup group = groupRepository.findById(request.getStudyGroupId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Study group not found"));
-            session.setStudyGroup(group);
-            session.setIsGroupSession(true);
         }
         
         // Generate room code
@@ -120,7 +111,7 @@ public class StudySessionService {
                 return t2.compareTo(t1); // Newest first
             })
             .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .toList();
     }
     
     @Transactional(readOnly = true)
@@ -131,7 +122,7 @@ public class StudySessionService {
         // Get sessions joined by user
         List<StudySession> joinedSessions = participantRepository.findByUserId(userId).stream()
             .map(SessionParticipant::getStudySession)
-            .collect(Collectors.toList());
+            .toList();
             
         // Combine and distinct
         java.util.Set<StudySession> allSessions = new java.util.HashSet<>(createdSessions);
@@ -140,7 +131,7 @@ public class StudySessionService {
         return allSessions.stream()
             .sorted((s1, s2) -> s2.getStartTime().compareTo(s1.getStartTime())) // Sort by newest first
             .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -149,7 +140,7 @@ public class StudySessionService {
                 .filter(s -> s.getStatus() == SessionStatus.COMPLETED)
                 .sorted((s1, s2) -> s2.getEndTime().compareTo(s1.getEndTime()))
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
     
     // startSession removed
@@ -344,15 +335,6 @@ public class StudySessionService {
         }
     }
     
-    @Transactional(readOnly = true)
-    public List<StudySessionDTO> getGroupSessions(Long groupId, Long requestingUserId) {
-        return sessionRepository.findByStudyGroupId(groupId).stream()
-            .filter(s -> s.getVisibility() == SessionVisibility.PUBLIC || 
-                        (requestingUserId != null && s.getCreator().getId().equals(requestingUserId)))
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
-    }
-    
     private String generateRoomCode() {
         return "ROOM-" + System.currentTimeMillis();
     }
@@ -381,7 +363,7 @@ public class StudySessionService {
         // Filter for active participants only (those who haven't left)
         List<SessionParticipant> activeParticipants = session.getParticipants().stream()
                 .filter(p -> p.getLeftAt() == null)
-                .collect(Collectors.toList());
+                .toList();
 
         List<com.studyspace.dto.UserDTO> participantDTOs = activeParticipants.stream()
                 .map(p -> {
@@ -391,7 +373,7 @@ public class StudySessionService {
                     userDTO.setTotalPausedSeconds(p.getTotalPausedSeconds() != null ? p.getTotalPausedSeconds() : 0L);
                     return userDTO;
                 })
-                .collect(Collectors.toList());
+                .toList();
 
         return StudySessionDTO.builder()
                 .id(session.getId())
@@ -401,13 +383,11 @@ public class StudySessionService {
                 .startTime(session.getStartTime())
                 .endTime(session.getEndTime())
                 .durationMinutes(session.getDurationMinutes())
-                .isGroupSession(session.getIsGroupSession())
                 .roomCode(session.getRoomCode())
                 .status(session.getStatus())
                 .createdAt(session.getCreatedAt())
                 .creatorId(session.getCreator().getId())
                 .creator(userMapper.toDTO(session.getCreator()))
-                .studyGroupId(session.getStudyGroup() != null ? session.getStudyGroup().getId() : null)
                 .participantCount(activeParticipants.size())
                 .participants(participantDTOs)
                 .duration(durationStr)

@@ -97,4 +97,11 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<UserDTO>> getLeaderboard(
+        @RequestParam(defaultValue = "50") int limit
+    ) {
+        return ResponseEntity.ok(userService.getLeaderboard(limit));
+    }
 }

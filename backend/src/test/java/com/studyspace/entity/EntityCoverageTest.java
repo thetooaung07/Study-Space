@@ -2,6 +2,8 @@ package com.studyspace.entity;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
@@ -19,8 +21,8 @@ class EntityCoverageTest {
             DocumentChunk.class,
             Message.class,
             SessionParticipant.class,
+            SpaceGuest.class,
             StudentWorkspace.class,
-            StudyGroup.class,
             StudySession.class,
             User.class,
             WorkspaceMaterial.class,
@@ -30,6 +32,8 @@ class EntityCoverageTest {
 
     @Test
     void testEntityCoverage() {
+        int successCount = 0;
+
         for (Class<?> clazz : entities) {
             try {
                 // Instantiate using no-args constructor
@@ -107,10 +111,15 @@ class EntityCoverageTest {
                         }
                     }
                 }
+
+                successCount++;
             } catch (Throwable t) {
                 System.out.println("Could not fully test " + clazz.getName() + ": " + t.getMessage());
             }
         }
+
+        assertEquals(entities.length, successCount,
+                "All entities must be instantiable and exercisable. " + successCount + " of " + entities.length + " passed.");
     }
 
     private Method getMethodQuietly(Class<?> clazz, String methodName, Class<?>... paramTypes) {

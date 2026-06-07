@@ -352,8 +352,9 @@ export default function ProposalPage() {
 
 	useEffect(() => {
 		(async () => {
+			if (!user) return;
 			try {
-				const s = await workspacesApi.getSpace(Number(spaceId));
+				const s = await workspacesApi.getSpace(Number(spaceId), user.id);
 				setSpace(s);
 				if (s.forkedFromCourseId) {
 					const c = await coursesApi.getById(s.forkedFromCourseId);

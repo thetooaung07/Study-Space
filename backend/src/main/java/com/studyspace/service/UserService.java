@@ -2,7 +2,6 @@ package com.studyspace.service;
 
 import com.studyspace.dto.CreateUserRequest;
 import com.studyspace.dto.UserDTO;
-import com.studyspace.entity.StudyGroup;
 import com.studyspace.entity.User;
 import com.studyspace.types.UserStatus;
 import com.studyspace.repository.UserRepository;
@@ -12,9 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -146,7 +143,7 @@ public class UserService {
         log.debug("Fetching all users");
         List<UserDTO> users = userRepository.findAll().stream()
             .map(this::convertToDTO)
-            .collect(Collectors.toList());
+            .toList();
         log.debug("Found {} users", users.size());
         return users;
     }
@@ -199,24 +196,18 @@ public class UserService {
                 return new ResponseStatusException(HttpStatus.NOT_FOUND, USER_NOT_FOUND);
             });
         
-        Set<StudyGroup> groupsToUpdate = new HashSet<>(user.getGroups());
-        for (StudyGroup group : groupsToUpdate) {
-            group.getMembers().remove(user);
-            user.getGroups().remove(group);
-        }
-        
-        Set<StudyGroup> createdGroups = new HashSet<>(user.getCreatedGroups());
-        for (StudyGroup group : createdGroups) {
-            // Remove all members from the group
-            Set<User> membersToRemove = new HashSet<>(group.getMembers());
-            for (User member : membersToRemove) {
-                member.getGroups().remove(group);
-                group.getMembers().remove(member);
-            }
-            group.getMembers().clear();
-        }
-        
         userRepository.delete(user);
         log.info("User ID: {} deleted successfully", id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserDTO> getLeaderboard(int limit) {
+        return userRepository.findAll().stream()
+            .sorted((a, b) -> Integer.compare(
+                b.getTotalStudyMinutes() != null ? b.getTotalStudyMinutes() : 0,
+                a.getTotalStudyMinutes() != null ? a.getTotalStudyMinutes() : 0))
+            .limit(limit)
+            .map(this::convertToDTO)
+           .toList();
     }
 }

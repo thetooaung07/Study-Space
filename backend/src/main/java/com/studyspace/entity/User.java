@@ -78,21 +78,6 @@ public class User {
     @Builder.Default
     private Set<StudySession> createdSessions = new HashSet<>();
     
-    @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
-    @ToString.Exclude 
-    @Builder.Default
-    private Set<StudyGroup> createdGroups = new HashSet<>();
-    
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-        name = "group_members",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "group_id")
-    )
-    @ToString.Exclude 
-    @Builder.Default
-    private Set<StudyGroup> groups = new HashSet<>();
-    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @ToString.Exclude 
     @Builder.Default

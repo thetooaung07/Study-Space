@@ -12,7 +12,6 @@ export type ActivityType =
 	| "QUESTION"
 	| "SESSION_JOIN"
 	| "SESSION_LEAVE"
-	| "GROUP_JOIN"
 	| "ACHIEVEMENT_UNLOCK"
 	| "STUDY_MILESTONE";
 export enum UserRole {
@@ -36,20 +35,6 @@ export interface ActivityDTO {
 	userProfilePictureUrl?: string;
 }
 
-export interface StudyGroupDTO {
-	id: number;
-	name: string;
-	description: string;
-	inviteCode: string;
-	createdAt: string;
-	updatedAt: string;
-	creatorId: number;
-	memberCount: number;
-	groupType: "PUBLIC" | "PERSONAL" | "INVITE_ONLY";
-	activeMemberCount: number;
-	totalSessionsCount: number;
-}
-
 export interface StudySessionDTO {
 	id: number;
 	title: string;
@@ -58,14 +43,12 @@ export interface StudySessionDTO {
 	startTime: string; // ISO 8601
 	endTime?: string;
 	durationMinutes?: number;
-	isGroupSession: boolean;
 	roomCode: string;
 	status: SessionStatus;
 	visibility: "PUBLIC" | "PRIVATE";
 	createdAt: string;
 	creatorId: number;
 	creator?: UserDTO;
-	studyGroupId?: number;
 	participantCount: number;
 	participants?: UserDTO[];
 	duration: string;
@@ -95,55 +78,65 @@ export interface CreateSessionRequest {
 	description?: string;
 	subject: Subject;
 	startTime?: string;
-	groupId?: number;
 	visibility?: "PUBLIC" | "PRIVATE";
-	isGroupSession?: boolean;
 }
 
-export interface CreateGroupRequest {
+// ─── Workspace Types ──────────────────────────────────────────────────────────
+
+export interface WorkspaceMaterialDTO {
+	id: number;
+	title: string;
+	fileUrl: string;
+	fileType: string;
+	originalFileName?: string;
+	isReference: boolean;
+	isHidden: boolean;
+	uploadedAt: string;
+	createdBy?: number; // userId of uploader
+}
+
+export interface WorkspaceSectionDTO {
+	id: number;
+	title: string;
+	description?: string;
+	orderIndex: number;
+	createdAt: string;
+	createdBy?: number;
+	materials: WorkspaceMaterialDTO[];
+}
+
+export interface WorkspaceSpaceDTO {
+	id: number;
+	title: string;
+	description?: string;
+	workspaceId: number;
+	forkedFromCourseId?: number;
+	forkedFromCourseTitle?: string;
+	isPublished: boolean;
+	createdAt: string;
+	updatedAt: string;
+	sections: WorkspaceSectionDTO[];
+	// Sharing
+	sharingEnabled?: boolean;
+	inviteCode?: string;   // only present when viewer is the owner
+	guestCount?: number;
+	isGuest?: boolean;
+	members?: any[];
+}
+
+export interface StudentWorkspaceDTO {
+	id: number;
 	name: string;
 	description?: string;
-	groupType: "PUBLIC" | "PERSONAL" | "INVITE_ONLY";
+	ownerId: number;
+	ownerName?: string;
+	spaceCount: number;
+	createdAt: string;
+	updatedAt: string;
 }
 
-export interface GroupStatsDTO {
-	groupId: number;
-	groupName: string;
-	sessionCount: number;
-	totalStudyMinutes: number;
-	averageSessionDuration: number;
-	activeMemberCount: number;
-}
-
-export interface AnalyticsOverviewDTO {
-	activeUsersNow: number;
-	totalStudyMinutes: number;
-	hotSessionsCount: number;
-	newGroupsToday: number;
-}
-
-export interface GroupMemberDTO {
-	id: number;
-	username: string;
-	fullName: string;
-	profilePictureUrl?: string;
-	currentStatus: UserStatus;
-	isAdmin: boolean;
-	totalStudyMinutesInGroup?: number;
-	joinedAt?: string;
-}
-
-export interface StudyGroupDetailsDTO {
-	group: StudyGroupDTO;
-	activeSessions: StudySessionDTO[];
-	members: GroupMemberDTO[];
-}
-
-// DTO for complex JPQL query results (group member leaderboard)
-export interface GroupMemberStatsDTO {
-	userId: number;
-	fullName: string;
-	profilePictureUrl?: string;
-	totalMinutes: number;
-	sessionCount: number;
+export interface ShareSettingsDTO {
+	sharingEnabled: boolean;
+	inviteCode: string | null;
+	guestCount: number;
 }

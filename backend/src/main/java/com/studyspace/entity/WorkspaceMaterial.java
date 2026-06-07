@@ -58,6 +58,10 @@ public class WorkspaceMaterial {
     @JoinColumn(name = "section_id")
     private WorkspaceSection section;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
 

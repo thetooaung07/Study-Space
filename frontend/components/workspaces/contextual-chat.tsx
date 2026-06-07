@@ -350,7 +350,6 @@ const ChatMessageItem = ({
 
 export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	const { user } = useAuth();
-	const [width, setWidth] = useState(384);
 	const [provider, setProvider] = useState<"gemini" | "openai">("gemini");
 	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
 
@@ -384,20 +383,6 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	const userScrolledRef = useRef(false);
 
 	// ── Resize handle ────────────────────────────────────────────────────────
-
-	const handleMouseDown = (e: React.MouseEvent) => {
-		e.preventDefault();
-		const startX = e.pageX;
-		const startWidth = width;
-		const onMouseMove = (mv: MouseEvent) =>
-			setWidth(Math.max(280, Math.min(800, startWidth + (startX - mv.pageX))));
-		const onMouseUp = () => {
-			document.removeEventListener("mousemove", onMouseMove);
-			document.removeEventListener("mouseup", onMouseUp);
-		};
-		document.addEventListener("mousemove", onMouseMove);
-		document.addEventListener("mouseup", onMouseUp);
-	};
 
 	// ── Scroll: respect user position, auto-scroll only when at bottom ────────
 
@@ -688,14 +673,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	// ── Render ────────────────────────────────────────────────────────────────
 
 	return (
-		<div className="flex flex-col h-full bg-card relative border-l border-border" style={{ width: `${width}px` }}>
-			{/* Resize handle */}
-			<button
-				type="button"
-				aria-label="Resize chat panel"
-				className="absolute left-[-4px] top-0 bottom-0 w-2 cursor-col-resize hover:bg-primary/50 z-10 transition-colors bg-transparent border-none p-0"
-				onMouseDown={handleMouseDown}
-			/>
+		<div className="flex flex-col h-full bg-card relative">
 
 			{/* Header */}
 			<div className="p-4 border-b border-border flex items-center justify-between shrink-0">

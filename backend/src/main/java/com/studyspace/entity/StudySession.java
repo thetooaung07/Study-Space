@@ -44,9 +44,6 @@ public class StudySession {
     
     private Integer durationMinutes;
     
-    @Column(columnDefinition = "BOOLEAN DEFAULT false")
-    private Boolean isGroupSession;
-    
     @Column(unique = true)
     private String roomCode;
     
@@ -64,10 +61,6 @@ public class StudySession {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User creator;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_group_id")
-    private StudyGroup studyGroup;
     
     @OneToMany(mappedBy = "studySession", cascade = CascadeType.ALL)
     @ToString.Exclude 
@@ -90,9 +83,6 @@ public class StudySession {
         }
         if (visibility == null) {
             visibility = SessionVisibility.PUBLIC;
-        }
-        if (isGroupSession == null) {
-            isGroupSession = false;
         }
     }
 }

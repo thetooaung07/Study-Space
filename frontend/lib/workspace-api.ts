@@ -75,7 +75,7 @@ export const workspacesApi = {
 		return res.json();
 	},
 
-	getSpace: (spaceId: number): Promise<WorkspaceSpace> => api.get(`/workspaces/spaces/${spaceId}`),
+	getSpace: (spaceId: number, userId: number): Promise<WorkspaceSpace> => api.get(`/workspaces/spaces/${spaceId}?userId=${userId}`),
 
 	updateSpace: (spaceId: number, userId: number, data: CreateSpaceRequest): Promise<WorkspaceSpace> =>
 		api.put(`/workspaces/spaces/${spaceId}?userId=${userId}`, data),
@@ -84,10 +84,19 @@ export const workspacesApi = {
 		api.delete(`/workspaces/spaces/${spaceId}?userId=${userId}`),
 
 	joinSpace: (userId: number, inviteCode: string): Promise<WorkspaceSpace> =>
-		api.post(`/spaces/join?userId=${userId}`, { inviteCode }),
+		api.post(`/workspaces/spaces/join?userId=${userId}&code=${encodeURIComponent(inviteCode)}`, {}),
+
+	removeGuest: (spaceId: number, guestUserId: number, userId: number): Promise<void> =>
+		api.delete(`/workspaces/spaces/${spaceId}/guests/${guestUserId}?userId=${userId}`),
+
+	getSharedSpaces: (userId: number): Promise<WorkspaceSpace[]> =>
+		api.get(`/workspaces/shared?userId=${userId}`),
+
+	leaveSpace: (spaceId: number, userId: number): Promise<void> =>
+		api.delete(`/workspaces/spaces/${spaceId}/leave?userId=${userId}`),
 
 	getSpaceMembers: (spaceId: number, userId: number): Promise<any[]> =>
-		api.get(`/spaces/${spaceId}/members?userId=${userId}`),
+		api.get(`/workspaces/spaces/${spaceId}/members?userId=${userId}`),
 
 	// ─── Sections ────────────────────────────────────────────────────────────
 

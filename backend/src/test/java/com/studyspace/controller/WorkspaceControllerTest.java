@@ -178,9 +178,10 @@ class WorkspaceControllerTest {
     @WithMockUser
     void getSpace() throws Exception {
         WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
-        when(workspaceService.getSpaceById(10L)).thenReturn(dto);
+        when(workspaceService.getSpaceById(10L, 1L)).thenReturn(dto);
 
-        mockMvc.perform(get("/api/workspaces/spaces/10"))
+        mockMvc.perform(get("/api/workspaces/spaces/10")
+                .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10));
     }

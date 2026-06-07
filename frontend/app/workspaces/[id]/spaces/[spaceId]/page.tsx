@@ -14,9 +14,11 @@ import {
 	Film,
 	FileImage,
 	File,
-	ArrowLeft,
 	Send,
 	Link2,
+	Users,
+	ArrowLeft,
+	Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,6 +36,12 @@ import type { MaterialType } from "@/types/courses";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { ContextualChat } from "@/components/workspaces/contextual-chat";
+import { ShareSheet } from "@/components/workspaces/share-sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { MemberChat } from "@/components/workspaces/member-chat";
+import { GroupMembers } from "@/components/workspaces/group-members";
+import { toast } from "sonner";
 
 const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 	const cls = "h-4 w-4 shrink-0";
@@ -53,20 +61,14 @@ const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 
 const addMaterialToSpace = (space: WorkspaceSpace, sectionId: number, material: WorkspaceMaterial): WorkspaceSpace => ({
 	...space,
-	sections: space.sections.map(s => 
-		s.id === sectionId 
-			? { ...s, materials: [...s.materials, material] } 
-			: s
-	)
+	sections: space.sections.map((s) => (s.id === sectionId ? { ...s, materials: [...s.materials, material] } : s)),
 });
 
 const removeMaterialFromSpace = (space: WorkspaceSpace, sectionId: number, materialId: number): WorkspaceSpace => ({
 	...space,
-	sections: space.sections.map(s => 
-		s.id === sectionId 
-			? { ...s, materials: s.materials.filter(m => m.id !== materialId) } 
-			: s
-	)
+	sections: space.sections.map((s) =>
+		s.id === sectionId ? { ...s, materials: s.materials.filter((m) => m.id !== materialId) } : s,
+	),
 });
 
 export default function SpaceManagePage() {
@@ -74,6 +76,9 @@ export default function SpaceManagePage() {
 	const { user } = useAuth();
 	const [space, setSpace] = useState<WorkspaceSpace | null>(null);
 	const [loading, setLoading] = useState(true);
+
+	// Sharing
+	const [showShare, setShowShare] = useState(false);
 
 	// Section creation
 	const [showAddSection, setShowAddSection] = useState(false);
@@ -102,9 +107,15 @@ export default function SpaceManagePage() {
 	const [deleteMaterialError, setDeleteMaterialError] = useState("");
 	const [deletingMaterial, setDeletingMaterial] = useState(false);
 
+	// Guest remove confirm
+	const [removeGuestId, setRemoveGuestId] = useState<number | null>(null);
+	const [removeGuestError, setRemoveGuestError] = useState("");
+	const [removingGuest, setRemovingGuest] = useState(false);
+
 	const fetchSpace = useCallback(async () => {
+		if (!user) return;
 		try {
-			const s = await workspacesApi.getSpace(Number(spaceId));
+			const s = await workspacesApi.getSpace(Number(spaceId), user.id);
 			setSpace(s);
 			// Expand all sections that have materials to avoid confusion
 			const idsWithMaterials = s.sections.filter((sec) => sec.materials.length > 0).map((sec) => sec.id);
@@ -116,7 +127,24 @@ export default function SpaceManagePage() {
 		} finally {
 			setLoading(false);
 		}
-	}, [spaceId]);
+	}, [spaceId, user]);
+
+	const handleRemoveGuest = async () => {
+		if (!space || !user || removeGuestId === null) return;
+		setRemovingGuest(true);
+		setRemoveGuestError("");
+		try {
+			await workspacesApi.removeGuest(space.id, removeGuestId, user.id);
+			toast.success("Guest removed successfully");
+			setRemoveGuestId(null);
+			fetchSpace(); // Refresh space to update members
+		} catch (error: any) {
+			console.error("Failed to remove guest:", error);
+			setRemoveGuestError(error.message || "Failed to remove guest");
+		} finally {
+			setRemovingGuest(false);
+		}
+	};
 
 	useEffect(() => {
 		fetchSpace();
@@ -198,7 +226,9 @@ export default function SpaceManagePage() {
 		try {
 			await workspacesApi.deleteMaterial(deleteMaterialConfig.materialId, user.id);
 			setSpace((prev) =>
-				prev ? removeMaterialFromSpace(prev, deleteMaterialConfig.sectionId, deleteMaterialConfig.materialId) : prev
+				prev
+					? removeMaterialFromSpace(prev, deleteMaterialConfig.sectionId, deleteMaterialConfig.materialId)
+					: prev,
 			);
 			setDeleteMaterialConfig(null);
 		} catch (e: any) {
@@ -230,318 +260,448 @@ export default function SpaceManagePage() {
 			<div className="flex flex-col flex-1 overflow-hidden">
 				<Header />
 				<main className="flex-1 flex overflow-hidden">
-					<div className="flex-1 overflow-auto p-6 max-w-5xl mx-auto space-y-6">
-						{/* Header */}
-						<div>
-							<Button variant="ghost" size="sm" className="mb-2" asChild>
-								<Link href={`/workspaces/${workspaceId}`}>
-									<ArrowLeft className="mr-1.5 h-4 w-4" />
-									Back to Workspace
-								</Link>
-							</Button>
-							<div className="flex items-start justify-between">
+					<ResizablePanelGroup direction="horizontal" className="flex-1">
+						<ResizablePanel defaultSize={70} minSize={30}>
+							<div className="h-full overflow-auto p-6 max-w-5xl mx-auto space-y-6">
+								{/* Header */}
 								<div>
-									<div className="flex items-center gap-2">
-										<h1 className="text-2xl font-bold text-foreground">{space.title}</h1>
-										{space.forkedFromCourseTitle && space.forkedFromCourseId && (
-											<Link href={`/courses/${space.forkedFromCourseId}`}>
-												<Badge
-													variant="secondary"
-													className="text-xs hover:bg-secondary/80 transition-colors cursor-pointer hover:underline"
-												>
-													<Link2 className="mr-1 h-3 w-3" />
-													Cloned from {space.forkedFromCourseTitle}
-												</Badge>
-											</Link>
-										)}
+									<Button variant="ghost" size="sm" className="mb-2" asChild>
+										<Link href={`/workspaces/${workspaceId}`}>
+											<ArrowLeft className="mr-1.5 h-4 w-4" />
+											Back to Workspace
+										</Link>
+									</Button>
+									<div className="flex items-start justify-between">
+										<div>
+											<div className="flex flex-wrap items-center gap-2">
+												<h1 className="text-2xl font-bold text-foreground">{space.title}</h1>
+												{space.forkedFromCourseTitle && space.forkedFromCourseId && (
+													<Link href={`/courses/${space.forkedFromCourseId}`}>
+														<Badge
+															variant="secondary"
+															className="text-xs hover:bg-secondary/80 transition-colors cursor-pointer hover:underline"
+														>
+															<Link2 className="mr-1 h-3 w-3" />
+															Cloned from {space.forkedFromCourseTitle}
+														</Badge>
+													</Link>
+												)}
+											</div>
+											{space.description && (
+												<p className="text-sm text-muted-foreground mt-1">
+													{space.description}
+												</p>
+											)}
+											<p className="text-xs text-muted-foreground mt-1">
+												{space.sections.length} sections ·{" "}
+												{space.sections.reduce((sum, s) => sum + s.materials.length, 0)}{" "}
+												materials
+											</p>
+										</div>
+										<div className="flex gap-2">
+											{space.forkedFromCourseId && !space.isGuest && (
+												<Button size="sm" asChild>
+													<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}/propose`}>
+														<Send className="mr-1.5 h-4 w-4" />
+														Propose Contribution
+													</Link>
+												</Button>
+											)}
+											{!space.isGuest && (
+												<Button size="sm" variant="outline" onClick={() => setShowShare(true)}>
+													<Users className="mr-1.5 h-4 w-4" />
+													Share Space
+												</Button>
+											)}
+										</div>
 									</div>
-									{space.description && (
-										<p className="text-sm text-muted-foreground mt-1">{space.description}</p>
-									)}
-									<p className="text-xs text-muted-foreground mt-1">
-										{space.sections.length} sections ·{" "}
-										{space.sections.reduce((sum, s) => sum + s.materials.length, 0)} materials
-									</p>
 								</div>
-								<div className="flex gap-2">
-									{space.forkedFromCourseId && (
-										<Button size="sm" asChild>
-											<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}/propose`}>
-												<Send className="mr-1.5 h-4 w-4" />
-												Propose Contribution
-											</Link>
-										</Button>
-									)}
-								</div>
-							</div>
-						</div>
 
-						{/* Sections */}
-						<div className="space-y-2 mb-3">
-							{space.sections.length === 0 ? (
-								<p className="text-sm text-muted-foreground py-4">
-									No sections yet. Add one to get started.
-								</p>
-							) : (
-								space.sections.map((section, idx) => {
-									const isExpanded = expandedIds.has(section.id);
-									return (
-										<Card key={section.id} className="border-border overflow-hidden gap-0 py-0">
-											{/* Section Header */}
-											<CardHeader
-												className={`px-4 pt-5 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors ${isExpanded ? "pb-1" : "pb-3"}`}
-												onClick={() => toggleExpanded(section.id)}
-											>
-												<div className="flex items-start gap-2">
-													<div className="flex-1 min-w-0">
-														<div className="flex items-center gap-1 w-full text-left text-sm font-medium hover:text-primary transition-colors">
-															{isExpanded ? (
-																<ChevronDown className="h-4 w-4 shrink-0" />
-															) : (
-																<ChevronRight className="h-4 w-4 shrink-0" />
-															)}
-															<span className="text-xs text-muted-foreground mr-1">
-																{String(idx + 1).padStart(2, "0")}
-															</span>
-															<span className="truncate">{section.title}</span>
-															<span className="ml-2 text-xs text-muted-foreground font-normal shrink-0">
-																({section.materials.length}{" "}
-																{section.materials.length === 1 ? "file" : "files"})
-															</span>
+								{showShare && (
+									<ShareSheet
+										space={space}
+										userId={user.id}
+										onClose={() => setShowShare(false)}
+										onUpdated={(updatedSpace) => setSpace(updatedSpace as any)}
+									/>
+								)}
+
+								{/* Sections */}
+								<div className="space-y-2 mb-3">
+									{space.sections.length === 0 ? (
+										<p className="text-sm text-muted-foreground py-4">
+											No sections yet. Add one to get started.
+										</p>
+									) : (
+										space.sections.map((section, idx) => {
+											const isExpanded = expandedIds.has(section.id);
+											return (
+												<Card
+													key={section.id}
+													className="overflow-hidden transition-all duration-200 py-0 gap-0"
+												>
+													<div
+														className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50"
+														onClick={() => toggleExpanded(section.id)}
+													>
+														<div className="flex items-center gap-3">
+															<Button variant="ghost" size="icon" className="h-6 w-6">
+																{isExpanded ? (
+																	<ChevronDown className="h-4 w-4 text-muted-foreground" />
+																) : (
+																	<ChevronRight className="h-4 w-4 text-muted-foreground" />
+																)}
+															</Button>
+															<div>
+																<div className="flex items-center gap-2">
+																	<span className="font-semibold text-sm">
+																		{idx + 1}. {section.title}
+																	</span>
+																	<Badge variant="outline" className="text-[10px]">
+																		{section.materials.length} item
+																		{section.materials.length !== 1 ? "s" : ""}
+																	</Badge>
+																</div>
+																{section.description && (
+																	<p className="text-xs text-muted-foreground mt-0.5 ml-1">
+																		{section.description}
+																	</p>
+																)}
+															</div>
 														</div>
-														{/* Show description below title */}
-														{section.description && (
-															<p
-																className={`text-xs text-muted-foreground mt-1.5 ml-5 ${!isExpanded ? "line-clamp-2" : ""}`}
-															>
-																{section.description}
-															</p>
-														)}
-													</div>
-													<div className="flex items-center gap-1 px-2 shrink-0">
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-7 w-7"
-															onClick={(e) => {
-																e.stopPropagation();
-																setUploadSectionId(section.id);
-																setExpandedIds(
-																	(prev) => new Set([...prev, section.id]),
-																);
-															}}
-														>
-															<Upload className="h-3.5 w-3.5" />
-														</Button>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-7 w-7 hover:text-destructive transition-all"
-															onClick={(e) => {
-																e.stopPropagation();
-																setDeleteSectionId(section.id);
-															}}
-														>
-															<Trash2 className="h-3.5 w-3.5 text-destructive" />
-														</Button>
-													</div>
-												</div>
-											</CardHeader>
-
-											{/* Section Content */}
-											{isExpanded && (
-												<CardContent className="px-4 pb-4 pt-1 space-y-2 border-t border-border bg-muted/20">
-													{/* Upload form inline */}
-													{uploadSectionId === section.id && (
-														<Card className="bg-card mt-2 mb-3">
-															<CardContent className="p-3 space-y-3">
-																<div className="space-y-2">
-																	<Label className="text-xs">Material Title</Label>
-																	<Input
-																		placeholder="e.g. Lecture Slides Week 1"
-																		value={materialTitle}
-																		onChange={(e) =>
-																			setMaterialTitle(e.target.value)
-																		}
-																		className="h-8 text-sm"
-																	/>
-																</div>
-																<div className="space-y-2">
-																	<Label className="text-xs">File</Label>
-																	<Input
-																		type="file"
-																		onChange={(e) =>
-																			setSelectedFile(e.target.files?.[0] || null)
-																		}
-																		className="h-8 text-sm"
-																	/>
-																</div>
-																<div className="flex gap-2">
+														<div className="flex items-center gap-1">
+															{!space.isGuest && (
+																<>
 																	<Button
-																		size="sm"
-																		onClick={handleUpload}
-																		disabled={
-																			uploading ||
-																			!selectedFile ||
-																			!materialTitle.trim()
-																		}
-																	>
-																		{uploading && (
-																			<Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-																		)}
-																		Upload
-																	</Button>
-																	<Button
-																		size="sm"
 																		variant="ghost"
-																		onClick={() => {
-																			setUploadSectionId(null);
-																			setMaterialTitle("");
-																			setSelectedFile(null);
+																		size="icon"
+																		className="h-7 w-7 text-muted-foreground hover:text-primary"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			if (uploadSectionId === section.id) {
+																				setUploadSectionId(null);
+																			} else {
+																				setUploadSectionId(section.id);
+																				setMaterialTitle("");
+																				setSelectedFile(null);
+																				setExpandedIds(
+																					(prev) =>
+																						new Set([...prev, section.id]),
+																				);
+																			}
 																		}}
 																	>
-																		Cancel
+																		<Plus className="h-4 w-4" />
 																	</Button>
-																</div>
-															</CardContent>
-														</Card>
-													)}
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="h-7 w-7 text-muted-foreground hover:text-destructive"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setDeleteSectionError("");
+																			setDeleteSectionId(section.id);
+																		}}
+																	>
+																		<Trash2 className="h-4 w-4" />
+																	</Button>
+																</>
+															)}
+														</div>
+													</div>
 
-													{/* Materials list */}
-													{section.materials.length === 0 ? (
-														<p className="text-xs text-muted-foreground italic py-1">
-															No materials in this section.
-														</p>
-													) : (
-														<div className="space-y-1 mt-2">
-															{section.materials.map((m) => (
-																<div
-																	key={m.id}
-																	className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5"
-																>
-																	<MaterialIcon type={m.fileType} />
-																	<a
-																		href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=WORKSPACE&token=${typeof window !== "undefined" ? localStorage.getItem("token") : ""}`}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		className="flex-1 truncate text-sm hover:underline hover:text-primary transition-colors"
-																		title={m.title}
+													{isExpanded && (
+														<div className="border-t bg-muted/10 p-3 space-y-2">
+															{section.materials.length === 0 ? (
+																<p className="text-xs text-muted-foreground italic text-center py-2">
+																	This section is empty.
+																</p>
+															) : (
+																section.materials.map((m) => (
+																	<div
+																		key={m.id}
+																		className="flex items-center justify-between p-2 rounded-md hover:bg-background border border-transparent hover:border-border transition-colors group"
 																	>
-																		{m.title}
-																	</a>
-																	{m.isReference && (
-																		<Badge
-																			variant="outline"
-																			className="text-[10px] px-1.5 py-0 hidden sm:inline-flex bg-background"
+																		<div className="flex items-center gap-3 min-w-0">
+																			<div className="p-1.5 rounded-md bg-muted group-hover:bg-background border border-transparent group-hover:border-border">
+																				<MaterialIcon type={m.fileType} />
+																			</div>
+																			<div className="min-w-0 flex-1">
+																				<a
+																					href={`http://localhost:8080/api/files/download?materialId=${
+																						m.id
+																					}&type=WORKSPACE&token=${
+																						localStorage.getItem("token") ||
+																						""
+																					}`}
+																					target="_blank"
+																					rel="noopener noreferrer"
+																					className="text-sm font-medium hover:underline hover:text-primary truncate block"
+																				>
+																					{m.title}
+																				</a>
+																				<div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+																					<span className="uppercase font-medium">
+																						{m.fileType}
+																					</span>
+																					<span>•</span>
+																					<span>
+																						Added{" "}
+																						{new Date(
+																							m.uploadedAt,
+																						).toLocaleDateString()}
+																					</span>
+																				</div>
+																			</div>
+																		</div>
+																		<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+																			<Button
+																				variant="outline"
+																				size="sm"
+																				className="h-7 text-xs"
+																				asChild
+																			>
+																				<a
+																					href={`http://localhost:8080/api/files/download?materialId=${
+																						m.id
+																					}&type=WORKSPACE&token=${
+																						localStorage.getItem("token") ||
+																						""
+																					}`}
+																					target="_blank"
+																					rel="noopener noreferrer"
+																				>
+																					<Download className="mr-1.5 h-3 w-3" />
+																					Download
+																				</a>
+																			</Button>
+																			{!space.isGuest && (
+																				<Button
+																					variant="ghost"
+																					size="icon"
+																					className="h-7 w-7 text-muted-foreground hover:text-destructive"
+																					onClick={() => {
+																						setDeleteMaterialError("");
+																						setDeleteMaterialConfig({
+																							sectionId: section.id,
+																							materialId: m.id,
+																						});
+																					}}
+																				>
+																					<Trash2 className="h-3.5 w-3.5" />
+																				</Button>
+																			)}
+																		</div>
+																	</div>
+																))
+															)}
+
+															{!space.isGuest && uploadSectionId === section.id && (
+																<div className="pt-2">
+																	<div className="p-3 border border-dashed rounded-md bg-background/50 space-y-3">
+																		<div className="flex justify-between items-center mb-1">
+																			<Label className="text-xs font-semibold">
+																				Upload Material
+																			</Label>
+																			<Button
+																				variant="ghost"
+																				size="sm"
+																				className="h-5 px-2 text-[10px]"
+																				onClick={() => setUploadSectionId(null)}
+																			>
+																				Cancel
+																			</Button>
+																		</div>
+																		<Input
+																			placeholder="Material Title"
+																			value={materialTitle}
+																			onChange={(e) =>
+																				setMaterialTitle(e.target.value)
+																			}
+																			className="h-8 text-sm"
+																		/>
+																		<Input
+																			type="file"
+																			onChange={(e) =>
+																				setSelectedFile(
+																					e.target.files?.[0] || null,
+																				)
+																			}
+																			className="text-xs file:h-full file:bg-transparent file:border-0"
+																		/>
+																		<Button
+																			size="sm"
+																			className="w-full h-8 text-xs"
+																			onClick={handleUpload}
+																			disabled={
+																				uploading ||
+																				!selectedFile ||
+																				!materialTitle.trim()
+																			}
 																		>
-																			<Link2 className="mr-1 h-2.5 w-2.5" />
-																			ref
-																		</Badge>
-																	)}
-																	<button
-																		onClick={() =>
-																			setDeleteMaterialConfig({
-																				materialId: m.id,
-																				sectionId: section.id,
-																			})
-																		}
-																		title="Delete material"
-																		className="text-destructive  transition-colors ml-2"
-																	>
-																		<Trash2 className="h-3.5 w-3.5" />
-																	</button>
+																			{uploading ? (
+																				<Loader2 className="mr-2 h-3 w-3 animate-spin" />
+																			) : (
+																				<Upload className="mr-2 h-3 w-3" />
+																			)}
+																			Upload
+																		</Button>
+																	</div>
 																</div>
-															))}
+															)}
 														</div>
 													)}
-												</CardContent>
-											)}
-										</Card>
-									);
-								})
-							)}
-						</div>
+												</Card>
+											);
+										})
+									)}
+								</div>
 
-						{/* Add Section */}
-						<div className="flex items-center gap-2 w-full">
-							<Dialog open={showAddSection} onOpenChange={setShowAddSection}>
-								<DialogTrigger asChild>
-									<Button variant="outline" className="w-full h-10">
-										<Plus className="mr-1.5 h-4 w-4" />
-										Add Section
-									</Button>
-								</DialogTrigger>
-								<DialogContent>
-									<DialogHeader>
-										<DialogTitle>Add Section</DialogTitle>
-									</DialogHeader>
-									<div className="space-y-4 pt-2">
-										<div className="space-y-2">
-											<Label>Title</Label>
-											<Input
-												placeholder="e.g. Week 1 - Introduction"
-												value={sectionTitle}
-												onChange={(e) => setSectionTitle(e.target.value)}
-											/>
-										</div>
-										<div className="space-y-2">
-											<Label>Description (optional)</Label>
-											<Textarea
-												value={sectionDesc}
-												onChange={(e) => setSectionDesc(e.target.value)}
-												rows={2}
-											/>
-										</div>
-										<Button
-											onClick={handleAddSection}
-											disabled={addingSection || !sectionTitle.trim()}
-											className="w-full"
-										>
-											{addingSection && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-											Add Section
-										</Button>
+								{/* Add Section Button */}
+								{!space.isGuest && (
+									<div className="pt-2">
+										<Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+											<DialogTrigger asChild>
+												<Button
+													variant="outline"
+													className="w-full border-dashed bg-background/50 hover:bg-background"
+												>
+													<Plus className="mr-2 h-4 w-4 text-muted-foreground" />
+													Add New Section
+												</Button>
+											</DialogTrigger>
+											<DialogContent>
+												<DialogHeader>
+													<DialogTitle>Add Section</DialogTitle>
+												</DialogHeader>
+												<div className="space-y-4 pt-2">
+													<div className="space-y-2">
+														<Label>Title</Label>
+														<Input
+															placeholder="e.g. Week 1: Introduction"
+															value={sectionTitle}
+															onChange={(e) => setSectionTitle(e.target.value)}
+														/>
+													</div>
+													<div className="space-y-2">
+														<Label>Description (optional)</Label>
+														<Textarea
+															value={sectionDesc}
+															onChange={(e) => setSectionDesc(e.target.value)}
+															rows={2}
+														/>
+													</div>
+													<Button
+														onClick={handleAddSection}
+														disabled={addingSection || !sectionTitle.trim()}
+														className="w-full"
+													>
+														{addingSection && (
+															<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+														)}
+														Add Section
+													</Button>
+												</div>
+											</DialogContent>
+										</Dialog>
 									</div>
-								</DialogContent>
-							</Dialog>
-						</div>
-					</div>
+								)}
 
-					<ConfirmDialog
-						open={deleteSectionId !== null}
-						onOpenChange={(open) => {
-							if (!open) {
-								setDeleteSectionId(null);
-								setDeleteSectionError("");
-							}
-						}}
-						title="Delete section"
-						description="This will permanently delete the section and all its materials. This action cannot be undone."
-						confirmText="Delete"
-						onConfirm={handleDeleteSection}
-						loading={deletingSection}
-						error={deleteSectionError}
-						variant="destructive"
-					/>
-					<ConfirmDialog
-						open={deleteMaterialConfig !== null}
-						onOpenChange={(open) => {
-							if (!open) {
-								setDeleteMaterialConfig(null);
-								setDeleteMaterialError("");
-							}
-						}}
-						title="Delete material"
-						description="This will permanently delete the material. This action cannot be undone."
-						confirmText="Delete"
-						onConfirm={handleDeleteMaterial}
-						loading={deletingMaterial}
-						error={deleteMaterialError}
-						variant="destructive"
-					/>
+								<ConfirmDialog
+									open={deleteSectionId !== null}
+									onOpenChange={(open) => {
+										if (!open) {
+											setDeleteSectionId(null);
+											setDeleteSectionError("");
+										}
+									}}
+									title="Delete section"
+									description="This will permanently delete the section and all its materials. This action cannot be undone."
+									confirmText="Delete"
+									onConfirm={handleDeleteSection}
+									loading={deletingSection}
+									error={deleteSectionError}
+									variant="destructive"
+								/>
+								<ConfirmDialog
+									open={deleteMaterialConfig !== null}
+									onOpenChange={(open) => {
+										if (!open) {
+											setDeleteMaterialConfig(null);
+											setDeleteMaterialError("");
+										}
+									}}
+									title="Delete material"
+									description="This will permanently delete the material. This action cannot be undone."
+									confirmText="Delete"
+									onConfirm={handleDeleteMaterial}
+									loading={deletingMaterial}
+									error={deleteMaterialError}
+									variant="destructive"
+								/>
+								<ConfirmDialog
+									open={removeGuestId !== null}
+									onOpenChange={(open) => {
+										if (!open) {
+											setRemoveGuestId(null);
+											setRemoveGuestError("");
+										}
+									}}
+									title="Remove guest"
+									description="Are you sure you want to remove this guest from the space? They will lose access immediately."
+									confirmText="Remove"
+									onConfirm={handleRemoveGuest}
+									loading={removingGuest}
+									error={removeGuestError}
+									variant="destructive"
+								/>
+							</div>
+						</ResizablePanel>
 
-					<div className="shrink-0 hidden md:flex flex-col">
-						<ContextualChat materials={space.sections.flatMap(s => s.materials)} />
-					</div>
+						<ResizableHandle withHandle className="hidden md:flex" />
+
+						<ResizablePanel defaultSize={30} minSize={25} maxSize={50} className="hidden md:flex bg-card">
+							<Tabs defaultValue="chat" className="flex flex-col h-full w-full">
+								<div className="px-4 py-2 border-b border-border bg-muted/20">
+									<TabsList className="w-full grid grid-cols-3">
+										<TabsTrigger value="members" className="text-xs truncate px-1">
+											Members
+										</TabsTrigger>
+										<TabsTrigger value="chat" className="text-xs truncate px-1">
+											Chat
+										</TabsTrigger>
+										<TabsTrigger value="ai" className="text-xs truncate px-1">
+											Ask AI
+										</TabsTrigger>
+									</TabsList>
+								</div>
+
+								<TabsContent
+									value="members"
+									className="flex-1 overflow-hidden m-0 data-[state=active]:flex flex-col"
+								>
+									<GroupMembers members={space.members || []} onRemoveGuest={setRemoveGuestId} />
+								</TabsContent>
+
+								<TabsContent
+									value="chat"
+									className="flex-1 overflow-hidden m-0 data-[state=active]:flex flex-col"
+								>
+									<MemberChat
+										spaceId={space.id}
+										materials={space.sections.flatMap((s) => s.materials)}
+									/>
+								</TabsContent>
+
+								<TabsContent
+									value="ai"
+									className="flex-1 overflow-hidden m-0 data-[state=active]:flex flex-col"
+								>
+									<ContextualChat materials={space.sections.flatMap((s) => s.materials)} />
+								</TabsContent>
+							</Tabs>
+						</ResizablePanel>
+					</ResizablePanelGroup>
 				</main>
 			</div>
 		</div>

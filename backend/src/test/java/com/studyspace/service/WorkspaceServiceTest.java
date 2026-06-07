@@ -30,6 +30,7 @@ class WorkspaceServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private FileStorageService fileStorageService;
     @Mock private ContributionProposalRepository proposalRepository;
+    @Mock private SpaceGuestRepository guestRepository;
 
     @InjectMocks
     private WorkspaceService workspaceService;
@@ -181,6 +182,7 @@ class WorkspaceServiceTest {
         request.setTitle("Lecture Notes");
 
         when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(sectionRepository.save(any(WorkspaceSection.class))).thenReturn(section);
 
         WorkspaceSectionDTO result = workspaceService.addSection(20L, 1L, request);
@@ -380,6 +382,8 @@ class WorkspaceServiceTest {
         org.springframework.web.multipart.MultipartFile mockFile = mock(org.springframework.web.multipart.MultipartFile.class);
 
         // PDF
+        when(sectionRepository.findById(30L)).thenReturn(Optional.of(section));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(mockFile.getOriginalFilename()).thenReturn("test.pdf");
         WorkspaceMaterialDTO dto = workspaceService.uploadMaterial(30L, 1L, mockFile, "Title");
         assertEquals(MaterialType.PDF, dto.getFileType());
@@ -408,5 +412,178 @@ class WorkspaceServiceTest {
         when(mockFile.getOriginalFilename()).thenReturn(null);
         dto = workspaceService.uploadMaterial(30L, 1L, mockFile, "Title");
         assertEquals(MaterialType.OTHER, dto.getFileType());
+    }
+
+    // ─── Missing Workspace Tests ────────────────────────────────────────────────
+
+    @Test
+    void getPublicWorkspaces_ReturnsPage() {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+        org.springframework.data.domain.Page<StudentWorkspace> page = new org.springframework.data.domain.PageImpl<>(List.of(workspace));
+        when(workspaceRepository.findAll(pageable)).thenReturn(page);
+
+        org.springframework.data.domain.Page<StudentWorkspaceDTO> result = workspaceService.getPublicWorkspaces(pageable);
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("My Workspace", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void getWorkspaceById_Success() {
+        when(workspaceRepository.findById(10L)).thenReturn(Optional.of(workspace));
+        StudentWorkspaceDTO result = workspaceService.getWorkspaceById(10L);
+        assertNotNull(result);
+        assertEquals("My Workspace", result.getName());
+    }
+
+    // ─── Missing Space Tests ────────────────────────────────────────────────────
+
+    @Test
+    void getSpacesByWorkspace_ReturnsList() {
+        space.setWorkspace(workspace);
+        when(spaceRepository.findByWorkspaceId(10L)).thenReturn(List.of(space));
+        
+        List<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L);
+        assertEquals(1, result.size());
+        assertEquals("DS Space", result.get(0).getTitle());
+    }
+
+    @Test
+    void getSpaceById_AsOwner_Success() {
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        when(guestRepository.existsBySpaceIdAndUserId(20L, 1L)).thenReturn(false);
+        
+        WorkspaceSpaceDTO result = workspaceService.getSpaceById(20L, 1L);
+        assertNotNull(result);
+        assertEquals("DS Space", result.getTitle());
+    }
+
+    @Test
+    void getSpaceById_AsGuest_Success() {
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        when(guestRepository.existsBySpaceIdAndUserId(20L, 2L)).thenReturn(true);
+        
+        WorkspaceSpaceDTO result = workspaceService.getSpaceById(20L, 2L);
+        assertNotNull(result);
+        assertEquals("DS Space", result.getTitle());
+    }
+
+    @Test
+    void getSpaceById_Forbidden_ThrowsException() {
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        when(guestRepository.existsBySpaceIdAndUserId(20L, 3L)).thenReturn(false);
+        
+        assertThrows(IllegalStateException.class, () -> workspaceService.getSpaceById(20L, 3L));
+    }
+
+    // ─── Sharing Tests ──────────────────────────────────────────────────────────
+
+    @Test
+    void enableSharing_Success() {
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        
+        ShareSettingsDTO result = workspaceService.enableSharing(20L, 1L);
+        
+        assertTrue(result.isSharingEnabled());
+        assertNotNull(result.getInviteCode());
+        verify(spaceRepository).save(space);
+    }
+
+    @Test
+    void disableSharing_Success() {
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        
+        workspaceService.disableSharing(20L, 1L);
+        
+        assertFalse(space.getSharingEnabled());
+        verify(spaceRepository).save(space);
+    }
+
+    @Test
+    void regenerateInviteCode_Success() {
+        space.setInviteCode("OLD-CODE");
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        
+        ShareSettingsDTO result = workspaceService.regenerateInviteCode(20L, 1L);
+        
+        assertTrue(result.isSharingEnabled());
+        assertNotNull(result.getInviteCode());
+        assertNotEquals("OLD-CODE", result.getInviteCode());
+        verify(spaceRepository).save(space);
+    }
+
+    // ─── Guest Operations ───────────────────────────────────────────────────────
+
+    @Test
+    void joinByCode_Success() {
+        space.setSharingEnabled(true);
+        when(spaceRepository.findByInviteCode("SPACE-123")).thenReturn(Optional.of(space));
+        when(guestRepository.existsBySpaceIdAndUserId(20L, 2L)).thenReturn(false);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(other));
+        
+        WorkspaceSpaceDTO result = workspaceService.joinByCode("SPACE-123", 2L);
+        
+        assertNotNull(result);
+        verify(guestRepository).save(any(SpaceGuest.class));
+    }
+
+    @Test
+    void joinByCode_AlreadyGuest() {
+        space.setSharingEnabled(true);
+        when(spaceRepository.findByInviteCode("SPACE-123")).thenReturn(Optional.of(space));
+        when(guestRepository.existsBySpaceIdAndUserId(20L, 2L)).thenReturn(true);
+        
+        WorkspaceSpaceDTO result = workspaceService.joinByCode("SPACE-123", 2L);
+        
+        assertNotNull(result);
+        verify(guestRepository, never()).save(any(SpaceGuest.class));
+    }
+
+    @Test
+    void joinByCode_SharingDisabled_ThrowsException() {
+        space.setSharingEnabled(false);
+        when(spaceRepository.findByInviteCode("SPACE-123")).thenReturn(Optional.of(space));
+        
+        assertThrows(IllegalStateException.class, () -> workspaceService.joinByCode("SPACE-123", 2L));
+    }
+
+    @Test
+    void joinByCode_AsOwner_ThrowsException() {
+        space.setSharingEnabled(true);
+        when(spaceRepository.findByInviteCode("SPACE-123")).thenReturn(Optional.of(space));
+        
+        assertThrows(IllegalStateException.class, () -> workspaceService.joinByCode("SPACE-123", 1L));
+    }
+
+    @Test
+    void leaveSpace_Success() {
+        SpaceGuest guest = SpaceGuest.builder().space(space).user(other).build();
+        when(guestRepository.findBySpaceIdAndUserId(20L, 2L)).thenReturn(Optional.of(guest));
+        
+        workspaceService.leaveSpace(20L, 2L);
+        
+        verify(guestRepository).delete(guest);
+    }
+
+    @Test
+    void getSharedSpaces_ReturnsList() {
+        SpaceGuest guest = SpaceGuest.builder().space(space).user(other).build();
+        when(guestRepository.findByUserId(2L)).thenReturn(List.of(guest));
+        
+        List<WorkspaceSpaceDTO> result = workspaceService.getSharedSpaces(2L);
+        
+        assertEquals(1, result.size());
+        assertEquals("DS Space", result.get(0).getTitle());
+    }
+
+    @Test
+    void removeGuest_Success() {
+        SpaceGuest guest = SpaceGuest.builder().space(space).user(other).build();
+        when(spaceRepository.findById(20L)).thenReturn(Optional.of(space));
+        when(guestRepository.findBySpaceIdAndUserId(20L, 2L)).thenReturn(Optional.of(guest));
+        
+        workspaceService.removeGuest(20L, 2L, 1L);
+        
+        verify(guestRepository).delete(guest);
     }
 }

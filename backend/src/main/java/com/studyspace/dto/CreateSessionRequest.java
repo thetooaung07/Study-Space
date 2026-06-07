@@ -18,10 +18,6 @@ public class CreateSessionRequest {
     
     private Subject subject;
     
-    private Boolean isGroupSession;
-    
-    private Long studyGroupId;
-    
     private SessionVisibility visibility;
 }
 

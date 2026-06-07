@@ -19,7 +19,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
 	}
 
 	if (!response.ok) {
-		throw new ApiError(response.status, text || response.statusText);
+		let errorMessage = text || response.statusText;
+		try {
+			const parsed = JSON.parse(text);
+			if (parsed.message) errorMessage = parsed.message;
+		} catch (e) {
+			// fallback to text
+		}
+		throw new ApiError(response.status, errorMessage);
 	}
 
 	// Handle 204 No Content

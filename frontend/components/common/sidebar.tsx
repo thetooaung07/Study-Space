@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Users, Clock, GraduationCap, FolderOpen } from "lucide-react";
+import { BookOpen, Clock, GraduationCap, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -15,7 +15,6 @@ export function Sidebar() {
 	const navItems = [
 		{ icon: BookOpen, label: "Dashboard", href: "/dashboard", roles: [UserRole.STUDENT] },
 		{ icon: Clock, label: "My Sessions", href: "/sessions", roles: [UserRole.STUDENT] },
-		{ icon: Users, label: "Groups", href: "/groups", roles: [UserRole.STUDENT] },
 		{ icon: GraduationCap, label: "Courses", href: "/courses", roles: [UserRole.STUDENT, UserRole.INSTRUCTOR] },
 		{ icon: FolderOpen, label: "My Workspaces", href: "/workspaces", roles: [UserRole.STUDENT] },
 	];

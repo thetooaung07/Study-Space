@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft } from "lucide-react";
+import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { workspacesApi } from "@/lib/workspace-api";
-import { coursesApi } from "@/lib/courses-api";
 import { useAuth } from "@/context/auth-context";
 import type { StudentWorkspace, WorkspaceSpace } from "@/types/workspaces";
-import type { CourseSummary } from "@/types/courses";
 import Link from "next/link";
 
 export default function WorkspaceDetailPage() {
@@ -38,12 +36,6 @@ export default function WorkspaceDetailPage() {
 	const [title, setTitle] = useState("");
 	const [desc, setDesc] = useState("");
 	const [creating, setCreating] = useState(false);
-
-	// Fork course
-	const [showFork, setShowFork] = useState(false);
-	const [courses, setCourses] = useState<CourseSummary[]>([]);
-	const [loadingCourses, setLoadingCourses] = useState(false);
-	const [forking, setForking] = useState(false);
 
 	// Initial load is handled by refresh() which is called in a consolidated effect below
 
@@ -91,36 +83,6 @@ export default function WorkspaceDetailPage() {
 			alert(e.message);
 		} finally {
 			setCreating(false);
-		}
-	};
-
-	const handleOpenFork = async () => {
-		setShowFork(true);
-		setLoadingCourses(true);
-		try {
-			const allCourses = await coursesApi.getAll();
-			setCourses(allCourses);
-		} finally {
-			setLoadingCourses(false);
-		}
-	};
-
-	const handleFork = async (courseId: number) => {
-		if (!user) return;
-		const course = courses.find((c) => c.id === courseId);
-		if (!course) return;
-		const name = prompt("Enter new space name:", `${course.title}`);
-		if (!name) return;
-		setForking(true);
-		try {
-			const space = await workspacesApi.forkCourse(Number(id), user.id, courseId, name);
-			setSpaces((prev) => [...prev, space]);
-			setWorkspace((prev) => (prev ? { ...prev, spaceCount: prev.spaceCount + 1 } : prev));
-			setShowFork(false);
-		} catch (e: any) {
-			alert(e.message);
-		} finally {
-			setForking(false);
 		}
 	};
 
@@ -219,62 +181,12 @@ export default function WorkspaceDetailPage() {
 										</DialogContent>
 									</Dialog>
 
-									{/* Fork a course */}
-									<Dialog open={showFork} onOpenChange={setShowFork}>
-										<DialogTrigger asChild>
-											<Button size="sm" onClick={handleOpenFork}>
-												<GitFork className="mr-1.5 h-4 w-4" />
-												Fork Course
-											</Button>
-										</DialogTrigger>
-										<DialogContent className="max-w-lg">
-											<DialogHeader>
-												<DialogTitle>Fork a Course</DialogTitle>
-											</DialogHeader>
-											<p className="text-sm text-muted-foreground">
-												Select a published course to copy into your workspace. All sections and
-												materials will be duplicated for you to customize.
-											</p>
-											<div className="space-y-2 max-h-80 overflow-auto mt-2">
-												{loadingCourses ? (
-													<div className="flex justify-center py-8">
-														<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-													</div>
-												) : courses.length === 0 ? ( // NOSONAR
-													<p className="text-sm text-muted-foreground text-center py-4">
-														No published courses available.
-													</p>
-												) : (
-													courses.map((course) => (
-														<Card
-															key={course.id}
-															className="cursor-pointer hover:border-primary/40 transition-colors py-2 px-3"
-															onClick={() => handleFork(course.id)}
-														>
-															<CardContent className="p-3 flex items-center justify-between">
-																<div>
-																	<p className="text-sm font-medium">
-																		{course.title}
-																	</p>
-																	<p className="text-xs text-muted-foreground">
-																		by {course.instructorName} ·{" "}
-																		{course.sectionCount} sections
-																	</p>
-																</div>
-																<GitFork className="h-4 w-4 text-muted-foreground shrink-0" />
-															</CardContent>
-														</Card>
-													))
-												)}
-											</div>
-											{forking && (
-												<div className="flex items-center gap-2 text-sm text-muted-foreground">
-													<Loader2 className="h-4 w-4 animate-spin" />
-													Forking course…
-												</div>
-											)}
-										</DialogContent>
-									</Dialog>
+									<Button size="sm" asChild>
+										<Link href="/courses">
+											<Compass className="mr-1.5 h-4 w-4" />
+											Explore Courses
+										</Link>
+									</Button>
 								</div>
 							</div>
 						</div>

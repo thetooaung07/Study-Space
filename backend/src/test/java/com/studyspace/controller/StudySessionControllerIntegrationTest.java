@@ -278,22 +278,6 @@ class StudySessionControllerIntegrationTest {
 
     @Test
     @WithMockUser
-    void getGroupSessions_Success() throws Exception {
-        com.studyspace.entity.StudyGroup group = com.studyspace.entity.StudyGroup.builder()
-                .name("Group")
-                .description("Desc")
-                .creator(testUser)
-                .build();
-        
-        // This is an integration test, we might not have a group repository easily available 
-        // without injecting it, but wait, StudyGroup doesn't require a repository to be saved if we inject StudyGroupRepository. 
-        // I will just use the MockMvc approach with a mocked service for this specific endpoint or just ignore group testing if it requires complex setup.
-        // Actually, StudySessionControllerIntegrationTest uses real DB.
-        // I will just test the deleteSession endpoint.
-    }
-
-    @Test
-    @WithMockUser
     void deleteSession_Success() throws Exception {
         testSession = StudySession.builder()
                 .title("To Delete")

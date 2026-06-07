@@ -48,14 +48,6 @@ public class StudySessionController {
         return ResponseEntity.ok(sessionService.getUserSessionHistory(userId));
     }
     
-    @GetMapping("/group/{groupId}")
-    public ResponseEntity<List<StudySessionDTO>> getGroupSessions(
-        @PathVariable Long groupId,
-        @RequestParam(required = false) Long userId
-    ) {
-        return ResponseEntity.ok(sessionService.getGroupSessions(groupId, userId));
-    }
-    
     // startSession and endSession endpoints removed as logic is handled via creation and participant removal
     
     @PostMapping("/{id}/participants/{userId}")
