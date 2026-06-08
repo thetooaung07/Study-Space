@@ -51,6 +51,9 @@ export interface CourseEnrollment {
   id: number;
   courseId: number;
   courseTitle: string;
+  courseDescription?: string;
+  instructorId: number;
+  instructorName: string;
   studentId: number;
   studentName: string;
   studentEmail: string;

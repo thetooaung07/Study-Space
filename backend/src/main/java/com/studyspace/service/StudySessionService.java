@@ -7,7 +7,6 @@ import com.studyspace.entity.*;
 import com.studyspace.mapper.UserMapper;
 import com.studyspace.types.ActivityType;
 import com.studyspace.types.SessionStatus;
-import com.studyspace.types.SessionVisibility;
 import com.studyspace.repository.*;
 import com.studyspace.util.DateTimeUtil;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

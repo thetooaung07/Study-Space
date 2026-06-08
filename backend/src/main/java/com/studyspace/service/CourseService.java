@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -71,14 +70,14 @@ public class CourseService {
     @Transactional(readOnly = true)
     public List<CourseSummaryDTO> getAllPublishedCourses() {
         return courseRepository.findByIsPublishedTrue()
-                .stream().map(this::toSummaryDTO).collect(Collectors.toList());
+                .stream().map(this::toSummaryDTO).toList();
     }
 
     @Transactional(readOnly = true)
     public List<CourseSummaryDTO> getMyCourses(Long instructorId) {
         User instructor = findUser(instructorId);
         return courseRepository.findByInstructor(instructor)
-                .stream().map(this::toSummaryDTO).collect(Collectors.toList());
+                .stream().map(this::toSummaryDTO).toList();
     }
 
     // ─── Section CRUD ───────────────────────────────────────────────────────────
@@ -151,9 +150,9 @@ public class CourseService {
         Course course = findCourse(courseId);
         User student = findUser(studentId);
 
-        if (enrollmentRepository.existsByCourseIdAndStudentId(courseId, studentId)) {
-            // Re-activate if previously dropped
-            CourseEnrollment existing = enrollmentRepository.findByCourseIdAndStudentId(courseId, studentId).get();
+        var existingOpt = enrollmentRepository.findByCourseIdAndStudentId(courseId, studentId);
+        if (existingOpt.isPresent()) {
+            CourseEnrollment existing = existingOpt.get();
             existing.setStatus(EnrollmentStatus.ACTIVE);
             return toEnrollmentDTO(enrollmentRepository.save(existing));
         }
@@ -186,7 +185,7 @@ public class CourseService {
         Course course = findCourse(courseId);
         assertInstructor(course, requestingUserId);
         return enrollmentRepository.findByCourseId(courseId)
-                .stream().map(this::toEnrollmentDTO).collect(Collectors.toList());
+                .stream().map(this::toEnrollmentDTO).toList();
     }
 
     @Transactional(readOnly = true)
@@ -195,7 +194,7 @@ public class CourseService {
                 .stream()
                 .filter(e -> Boolean.TRUE.equals(e.getCourse().getIsPublished()))
                 .map(this::toEnrollmentDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     // ─── Helpers & Mappers ───────────────────────────────────────────────────────
@@ -241,7 +240,7 @@ public class CourseService {
                 .isPublished(course.getIsPublished())
                 .createdAt(course.getCreatedAt())
                 .updatedAt(course.getUpdatedAt())
-                .sections(course.getSections().stream().map(this::toSectionDTO).collect(Collectors.toList()))
+                .sections(course.getSections().stream().map(this::toSectionDTO).toList())
                 .enrollmentCount(enrollmentRepository.countByCourseIdAndStatus(course.getId(), EnrollmentStatus.ACTIVE))
                 .build();
     }
@@ -267,7 +266,7 @@ public class CourseService {
                 .description(section.getDescription())
                 .orderIndex(section.getOrderIndex())
                 .createdAt(section.getCreatedAt())
-                .materials(section.getMaterials().stream().map(this::toMaterialDTO).collect(Collectors.toList()))
+                .materials(section.getMaterials().stream().map(this::toMaterialDTO).toList())
                 .build();
     }
 
@@ -288,6 +287,9 @@ public class CourseService {
                 .id(enrollment.getId())
                 .courseId(enrollment.getCourse().getId())
                 .courseTitle(enrollment.getCourse().getTitle())
+                .courseDescription(enrollment.getCourse().getDescription())
+                .instructorId(enrollment.getCourse().getInstructor().getId())
+                .instructorName(enrollment.getCourse().getInstructor().getFullName())
                 .studentId(enrollment.getStudent().getId())
                 .studentName(enrollment.getStudent().getFullName())
                 .studentEmail(enrollment.getStudent().getEmail())

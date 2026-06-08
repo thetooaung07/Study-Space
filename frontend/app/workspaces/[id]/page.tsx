@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft, Compass } from "lucide-react";
+import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft, Compass, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,12 @@ export default function WorkspaceDetailPage() {
 	const [title, setTitle] = useState("");
 	const [desc, setDesc] = useState("");
 	const [creating, setCreating] = useState(false);
+
+	// Edit space
+	const [editSpaceTarget, setEditSpaceTarget] = useState<WorkspaceSpace | null>(null);
+	const [editSpaceTitle, setEditSpaceTitle] = useState("");
+	const [editSpaceDesc, setEditSpaceDesc] = useState("");
+	const [editingSpace, setEditingSpace] = useState(false);
 
 	// Initial load is handled by refresh() which is called in a consolidated effect below
 
@@ -83,6 +89,23 @@ export default function WorkspaceDetailPage() {
 			alert(e.message);
 		} finally {
 			setCreating(false);
+		}
+	};
+
+	const handleEditSpace = async () => {
+		if (!user || !editSpaceTarget || !editSpaceTitle.trim()) return;
+		setEditingSpace(true);
+		try {
+			const updatedSpace = await workspacesApi.updateSpace(editSpaceTarget.id, user.id, {
+				title: editSpaceTitle.trim(),
+				description: editSpaceDesc.trim() || undefined,
+			});
+			setSpaces((prev) => prev.map((s) => (s.id === updatedSpace.id ? updatedSpace : s)));
+			setEditSpaceTarget(null);
+		} catch (e: any) {
+			alert(e.message);
+		} finally {
+			setEditingSpace(false);
 		}
 	};
 
@@ -243,6 +266,16 @@ export default function WorkspaceDetailPage() {
 														onClick={(e) => e.stopPropagation()}
 													>
 														<DropdownMenuItem
+															onClick={() => {
+																setEditSpaceTitle(space.title);
+																setEditSpaceDesc(space.description || "");
+																setEditSpaceTarget(space);
+															}}
+														>
+															<Pencil className="mr-2 h-4 w-4" />
+															Edit
+														</DropdownMenuItem>
+														<DropdownMenuItem
 															className="text-destructive"
 															onClick={() => handleDeleteSpace(space.id)}
 														>
@@ -265,6 +298,48 @@ export default function WorkspaceDetailPage() {
 					</div>
 				</main>
 			</div>
+
+			<Dialog
+				open={!!editSpaceTarget}
+				onOpenChange={(open) => {
+					if (!open) setEditSpaceTarget(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Edit Space</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 pt-2">
+						<div className="space-y-2">
+							<Label htmlFor="edit-space-title">Title</Label>
+							<Input
+								id="edit-space-title"
+								placeholder="e.g. Operating Systems Notes"
+								value={editSpaceTitle}
+								onChange={(e) => setEditSpaceTitle(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="edit-space-desc">Description (optional)</Label>
+							<Textarea
+								id="edit-space-desc"
+								placeholder="What is this space for?"
+								value={editSpaceDesc}
+								onChange={(e) => setEditSpaceDesc(e.target.value)}
+								rows={3}
+							/>
+						</div>
+						<Button
+							onClick={handleEditSpace}
+							disabled={editingSpace || !editSpaceTitle.trim() || (editSpaceTitle.trim() === editSpaceTarget?.title && editSpaceDesc.trim() === (editSpaceTarget?.description || ""))}
+							className="w-full"
+						>
+							{editingSpace && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							Save Changes
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

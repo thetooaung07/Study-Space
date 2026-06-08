@@ -20,8 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import type { WorkspaceMaterial } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 import { useAuth } from "@/context/auth-context";
+import { ChatQueryRequest, ChatQueryResponse, chatApi } from "@/lib/workspace-api";
+import { API_BASE_URL } from "@/lib/api";
 import { format } from "date-fns";
-import { chatApi } from "@/lib/workspace-api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -45,7 +46,7 @@ const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
 
 // ─── Lightweight Syntax Highlighter (no extra npm dependencies, highly optimized)
 const highlightCode = (codeText: string): React.ReactNode[] => {
-	const COMMENT = "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)"; // NOSONAR
+	const COMMENT = "(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/)";
 	const STRING = "(\"(?:\\\\.|[^\"\\\\])*\"|'(?:\\\\.|[^'\\\\])*'|`(?:\\\\.|[^`\\\\])*`)";
 	const KEYWORD =
 		"(\\b(?:public|private|protected|class|interface|enum|extends|implements|void|return|import|package|const|let|var|function|new|if|else|for|while|switch|case|default|try|catch|finally|throw|throws|static|final|volatile|transient|synchronized|abstract|native|strictfp|export|from|as|await|async|yield|debugger|super|this|typeof|instanceof|in|of|delete|null|true|false)\\b)";
@@ -587,7 +588,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		// ── Debug log: outgoing request ──────────────────────────────────────
 		console.log("[CHAT] Sending query", {
 			conversationId,
-			questionLength: question.length, // NOSONAR
+			questionLength: question.length,
 			hasDocument: !!documentUrl,
 			documentTitle: documentTitle ?? null,
 			provider,
@@ -617,11 +618,11 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 			// user just got a new reply — snap back to bottom
 			userScrolledRef.current = false;
 		} catch (err: any) {
-			console.error("[CHAT] Query failed", { conversationId, error: err?.message }); // NOSONAR
+			console.error("[CHAT] Query failed", { conversationId, error: err?.message });
 			const errMsg: Message = {
 				id: (Date.now() + 1).toString(),
 				role: "error",
-				text: err?.message ?? "The AI assistant is currently unavailable. Please try again.", // NOSONAR
+				text: err?.message ?? "The AI assistant is currently unavailable. Please try again.",
 				timestamp: new Date(),
 			};
 			setMessages((prev) => [...prev, errMsg]);
@@ -652,13 +653,12 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 					className="mx-1 inline-flex items-center gap-1 cursor-pointer hover:bg-primary/80 transition-colors align-middle shadow-sm rounded-full px-2 py-0.5 font-medium"
 					onClick={() => {
 						if (material) {
-							const url = `http://localhost:8080/api/files/download?materialId=${material.id}&type=WORKSPACE&token=${localStorage.getItem("token") || ""}`; // NOSONAR
+							const url = `${API_BASE_URL}/files/download?materialId=${material.id}&type=WORKSPACE&token=${localStorage.getItem("token") || ""}`;
 							window.open(url, "_blank");
 						}
 					}}
 				>
 					{material ? <MaterialIcon type={material.fileType} /> : <Link2 className="h-3 w-3" />}{" "}
-					{/* NOSONAR */}
 					<span className="truncate max-w-[150px]">{matTitle}</span>
 				</Badge>,
 			);
@@ -674,7 +674,6 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 
 	return (
 		<div className="flex flex-col h-full bg-card relative">
-
 			{/* Header */}
 			<div className="p-4 border-b border-border flex items-center justify-between shrink-0">
 				<div>
@@ -727,7 +726,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 						<div className="bg-popover border border-border rounded-md shadow-md overflow-hidden">
 							{filteredMaterials.length === 0 ? (
 								<div className="p-3 text-xs text-muted-foreground text-center">
-									No materials found for &ldquo;{tagQuery}&rdquo; {/* NOSONAR */}
+									No materials found for &ldquo;{tagQuery}&rdquo;
 								</div>
 							) : (
 								<div className="max-h-48 overflow-y-auto">

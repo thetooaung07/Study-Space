@@ -19,6 +19,7 @@ import {
 	Users,
 	ArrowLeft,
 	Download,
+	Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
 import { workspacesApi } from "@/lib/workspace-api";
+import { API_BASE_URL } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import type { WorkspaceSpace, WorkspaceMaterial } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
@@ -79,6 +81,12 @@ export default function SpaceManagePage() {
 
 	// Sharing
 	const [showShare, setShowShare] = useState(false);
+
+	// Space Edit
+	const [showEditSpace, setShowEditSpace] = useState(false);
+	const [editSpaceTitle, setEditSpaceTitle] = useState("");
+	const [editSpaceDesc, setEditSpaceDesc] = useState("");
+	const [editingSpace, setEditingSpace] = useState(false);
 
 	// Section creation
 	const [showAddSection, setShowAddSection] = useState(false);
@@ -143,6 +151,23 @@ export default function SpaceManagePage() {
 			setRemoveGuestError(error.message || "Failed to remove guest");
 		} finally {
 			setRemovingGuest(false);
+		}
+	};
+
+	const handleEditSpace = async () => {
+		if (!user || !space || !editSpaceTitle.trim()) return;
+		setEditingSpace(true);
+		try {
+			const updatedSpace = await workspacesApi.updateSpace(space.id, user.id, {
+				title: editSpaceTitle.trim(),
+				description: editSpaceDesc.trim() || undefined,
+			});
+			setSpace(updatedSpace);
+			setShowEditSpace(false);
+		} catch (e: any) {
+			alert(e.message);
+		} finally {
+			setEditingSpace(false);
 		}
 	};
 
@@ -308,10 +333,27 @@ export default function SpaceManagePage() {
 												</Button>
 											)}
 											{!space.isGuest && (
-												<Button size="sm" variant="outline" onClick={() => setShowShare(true)}>
-													<Users className="mr-1.5 h-4 w-4" />
-													Share Space
-												</Button>
+												<>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => setShowShare(true)}
+													>
+														<Users className="mr-1.5 h-4 w-4" />
+														Share Space
+													</Button>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => {
+															setEditSpaceTitle(space.title);
+															setEditSpaceDesc(space.description || "");
+															setShowEditSpace(true);
+														}}
+													>
+														<Pencil className="h-6 w-4" />
+													</Button>
+												</>
 											)}
 										</div>
 									</div>
@@ -428,7 +470,7 @@ export default function SpaceManagePage() {
 																			</div>
 																			<div className="min-w-0 flex-1">
 																				<a
-																					href={`http://localhost:8080/api/files/download?materialId=${
+																					href={`${API_BASE_URL}/files/download?materialId=${
 																						m.id
 																					}&type=WORKSPACE&token=${
 																						localStorage.getItem("token") ||
@@ -462,7 +504,7 @@ export default function SpaceManagePage() {
 																				asChild
 																			>
 																				<a
-																					href={`http://localhost:8080/api/files/download?materialId=${
+																					href={`${API_BASE_URL}/files/download?materialId=${
 																						m.id
 																					}&type=WORKSPACE&token=${
 																						localStorage.getItem("token") ||
@@ -560,6 +602,48 @@ export default function SpaceManagePage() {
 								{/* Add Section Button */}
 								{!space.isGuest && (
 									<div className="pt-2">
+										<Dialog open={showEditSpace} onOpenChange={setShowEditSpace}>
+											<DialogContent>
+												<DialogHeader>
+													<DialogTitle>Edit Space</DialogTitle>
+												</DialogHeader>
+												<div className="space-y-4 pt-2">
+													<div className="space-y-2">
+														<Label>Title</Label>
+														<Input
+															placeholder="e.g. Operating Systems Notes"
+															value={editSpaceTitle}
+															onChange={(e) => setEditSpaceTitle(e.target.value)}
+														/>
+													</div>
+													<div className="space-y-2">
+														<Label>Description (optional)</Label>
+														<Textarea
+															placeholder="What is this space for?"
+															value={editSpaceDesc}
+															onChange={(e) => setEditSpaceDesc(e.target.value)}
+															rows={3}
+														/>
+													</div>
+													<Button
+														onClick={handleEditSpace}
+														disabled={
+															editingSpace ||
+															!editSpaceTitle.trim() ||
+															(editSpaceTitle.trim() === space.title &&
+																editSpaceDesc.trim() === (space.description || ""))
+														}
+														className="w-full"
+													>
+														{editingSpace && (
+															<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+														)}
+														Save Changes
+													</Button>
+												</div>
+											</DialogContent>
+										</Dialog>
+
 										<Dialog open={showAddSection} onOpenChange={setShowAddSection}>
 											<DialogTrigger asChild>
 												<Button

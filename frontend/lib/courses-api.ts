@@ -10,7 +10,7 @@ import type {
   EnrollmentStatus,
 } from "@/types/courses";
 
-const BASE_URL = "http://localhost:8080/api";
+import { API_BASE_URL } from "./api";
 
 // ─── Course endpoints ──────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ export const coursesApi = {
   /** Toggle publish/unpublish */
   togglePublish: async (id: number, userId: number): Promise<Course> => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${BASE_URL}/courses/${id}/publish?userId=${userId}`, {
+    const res = await fetch(`${API_BASE_URL}/courses/${id}/publish?userId=${userId}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export const coursesApi = {
     formData.append("file", file);
     formData.append("title", title);
     const res = await fetch(
-      `${BASE_URL}/courses/sections/${sectionId}/materials?userId=${userId}`,
+      `${API_BASE_URL}/courses/sections/${sectionId}/materials?userId=${userId}`,
       {
         method: "POST",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -93,7 +93,7 @@ export const coursesApi = {
 
   enroll: async (courseId: number, studentId: number): Promise<CourseEnrollment> => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${BASE_URL}/courses/${courseId}/enroll?studentId=${studentId}`, {
+    const res = await fetch(`${API_BASE_URL}/courses/${courseId}/enroll?studentId=${studentId}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -120,7 +120,7 @@ export const coursesApi = {
   ): Promise<CourseEnrollment> => {
     const token = localStorage.getItem("token");
     const res = await fetch(
-      `${BASE_URL}/courses/enrollments/${enrollmentId}?userId=${userId}&status=${status}`,
+      `${API_BASE_URL}/courses/enrollments/${enrollmentId}?userId=${userId}&status=${status}`,
       {
         method: "PATCH",
         headers: {

@@ -1,7 +1,6 @@
 package com.studyspace.service.llm;
 
 import com.studyspace.service.GeminiService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

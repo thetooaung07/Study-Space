@@ -62,7 +62,7 @@ function DailyStatsCards({ refreshTrigger }: Readonly<DailyStatsCardsProps>) {
 	// Calculate today's stats
 	const todayMinutes = todaySessions.reduce((acc, s) => acc + (s.durationMinutes || 0), 0);
 	const sessionCount = todaySessions.length;
-	const avgDuration = sessionCount > 0 ? Math.round(todayMinutes / sessionCount) : 0; // NOSONAR
+	const avgDuration = sessionCount > 0 ? Math.round(todayMinutes / sessionCount) : 0;
 	const streak = user?.currentStreak || 0;
 
 	const stats = [
@@ -70,7 +70,7 @@ function DailyStatsCards({ refreshTrigger }: Readonly<DailyStatsCardsProps>) {
 			label: "Today's Study Time",
 			value: formatStudyTime(todayMinutes),
 			subtext:
-				sessionCount > 0 ? `From ${sessionCount} session${sessionCount !== 1 ? "s" : ""}` : "Start studying!", // NOSONAR
+				sessionCount > 0 ? `From ${sessionCount} session${sessionCount !== 1 ? "s" : ""}` : "Start studying!",
 			highlight: todayMinutes > 0,
 		},
 		{

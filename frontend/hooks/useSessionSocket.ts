@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
+import { useAuth } from "@/context/auth-context";
+import { WS_BASE_URL } from "@/lib/api";
 import { StudySessionDTO, ActivityDTO } from "@/types";
 
 interface UseSessionSocketOptions {
@@ -52,7 +54,7 @@ export function useSessionSocket({
 				// Use SockJS for the connection (with HTTP fallback)
 				// eslint-disable-next-line @typescript-eslint/no-require-imports
 				const SockJS = require("sockjs-client");
-				return new SockJS("http://localhost:8080/ws");
+				return new SockJS(WS_BASE_URL);
 			},
 			reconnectDelay: 5000,
 			heartbeatIncoming: 10000,

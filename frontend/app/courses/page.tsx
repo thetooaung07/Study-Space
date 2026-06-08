@@ -45,9 +45,9 @@ export default function CoursesPage() {
 								.map((e) => ({
 									id: e.courseId,
 									title: e.courseTitle,
-									description: "",
-									instructorId: 0,
-									instructorName: "",
+									description: e.courseDescription || "",
+									instructorId: e.instructorId,
+									instructorName: e.instructorName,
 									isPublished: true,
 									createdAt: e.enrolledAt,
 									enrollmentCount: e.enrollmentCount,
@@ -130,7 +130,6 @@ export default function CoursesPage() {
 									{user?.role === UserRole.INSTRUCTOR
 										? "My Courses (Instructor)"
 										: "Enrolled Courses"}{" "}
-									{/* NOSONAR */}
 								</TabsTrigger>
 							</TabsList>
 

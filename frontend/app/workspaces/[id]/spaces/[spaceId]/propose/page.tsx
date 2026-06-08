@@ -537,7 +537,7 @@ export default function ProposalPage() {
 									</CardTitle>
 									<div className="flex gap-1">
 										<Button variant="ghost" size="sm" className="text-xs h-7" onClick={selectAll}>
-											Select All {/* NOSONAR */}
+											Select All
 										</Button>
 										<Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearAll}>
 											Clear

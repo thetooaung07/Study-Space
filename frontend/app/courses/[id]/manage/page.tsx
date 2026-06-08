@@ -127,7 +127,7 @@ export default function CourseManagePage() {
 								<Button variant="outline" size="sm" onClick={handleTogglePublish} disabled={publishing}>
 									{publishing ? (
 										<Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-									) : course.isPublished ? ( // NOSONAR
+									) : course.isPublished ? (
 										<EyeOff className="mr-1.5 h-4 w-4" />
 									) : (
 										<Eye className="mr-1.5 h-4 w-4" />

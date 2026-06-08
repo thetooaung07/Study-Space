@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
+import { API_BASE_URL } from "@/lib/api";
 import type { CourseSection, MaterialType } from "@/types/courses";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -318,7 +319,7 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 									>
 										<MatIcon type={m.fileType} />
 										<a
-											href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+											href={`${API_BASE_URL}/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											title="Open file"

@@ -5,11 +5,11 @@ import type React from "react"
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { api } from "@/lib/api";
+import { api, SERVER_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Chrome, Github, Mail, Lock, User, BookOpen, Eye, EyeOff } from "lucide-react";
+import { Chrome, Github, Mail, Lock, User, BookOpen, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export function SignupForm() {
   const [name, setName] = useState("");
@@ -50,7 +50,7 @@ export function SignupForm() {
   };
 
   const handleOAuthSignup = (provider: string) => {
-    window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
+    window.location.href = `${SERVER_BASE_URL}/oauth2/authorization/${provider}`;
   };
 
   return (

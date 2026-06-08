@@ -1,4 +1,6 @@
-const BASE_URL = "http://localhost:8080/api";
+export const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8080";
+export const API_BASE_URL = `${SERVER_BASE_URL}/api`;
+export const WS_BASE_URL = `${SERVER_BASE_URL}/ws`;
 
 export class ApiError extends Error {
 	constructor(
@@ -50,7 +52,7 @@ export const api = {
 		if (token) {
 			headers["Authorization"] = `Bearer ${token}`;
 		}
-		const res = await fetch(`${BASE_URL}${endpoint}`, {
+		const res = await fetch(`${API_BASE_URL}${endpoint}`, {
 			headers,
 			cache: "no-store",
 		});
@@ -65,7 +67,7 @@ export const api = {
 		if (token) {
 			headers["Authorization"] = `Bearer ${token}`;
 		}
-		const res = await fetch(`${BASE_URL}${endpoint}`, {
+		const res = await fetch(`${API_BASE_URL}${endpoint}`, {
 			method: "POST",
 			headers,
 			body: JSON.stringify(body),
@@ -88,7 +90,7 @@ export const api = {
 		if (body) {
 			options.body = JSON.stringify(body);
 		}
-		const res = await fetch(`${BASE_URL}${endpoint}`, options);
+		const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
 		return handleResponse<T>(res);
 	},
 
@@ -100,7 +102,7 @@ export const api = {
 		if (token) {
 			headers["Authorization"] = `Bearer ${token}`;
 		}
-		const res = await fetch(`${BASE_URL}${endpoint}`, {
+		const res = await fetch(`${API_BASE_URL}${endpoint}`, {
 			method: "DELETE",
 			headers,
 		});

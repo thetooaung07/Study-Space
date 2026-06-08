@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { contributionsApi } from "@/lib/workspace-api";
+import { API_BASE_URL } from "@/lib/api";
 import type { ContributionProposal } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 
@@ -123,7 +124,7 @@ export function ContributionReview({ courseId, userId, proposals, onUpdated }: R
 											</span>
 											{p.sourceMaterialId && (
 												<a
-													href={`http://localhost:8080/api/files/download?materialId=${p.sourceMaterialId}&type=WORKSPACE&token=${typeof window !== "undefined" ? (localStorage.getItem("token") ?? "") : ""}`}
+													href={`${API_BASE_URL}/files/download?materialId=${p.sourceMaterialId}&type=WORKSPACE&token=${typeof window !== "undefined" ? (localStorage.getItem("token") ?? "") : ""}`}
 													target="_blank"
 													rel="noopener noreferrer"
 													className="text-[10px] text-primary hover:underline"

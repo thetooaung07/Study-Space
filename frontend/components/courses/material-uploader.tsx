@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
+import { API_BASE_URL } from "@/lib/api";
 import type { CourseMaterial, MaterialType } from "@/types/courses";
 
 const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
@@ -92,7 +93,7 @@ export function MaterialUploader({
               <span className="flex-1 truncate text-card-foreground">{m.title}</span>
               <span className="text-xs text-muted-foreground">{m.fileType}</span>
               <a
-                href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+                href={`${API_BASE_URL}/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="opacity-0 group-hover:opacity-100 transition-opacity"

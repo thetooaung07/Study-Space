@@ -12,7 +12,7 @@ import type {
 	ReviewProposalRequest,
 } from "@/types/workspaces";
 
-const BASE_URL = "http://localhost:8080/api";
+import { API_BASE_URL } from "./api";
 
 // ─── Workspace endpoints ────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ export const workspacesApi = {
 		title?: string,
 	): Promise<WorkspaceSpace> => {
 		const token = localStorage.getItem("token");
-		const url = new URL(`${BASE_URL}/workspaces/${workspaceId}/spaces/fork`);
+		const url = new URL(`${API_BASE_URL}/workspaces/${workspaceId}/spaces/fork`);
 		url.searchParams.append("userId", userId.toString());
 		url.searchParams.append("courseId", courseId.toString());
 		if (title) url.searchParams.append("title", title);
@@ -124,7 +124,7 @@ export const workspacesApi = {
 		const formData = new FormData();
 		formData.append("file", file);
 		formData.append("title", title);
-		const res = await fetch(`${BASE_URL}/workspaces/sections/${sectionId}/materials?userId=${userId}`, {
+		const res = await fetch(`${API_BASE_URL}/workspaces/sections/${sectionId}/materials?userId=${userId}`, {
 			method: "POST",
 			headers: token ? { Authorization: `Bearer ${token}` } : {},
 			body: formData,
@@ -155,7 +155,7 @@ export const contributionsApi = {
 	/** Review a proposal (instructor) */
 	review: async (proposalId: number, userId: number, data: ReviewProposalRequest): Promise<ContributionProposal> => {
 		const token = localStorage.getItem("token");
-		const res = await fetch(`${BASE_URL}/contributions/${proposalId}/review?userId=${userId}`, {
+		const res = await fetch(`${API_BASE_URL}/contributions/${proposalId}/review?userId=${userId}`, {
 			method: "PATCH",
 			headers: {
 				"Content-Type": "application/json",

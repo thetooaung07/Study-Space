@@ -31,7 +31,7 @@ export function Sidebar() {
 	return (
 		<aside className="w-64 border-r border-border bg-sidebar flex flex-col">
 			<div className="p-6">
-				<div // NOSONAR
+				<div
 					className="flex items-center gap-2"
 					onClick={(e) => {
 						e.preventDefault();

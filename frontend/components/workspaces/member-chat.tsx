@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
+import { API_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Send, Link2, FileText, AlertCircle, Sparkles, MessageSquare } from "lucide-react";
@@ -265,7 +266,7 @@ export function MemberChat({ spaceId, materials }: Readonly<MemberChatProps>) {
 					className="mx-1 inline-flex items-center gap-1 cursor-pointer hover:bg-primary/80 transition-colors align-middle shadow-sm rounded-full px-2 py-0.5 font-medium"
 					onClick={() => {
 						if (material) {
-							const url = `http://localhost:8080/api/files/download?materialId=${material.id}&type=WORKSPACE&token=${localStorage.getItem("token") || ""}`;
+							const url = `${API_BASE_URL}/files/download?materialId=${material.id}&type=WORKSPACE&token=${localStorage.getItem("token") || ""}`;
 							window.open(url, "_blank");
 						}
 					}}

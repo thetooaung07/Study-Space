@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FolderOpen, Plus, Loader2, Trash2, MoreHorizontal, Users, Hash, ArrowRight } from "lucide-react";
+import { FolderOpen, Plus, Loader2, Trash2, MoreHorizontal, Users, Hash, ArrowRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,12 @@ export default function WorkspacesPage() {
 	const [creating, setCreating] = useState(false);
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
+
+	// Edit workspace
+	const [editTarget, setEditTarget] = useState<StudentWorkspace | null>(null);
+	const [editing, setEditing] = useState(false);
+	const [editName, setEditName] = useState("");
+	const [editDescription, setEditDescription] = useState("");
 
 	// Join space
 	const [showJoin, setShowJoin] = useState(false);
@@ -77,6 +83,23 @@ export default function WorkspacesPage() {
 			alert(e.message);
 		} finally {
 			setCreating(false);
+		}
+	};
+
+	const handleEdit = async () => {
+		if (!user || !editTarget || !editName.trim()) return;
+		setEditing(true);
+		try {
+			const updatedWs = await workspacesApi.update(editTarget.id, user.id, {
+				name: editName.trim(),
+				description: editDescription.trim() || undefined,
+			});
+			setWorkspaces((prev) => prev.map((w) => (w.id === updatedWs.id ? updatedWs : w)));
+			setEditTarget(null);
+		} catch (e: any) {
+			alert(e.message);
+		} finally {
+			setEditing(false);
 		}
 	};
 
@@ -370,6 +393,16 @@ export default function WorkspacesPage() {
 																	onClick={(e) => e.stopPropagation()}
 																>
 																	<DropdownMenuItem
+																		onClick={() => {
+																			setEditName(ws.name);
+																			setEditDescription(ws.description || "");
+																			setEditTarget(ws);
+																		}}
+																	>
+																		<Pencil className="mr-2 h-4 w-4" />
+																		Edit
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
 																		className="text-destructive"
 																		onClick={() => {
 																			setDeleteError("");
@@ -406,6 +439,48 @@ export default function WorkspacesPage() {
 					</div>
 				</main>
 			</div>
+
+			<Dialog
+				open={!!editTarget}
+				onOpenChange={(open) => {
+					if (!open) setEditTarget(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Edit Workspace</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 pt-2">
+						<div className="space-y-2">
+							<Label htmlFor="edit-ws-name">Name</Label>
+							<Input
+								id="edit-ws-name"
+								placeholder="e.g. My Study Hub"
+								value={editName}
+								onChange={(e) => setEditName(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="edit-ws-desc">Description (optional)</Label>
+							<Textarea
+								id="edit-ws-desc"
+								placeholder="What is this workspace for?"
+								value={editDescription}
+								onChange={(e) => setEditDescription(e.target.value)}
+								rows={3}
+							/>
+						</div>
+						<Button
+							onClick={handleEdit}
+							disabled={editing || !editName.trim() || (editName.trim() === editTarget?.name && editDescription.trim() === (editTarget?.description || ""))}
+							className="w-full"
+						>
+							{editing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+							Save Changes
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 
 			<ConfirmDialog
 				open={!!deleteTarget}

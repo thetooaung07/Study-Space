@@ -144,7 +144,7 @@ export default function ActiveSessionPage() {
 		enabled: !loading,
 	});
 
-	const initializeTimer = useCallback(() => { // NOSONAR
+	const initializeTimer = useCallback(() => {
 		if (!session || !user) {
 			if (!userStartTime) setUserStartTime(new Date().getTime());
 			return;

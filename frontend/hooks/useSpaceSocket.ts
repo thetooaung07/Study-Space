@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
 import { SpaceMessage } from "@/types/workspaces";
+import { WS_BASE_URL } from "@/lib/api";
 
 interface UseSpaceSocketOptions {
     spaceId: string | string[];
@@ -36,7 +37,7 @@ export function useSpaceSocket({
             webSocketFactory: () => {
                 // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const SockJS = require("sockjs-client");
-                return new SockJS("http://localhost:8080/ws");
+                return new SockJS(WS_BASE_URL);
             },
             reconnectDelay: 5000,
             heartbeatIncoming: 10000,

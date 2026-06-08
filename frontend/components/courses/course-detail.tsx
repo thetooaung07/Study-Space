@@ -20,6 +20,7 @@ import {
 	FolderPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { API_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ const CourseSectionItem = ({ section, idx, isExpanded, toggleExpanded }: any) =>
 							<li key={m.id} className="flex items-center gap-2 text-sm py-1">
 								<MaterialIcon type={m.fileType} />
 								<a
-									href={`http://localhost:8080/api/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
+									href={`${API_BASE_URL}/files/download?materialId=${m.id}&type=COURSE&token=${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="flex-1 truncate text-card-foreground hover:text-primary hover:underline transition-colors"
