@@ -106,7 +106,7 @@ class CourseControllerTest {
         CourseSummaryDTO summary = CourseSummaryDTO.builder()
                 .id(1L).title("Algorithms").isPublished(true).build();
 
-        when(courseService.getAllPublishedCourses(any(org.springframework.data.domain.Pageable.class)))
+        when(courseService.getAllPublishedCourses(any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/api/courses"))
@@ -218,7 +218,7 @@ class CourseControllerTest {
     @Test
     void getMyCourses_Returns200() throws Exception {
         CourseSummaryDTO summary = CourseSummaryDTO.builder().id(1L).title("My Course").build();
-        when(courseService.getMyCourses(eq(10L), any(org.springframework.data.domain.Pageable.class)))
+        when(courseService.getMyCourses(eq(10L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/api/courses/my").param("userId", "10"))
@@ -314,7 +314,7 @@ class CourseControllerTest {
     @Test
     void getMyEnrollments_Returns200() throws Exception {
         CourseEnrollmentDTO dto = CourseEnrollmentDTO.builder().id(1L).status(EnrollmentStatus.ACTIVE).build();
-        when(courseService.getMyEnrollments(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+        when(courseService.getMyEnrollments(eq(2L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/courses/my-enrollments").param("studentId", "2"))

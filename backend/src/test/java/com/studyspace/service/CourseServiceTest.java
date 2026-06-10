@@ -96,11 +96,11 @@ class CourseServiceTest {
     @Test
     void getMyCourses_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(instructor));
-        when(courseRepository.findByInstructor(eq(instructor), any(org.springframework.data.domain.Pageable.class)))
+        when(courseRepository.findByInstructorWithSearch(eq(instructor), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(course)));
         when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
 
-        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getMyCourses(1L, org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getMyCourses(1L, null, org.springframework.data.domain.PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
         assertEquals("Data Structures", result.getContent().get(0).getTitle());
@@ -357,10 +357,10 @@ class CourseServiceTest {
                 .id(40L).course(unpublished).student(student).status(EnrollmentStatus.ACTIVE).build();
 
         // The repository method findPublishedByStudentId will filter out unpublished courses
-        when(enrollmentRepository.findPublishedByStudentId(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+        when(enrollmentRepository.findPublishedByStudentIdWithSearch(eq(2L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(org.springframework.data.domain.Page.empty());
 
-        org.springframework.data.domain.Page<CourseEnrollmentDTO> result = courseService.getMyEnrollments(2L, org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<CourseEnrollmentDTO> result = courseService.getMyEnrollments(2L, null, org.springframework.data.domain.PageRequest.of(0, 10));
 
         // Unpublished course should be filtered out
         assertTrue(result.getContent().isEmpty());
@@ -371,11 +371,11 @@ class CourseServiceTest {
     @Test
     void getAllPublishedCourses_ReturnsList() {
         course.setIsPublished(true);
-        when(courseRepository.findByIsPublishedTrue(any(org.springframework.data.domain.Pageable.class)))
+        when(courseRepository.findByIsPublishedTrueWithSearch(any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(course)));
         when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
 
-        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getAllPublishedCourses(org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getAllPublishedCourses(null, org.springframework.data.domain.PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
         assertEquals("Data Structures", result.getContent().get(0).getTitle());

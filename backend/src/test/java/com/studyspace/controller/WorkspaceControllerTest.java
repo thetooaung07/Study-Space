@@ -68,7 +68,7 @@ class WorkspaceControllerTest {
     void getMyWorkspaces() throws Exception {
         StudentWorkspaceDTO dto = StudentWorkspaceDTO.builder().id(1L).build();
 
-        when(workspaceService.getMyWorkspaces(eq(1L), any(Pageable.class)))
+        when(workspaceService.getMyWorkspaces(eq(1L), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/workspaces/my")
@@ -154,7 +154,7 @@ class WorkspaceControllerTest {
     @WithMockUser
     void getSpaces() throws Exception {
         WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
-        when(workspaceService.getSpacesByWorkspace(eq(1L), any(Pageable.class)))
+        when(workspaceService.getSpacesByWorkspace(eq(1L), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/workspaces/1/spaces"))

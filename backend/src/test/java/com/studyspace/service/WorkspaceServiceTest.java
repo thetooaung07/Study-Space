@@ -252,10 +252,10 @@ class WorkspaceServiceTest {
 
     @Test
     void getMyWorkspaces_ReturnsList() {
-        when(workspaceRepository.findByOwnerId(eq(1L), any(org.springframework.data.domain.Pageable.class)))
+        when(workspaceRepository.findByOwnerIdWithSearch(eq(1L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(workspace)));
 
-        org.springframework.data.domain.Page<StudentWorkspaceDTO> result = workspaceService.getMyWorkspaces(1L, org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<StudentWorkspaceDTO> result = workspaceService.getMyWorkspaces(1L, null, org.springframework.data.domain.PageRequest.of(0, 10));
 
         assertEquals(1, result.getContent().size());
         assertEquals("My Workspace", result.getContent().get(0).getName());
@@ -442,10 +442,10 @@ class WorkspaceServiceTest {
     @Test
     void getSpacesByWorkspace_ReturnsList() {
         space.setWorkspace(workspace);
-        when(spaceRepository.findByWorkspaceId(eq(10L), any(org.springframework.data.domain.Pageable.class)))
+        when(spaceRepository.findByWorkspaceIdWithSearch(eq(10L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(space)));
         
-        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L, org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L, null, org.springframework.data.domain.PageRequest.of(0, 10));
         assertEquals(1, result.getContent().size());
         assertEquals("DS Space", result.getContent().get(0).getTitle());
     }
