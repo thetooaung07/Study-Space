@@ -180,6 +180,36 @@ unambiguous to parse with a single regular expression on the render side. Storin
 ID inside the token allows the backend to validate or re-fetch the material metadata if needed,
 while the title provides a human-readable fallback if the material is later renamed.
 
+\subsection{Workspace Collaboration}
+\label{subsec:impl-workspace-collaboration}
+
+To facilitate peer-to-peer discussion, Private Workspaces must support collaboration among multiple students. The system achieves this by allowing the workspace owner to add other users as members. The \texttt{WorkspaceService} manages this by persisting a list of \texttt{SpaceMemberDTO} objects associated with the space. Before a user can post or view messages in the chat, the \texttt{assertMember} security check verifies their membership. This transforms the Private Workspace from an isolated clone into a collaborative study environment, directly supporting the interactive requirements of FR-03.
+
+\subsection{Real-Time Communication via WebSockets}
+\label{subsec:impl-chat-sockets}
+
+For the discussion to be truly interactive, messages must be delivered to all workspace members instantly without client-side polling. This is implemented using WebSockets with STOMP over SockJS (as justified in section~\ref{subsec:websocket-tech}). While earlier iterations used WebSockets exclusively for study sessions, the infrastructure was extended to power the Contextual Messaging System.
+
+When a user submits a message, the \texttt{SpaceChatController} intercepts the HTTP \texttt{POST} request, saves the message to the database, and immediately broadcasts the message payload to the STOMP destination corresponding to the workspace ID.
+
+\begin{lstlisting}[language=Java, caption={Code listing 4.4 --- WebSocket broadcast for workspace chat (SpaceChatController.java)}, label=lst:socket-broadcast]
+@PostMapping("/{spaceId}/messages")
+public ResponseEntity<MessageDTO> postMessage(
+        @PathVariable Long spaceId,
+        @RequestBody MessageRequest request) {
+    MessageDTO savedMessage = chatService.saveMessage(spaceId, request);
+    
+    // Broadcast to space members over WebSocket channel
+    messagingTemplate.convertAndSend(
+        "/topic/space/" + spaceId + "/chat", 
+        savedMessage
+    );
+    return ResponseEntity.ok(savedMessage);
+}
+\end{lstlisting}
+
+On the frontend, the React application uses a WebSocket hook to subscribe to the \texttt{/topic/space/\{spaceId\}/chat} channel. Upon receiving a message event, the client appends the new message to the Redux state, triggering an immediate UI update for all connected members.
+
 % ----------------------------------------------------------------
 \section{AI-Based Content Querying (FR-04)}
 \label{sec:impl-ai}
@@ -210,7 +240,7 @@ three-part prompt (system instruction, document context truncated to 10\,000 cha
 user's question) and calls the Gemini API via the Google GenAI Java SDK~\cite{GoogleGenAI}. The
 listing below shows the prompt construction.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.4 --- Structured prompt construction (GeminiService.java)}, label=lst:gemini-prompt]
+\begin{lstlisting}[language=Java, caption={Code listing 4.5 --- Structured prompt construction (GeminiService.java)}, label=lst:gemini-prompt]
 String systemInstruction =
     "You are a teaching assistant. Prefer the provided document " +
     "context over your own knowledge when it is relevant.";
@@ -268,7 +298,7 @@ hours. On every subsequent request, \texttt{JwtAuthenticationFilter} extracts th
 \texttt{UserDetails} by email, and populates the Spring Security context. The listing below
 shows the core of the filter.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.5 --- JWT validation in the authentication filter (JwtAuthenticationFilter.java)}, label=lst:jwt-filter]
+\begin{lstlisting}[language=Java, caption={Code listing 4.6 --- JWT validation in the authentication filter (JwtAuthenticationFilter.java)}, label=lst:jwt-filter]
 // Runs once per request; short-circuits if no token is present
 String authHeader = request.getHeader("Authorization");
 if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -302,10 +332,10 @@ simplifying horizontal scaling.
 \section{Testing}
 \label{sec:impl-testing}
 
-\subsection{Automated Tests}
-\label{subsec:automated-tests}
+\subsection{Backend Automated Tests}
+\label{subsec:backend-tests}
 
-The project uses three levels of automated tests, all implemented with JUnit~5 and the Spring
+The backend uses three levels of automated tests, all implemented with JUnit~5 and the Spring
 Boot Test framework.
 
 \emph{Unit tests} cover individual service classes in isolation. Dependencies are substituted
@@ -329,6 +359,15 @@ soft-delete \texttt{isHidden} flag described in section~\ref{sec:impl-fork}. A s
 issue in the AI chat panel was discovered during manual end-to-end testing and fixed by
 introducing a \texttt{userScrolledRef} guard that suppresses programmatic scroll when the user
 has manually scrolled upward.
+
+\subsection{Frontend Automated Tests}
+\label{subsec:frontend-tests}
+
+Complementing the backend testing suite, the frontend employs a dual-framework testing strategy to verify user interfaces and application flows.
+
+\emph{Unit and integration tests} are executed using Vitest and the React Testing Library. Components such as the authentication forms are mounted in an isolated \texttt{jsdom} environment. By mocking the Next.js router and Redux store, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
+
+\emph{End-to-end (E2E) tests} are orchestrated with Playwright. These tests spin up a headless browser (such as Chromium) and navigate through complete user journeys. By leveraging Playwright's network interception capabilities, the tests mock the backend API responses. This approach ensures that the frontend behaves correctly under various backend states---such as a successful login or an HTTP 401 Unauthorized response---in a highly deterministic and fast-executing manner.
 
 \subsection{User and Usability Tests}
 \label{subsec:user-tests}

@@ -38,57 +38,194 @@ assistance into a single platform, so that the interactions between these activi
 and visible to all participants.
 
 % ----------------------------------------------------------------
-\section{Architecture Overview}
-\label{sec:architecture-overview}
+\section{Architecture Analysis}
+\label{sec:architecture-analysis}
 
-\subsection{System Architecture}
-\label{subsec:system-architecture}
+\label{sec:technologies}
 
-At the highest level, StudySpace is a web application that separates the browser-based user
-interface from the server-side application logic and the persistent data store. The user interface
-runs entirely in the browser and communicates with the backend over two channels: a standard
-request-response channel for operations such as loading course content, uploading materials, and
-submitting contribution proposals, and a persistent real-time channel for events that must reach
-all connected participants without a manual page refresh, such as chat messages and study-session
-activity feeds.
+This section justifies each major technology choice by comparing the available alternatives against
+the requirements established in Chapter~\ref{ch:analysis}. The goal was to select a stack that is
+well suited for the required features, has strong community support and ecosystem maturity, and is
+practical to use within the scope of a bachelor thesis prototype.
 
-The backend is a single application that handles all business logic, enforces access control,
-processes file uploads, calls the external AI API, and broadcasts real-time events. The data store
-holds all persistent state, including user accounts, course structures, Private Workspace records,
-Merge Proposals, and conversation history.
+% ----------------------------------------------------------------
+\subsection{Frontend Framework}
+\label{subsec:frontend-tech}
 
-All three tiers run as isolated containers managed by a single container orchestration file, so the
-complete application can be started with one command and requires no manual environment
-configuration. The final architecture diagram is presented in section~\ref{sec:system-architecture-final}
-after the technology choices have been made.
+FR-01 through FR-04 require a responsive, component-rich user interface that manages complex
+shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
+simultaneously on the same screen.
 
-% TODO: Insert high-level system architecture diagram here
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_2_1_system-architecture.png}
-%     \caption{Conceptual three-tier system architecture of StudySpace}
-%     \label{fig:conceptual-architecture}
-% \end{figure}
+\textbf{React~19}~\cite{React} is a declarative UI library maintained by Meta. Its component model
+encourages decomposing the interface into small, reusable pieces, each responsible for a single
+part of the view. The unidirectional data flow makes state changes predictable and easier to trace
+during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
+rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
 
-\subsection{Logical Architecture}
-\label{subsec:logical-architecture}
+\textbf{Vue.js} is a progressive framework with a smaller bundle size and a gentler learning
+curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
+components, and the TypeScript integration, while improving, is less seamless than in React.
 
-The server-side application follows the Model-View-Controller (MVC) layered pattern. The
-\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
-the response. The \emph{service layer} contains all business logic, orchestrates data access, and
-enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
-provides data access through named query methods and custom queries for complex lookups. Entity
-classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
-contract and decouple the internal entity structure from the shape of the JSON responses, so the
-two can evolve independently.
+\textbf{Angular} is a full-featured framework backed by Google that includes dependency injection,
+a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
+module system exceeds what is justified for a single-team prototype of this scope.
 
-% TODO: Insert MVC layered architecture diagram here
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/fig_2_2_logical-architecture.png}
-%     \caption{Logical (MVC) architecture of the StudySpace backend}
-%     \label{fig:logical-architecture}
-% \end{figure}
+React was selected because its component model aligns directly with the StudySpace screen layout
+(course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
+first-class, and its ecosystem provides the resizable panel, rich-text input, and WebSocket hook
+primitives needed by FR-02 and FR-03 without significant additional integration effort.
+
+React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
+routing via the App Router, server-side rendering where applicable, and built-in image
+optimisation. Compared to a plain Vite or Create React App setup, Next.js removes boilerplate
+routing configuration and makes the project structure self-documenting through the directory
+layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
+\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}, which provide accessible, unstyled
+component primitives that Tailwind classes are applied to. State management across the application
+uses \textbf{Redux Toolkit}~\cite{ReduxToolkit}, which offers predictable reducers and typed
+async thunks for all API interactions.
+
+% ----------------------------------------------------------------
+\subsection{Backend Framework}
+\label{subsec:backend-tech}
+
+FR-05 requires robust authentication and role-based authorisation. FR-02 and FR-04 involve
+complex transactional operations over relational data. These requirements favour a statically
+typed language with mature transaction management and security libraries.
+
+\textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
+object-oriented foundation with a mature ecosystem. Spring Boot's convention-over-configuration
+approach applies sensible defaults automatically, embeds a Tomcat web server, and offers
+first-class integration with Spring Security, Spring Data JPA, Spring WebSocket, and Springdoc
+OpenAPI --- all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
+improve the throughput of concurrent request handling without the complexity of reactive
+programming.
+
+\textbf{Node.js with NestJS or Express} excels in I/O-bound tasks due to its event-driven
+architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
+transactional operations required by the Content Extension System (FR-02), and the ORM ecosystem
+does not reach the integration depth and stability of Spring Data JPA.
+
+\textbf{Python with Django or FastAPI} is excellent for rapid prototyping and AI integration.
+Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
+without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
+concurrent CPU-bound tasks.
+
+Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model
+maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
+authentication and method-level authorisation out of the box (directly addressing FR-05), and the
+mature transaction management ensures referential integrity across the complex clone and proposal
+approval operations required by FR-02.
+
+% ----------------------------------------------------------------
+\subsection{Database and Vector Store}
+\label{subsec:database-tech}
+
+The application's data model is inherently relational: users own workspaces, workspaces belong
+to courses, clone records track inheritance, and proposals reference both student materials and
+instructor courses. FR-02 requires ACID transaction guarantees across multi-entity writes.
+
+\textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
+system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
+foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
+and higher-level access is provided by Spring Data JPA with Hibernate as the ORM provider.
+
+\textbf{MongoDB} (NoSQL document store) and \textbf{Cassandra} (wide-column store) are optimised
+for unstructured or semi-structured data and horizontal scalability. However, they lack strict
+schema enforcement and standard join operations. Using a document store would require significant
+denormalisation, duplicating data to avoid application-level joins, which introduces the risk of
+inconsistency when a Course Material is approved and must be reflected in both the workspace and
+the course tables atomically.
+
+PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
+transactions are required for the clone and approval workflows (FR-02), and foreign-key
+constraints enforce referential integrity between proposals and their source materials. The AI
+assistant (FR-04) does not require a dedicated vector store at this prototype stage because the
+document text is extracted at query time and injected directly into the prompt; full vector
+embeddings are identified as a future extension in section~\ref{sec:future-work}.
+
+% ----------------------------------------------------------------
+\subsection{Authentication and Authorisation}
+\label{subsec:auth-tech}
+
+FR-05 requires stateless authentication suitable for a REST API consumed by a single-page
+application, with role-based restrictions enforced on the server side.
+
+\textbf{JSON Web Tokens (JWT) with Spring Security}~\cite{SpringSecurity} enables stateless
+authentication: after login, the server issues a signed token that the client stores and sends
+with every subsequent request. The server validates the token signature without consulting a
+session store, which simplifies horizontal scaling.
+
+\textbf{Server-side sessions} with Spring Session require a shared session store (such as Redis)
+across instances and add network latency to every request. For a stateless REST API served to a
+browser-based SPA, this overhead is unnecessary.
+
+\textbf{OAuth~2.0 only} (without local credentials) would prevent users without a Google or
+GitHub account from registering, which is inappropriate for a faculty application where students
+may not use third-party providers for academic accounts.
+
+JWT with Spring Security was selected because it achieves stateless session management (directly
+satisfying NFR-02), requires no external session store, and Spring Security's filter chain
+integrates the JWT validation and role check into a single, reusable \texttt{OncePerRequestFilter}
+implementation. Google OAuth~2.0 login is supported as an optional alternative authentication
+path alongside the primary local credential flow.
+
+% ----------------------------------------------------------------
+\subsection{Real-Time Communication}
+\label{subsec:websocket-tech}
+
+The Contextual Messaging System (FR-03) requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
+
+
+\textbf{WebSocket with STOMP over SockJS}~\cite{SockJS} layers a publish-subscribe model on top
+of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
+per-session topics, allowing the server to push participant-list updates and activity events to
+all subscribers without the clients polling.
+
+\textbf{Server-Sent Events (SSE)} provide a unidirectional push channel from server to client.
+They lack the bidirectional subscription model needed for clients to send activity events (such as
+a hand-raise) back to the server over the same connection.
+
+\textbf{Long Polling} achieves real-time delivery but requires each client to maintain a pending
+request and re-establish it after every response, producing significant per-client overhead on
+the server.
+
+WebSocket with STOMP over SockJS was selected because the bidirectional subscription model covers
+both server-to-client pushes (participant list updates, activity events) and client-to-server
+messages (hand raises) over a single connection, and Spring Boot's built-in STOMP message broker
+requires no additional infrastructure.
+
+% ----------------------------------------------------------------
+
+\subsection{Quality Assurance}
+\label{subsec:quality-assurance}
+
+Ensuring the reliability of the StudySpace web application requires a robust quality assurance strategy, encompassing both isolated component testing and full-system end-to-end (E2E) verification. The selection of appropriate testing frameworks must account for the project's reliance on the Next.js framework, the need for rapid developer feedback, and the complexity of real-time browser interactions.
+
+\subsubsection{Unit and Integration Testing}
+\label{subsubsec:unit-integration-testing}
+
+Unit and integration tests verify individual application components, such as the contextual chat panel or the course material upload logic, in isolation from the full backend server. The two primary candidates for the React ecosystem are Jest and Vitest.
+
+Jest~\cite{Jest} is a mature, widely adopted testing framework maintained by the open-source community. It provides a comprehensive set of assertion libraries and mocking utilities out of the box, and Next.js offers built-in configuration wrappers for it. However, Jest relies on a traditional Node.js execution model and requires complex transformations to handle modern ECMAScript modules (ESM) and TypeScript natively. As the StudySpace codebase grows, this transformation overhead can significantly slow down test execution.
+
+Vitest~\cite{Vitest} is a newer framework built on top of Vite. It is designed to be API-compatible with Jest, allowing developers to use identical syntax for assertions and mocks, but it uses Vite's highly optimised build pipeline for module resolution and transformation. This results in significantly faster test execution and near-instantaneous Hot Module Replacement (HMR) during test-driven development. In the context of StudySpace, where frequent iterations on the user interface and complex state management hooks are required, minimising the feedback loop is critical. Although Next.js uses Webpack and Turbopack rather than Vite for its production builds, Vitest can be configured to understand the Next.js environment seamlessly.
+
+Given the performance advantages of its modern execution pipeline and its seamless compatibility with the React Testing Library, Vitest was selected as the unit and integration testing framework. The speed improvements directly support the rapid development cycles required for the project, while the familiar Jest-like API minimises the learning curve.
+
+\subsubsection{End-to-End Testing}
+\label{subsubsec:e2e-testing}
+
+End-to-end testing simulates real user behaviour by driving an actual web browser, ensuring that the frontend, backend, and database interact correctly. This is particularly important for StudySpace, as features like the Merge Proposal workflow (FR-02) and the real-time Contextual Messaging System (FR-03) involve complex cross-tier interactions. Cypress and Playwright are the leading solutions for modern web applications.
+
+Cypress~\cite{Cypress} offers a highly visual, interactive test runner that executes directly within the browser alongside the application under test. This architecture provides excellent debugging capabilities and a shallow learning curve. However, Cypress traditionally struggles with testing multi-tab workflows and cross-origin navigations, which can be problematic when testing OAuth flows or interactions that open course materials in new tabs. Furthermore, its execution speed is relatively slow when running large test suites in headless Continuous Integration (CI) environments.
+
+Playwright~\cite{Playwright}, developed by Microsoft, takes a different architectural approach by communicating with browsers over the Chrome DevTools Protocol (CDP). It natively supports parallel test execution across multiple browser engines (Chromium, WebKit, and Firefox) and handles multi-tab, multi-origin scenarios effortlessly. Playwright also includes a powerful trace viewer that captures DOM snapshots, network requests, and console logs for every step of a failed test, significantly easing debugging without requiring the interactive test runner to be open.
+
+For StudySpace, the ability to test complex user journeys efficiently is paramount. The parallel execution model of Playwright drastically reduces the time required to run the full E2E suite compared to Cypress. Additionally, its robust handling of modern web APIs and multi-context scenarios ensures that the real-time communication channels and file viewing features can be tested reliably. Consequently, Playwright was chosen as the end-to-end testing framework for the project.
+
+% ----------------------------------------------------------------
+
 
 % ----------------------------------------------------------------
 \section{Functional Requirements}
@@ -169,8 +306,8 @@ context. Instructor-only endpoints are protected with \texttt{@PreAuthorize} ann
 explicit ownership checks in the service layer so that a student account receives an HTTP 403
 response if it attempts a restricted operation.
 
-\subsection{Non-Functional Requirements}
-\label{subsec:nonfunctional-requirements}
+\section{Non-Functional Requirements}
+\label{sec:nonfunctional-requirements}
 
 The following non-functional requirements define the quality constraints the system must satisfy
 regardless of the specific feature being used.
@@ -388,3 +525,9 @@ StudySpace addresses this integration gap by combining structured course managem
 clone-based student contribution workflow with Instructor review, chat messages with Contextual
 Anchors tied to specific Course Materials, and an AI assistant grounded in the actual course
 content, all within a single application with role-based access control.
+
+% ----------------------------------------------------------------
+\section{Conclusions from Analysis}
+\label{sec:conclusions-from-analysis}
+
+The analysis of the problem space, requirements, and existing platforms reveals a clear need for a unified system. None of the evaluated solutions successfully integrate structured course administration (FR-01) with a student-driven content extension system (FR-02) and contextual peer messaging (FR-03). Furthermore, the necessity for an AI assistant grounded directly in the course materials (FR-04) cannot be met by general-purpose collaborative tools. These identified gaps and defined requirements establish the boundaries and constraints that directly drive the architectural and technical design decisions presented in the following chapter.

@@ -1,12 +1,14 @@
 \chapter{Design}
 \label{ch:design}
 
-This chapter translates the requirements and architectural overview established in
-Chapter~\ref{ch:analysis} into concrete technical decisions. The domain model defines the
-entities and their relationships. The technology analysis justifies each major component of the
-stack by comparing alternatives against the project requirements. The database schema and
-entity-relationship diagram document the persistent data model. The finalised system architecture
-and API design are presented, and the chapter closes with the user interface design.
+Based on the requirements and gaps identified in Chapter 2, the following design decisions were made.
+
+This chapter translates the requirements and architecture analysis established in
+Chapter~\ref{ch:analysis} into a concrete technical design. The domain model defines the
+entities and their relationships. The system and logical architecture outlines the overarching
+application structure, while the database schema and entity-relationship diagram document the
+persistent data model. Finally, the API design and user interface design detail how the system
+will be accessed and experienced by its users.
 
 % ----------------------------------------------------------------
 \section{Domain Model}
@@ -93,243 +95,41 @@ so no database sequence is required.
 % \end{figure}
 
 % ----------------------------------------------------------------
-\section{Technology Analysis}
-\label{sec:technologies}
+\section{System and Logical Architecture}
+\label{sec:system-logical-architecture}
 
-This section justifies each major technology choice by comparing the available alternatives against
-the requirements established in Chapter~\ref{ch:analysis}. The goal was to select a stack that is
-well suited for the required features, has strong community support and ecosystem maturity, and is
-practical to use within the scope of a bachelor thesis prototype.
+\subsection{Conceptual Architecture}
+\label{subsec:conceptual-architecture}
+\label{subsec:system-architecture}
 
-% ----------------------------------------------------------------
-\subsection{Frontend Framework}
-\label{subsec:frontend-tech}
+At the highest level, StudySpace is a web application that separates the browser-based user
+interface from the server-side application logic and the persistent data store. The user interface
+runs entirely in the browser and communicates with the backend over two channels: a standard
+request-response channel for operations such as loading course content, uploading materials, and
+submitting contribution proposals, and a persistent real-time channel for events that must reach
+all connected participants without a manual page refresh, such as chat messages and study-session
+activity feeds.
 
-FR-01 through FR-04 require a responsive, component-rich user interface that manages complex
-shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
-simultaneously on the same screen.
+The backend is a single application that handles all business logic, enforces access control,
+processes file uploads, calls the external AI API, and broadcasts real-time events. The data store
+holds all persistent state, including user accounts, course structures, Private Workspace records,
+Merge Proposals, and conversation history.
 
-\textbf{React~19}~\cite{React} is a declarative UI library maintained by Meta. Its component model
-encourages decomposing the interface into small, reusable pieces, each responsible for a single
-part of the view. The unidirectional data flow makes state changes predictable and easier to trace
-during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
-rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
+All three tiers run as isolated containers managed by a single container orchestration file, so the
+complete application can be started with one command and requires no manual environment
+configuration. The final architecture diagram is presented in section~\ref{sec:system-architecture}
+after the technology choices have been made.
 
-\textbf{Vue.js} is a progressive framework with a smaller bundle size and a gentler learning
-curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
-components, and the TypeScript integration, while improving, is less seamless than in React.
-
-\textbf{Angular} is a full-featured framework backed by Google that includes dependency injection,
-a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
-module system exceeds what is justified for a single-team prototype of this scope.
-
-React was selected because its component model aligns directly with the StudySpace screen layout
-(course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
-first-class, and its ecosystem provides the resizable panel, rich-text input, and WebSocket hook
-primitives needed by FR-02 and FR-03 without significant additional integration effort.
-
-React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
-routing via the App Router, server-side rendering where applicable, and built-in image
-optimisation. Compared to a plain Vite or Create React App setup, Next.js removes boilerplate
-routing configuration and makes the project structure self-documenting through the directory
-layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
-\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}, which provide accessible, unstyled
-component primitives that Tailwind classes are applied to. State management across the application
-uses \textbf{Redux Toolkit}~\cite{ReduxToolkit}, which offers predictable reducers and typed
-async thunks for all API interactions.
-
-% ----------------------------------------------------------------
-\subsection{Backend Framework}
-\label{subsec:backend-tech}
-
-FR-05 requires robust authentication and role-based authorisation. FR-02 and FR-04 involve
-complex transactional operations over relational data. These requirements favour a statically
-typed language with mature transaction management and security libraries.
-
-\textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
-object-oriented foundation with a mature ecosystem. Spring Boot's convention-over-configuration
-approach applies sensible defaults automatically, embeds a Tomcat web server, and offers
-first-class integration with Spring Security, Spring Data JPA, Spring WebSocket, and Springdoc
-OpenAPI --- all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
-improve the throughput of concurrent request handling without the complexity of reactive
-programming.
-
-\textbf{Node.js with NestJS or Express} excels in I/O-bound tasks due to its event-driven
-architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
-transactional operations required by the Content Extension System (FR-02), and the ORM ecosystem
-does not reach the integration depth and stability of Spring Data JPA.
-
-\textbf{Python with Django or FastAPI} is excellent for rapid prototyping and AI integration.
-Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
-without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
-concurrent CPU-bound tasks.
-
-Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model
-maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
-authentication and method-level authorisation out of the box (directly addressing FR-05), and the
-mature transaction management ensures referential integrity across the complex clone and proposal
-approval operations required by FR-02.
-
-% ----------------------------------------------------------------
-\subsection{Database and Vector Store}
-\label{subsec:database-tech}
-
-The application's data model is inherently relational: users own workspaces, workspaces belong
-to courses, clone records track inheritance, and proposals reference both student materials and
-instructor courses. FR-02 requires ACID transaction guarantees across multi-entity writes.
-
-\textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
-system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
-foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
-and higher-level access is provided by Spring Data JPA with Hibernate as the ORM provider.
-
-\textbf{MongoDB} (NoSQL document store) and \textbf{Cassandra} (wide-column store) are optimised
-for unstructured or semi-structured data and horizontal scalability. However, they lack strict
-schema enforcement and standard join operations. Using a document store would require significant
-denormalisation, duplicating data to avoid application-level joins, which introduces the risk of
-inconsistency when a Course Material is approved and must be reflected in both the workspace and
-the course tables atomically.
-
-PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
-transactions are required for the clone and approval workflows (FR-02), and foreign-key
-constraints enforce referential integrity between proposals and their source materials. The AI
-assistant (FR-04) does not require a dedicated vector store at this prototype stage because the
-document text is extracted at query time and injected directly into the prompt; full vector
-embeddings are identified as a future extension in section~\ref{sec:future-work}.
-
-% ----------------------------------------------------------------
-\subsection{LLM API Integration}
-\label{subsec:ai-tech}
-
-FR-04 requires an LLM API capable of answering questions grounded in a provided document context
-within a single prompt, without fine-tuning.
-
-\textbf{Google Gemini API (gemini-2.5-flash)} provides a large context window, competitive
-quality on open-domain question answering, and an official Java SDK that integrates directly with
-the Spring Boot application. The free tier is sufficient for prototype-level usage.
-
-\textbf{OpenAI GPT-4o} exposes a compatible REST interface and achieves comparable quality on
-question answering tasks. However, the Java SDK is less mature than the official Google GenAI
-SDK, and the cost per token is higher for the same context window size at the time of writing.
-
-The Google Gemini API was selected because the official Google GenAI Java SDK~\cite{GoogleGenAI}
-integrates directly with Spring Boot without additional HTTP client configuration, the
-\texttt{gemini-2.5-flash} model's context window comfortably accommodates the 10\,000-character
-document extract required by FR-04, and the free tier capacity is sufficient for the prototype.
-
-% ----------------------------------------------------------------
-\subsection{Authentication and Authorisation}
-\label{subsec:auth-tech}
-
-FR-05 requires stateless authentication suitable for a REST API consumed by a single-page
-application, with role-based restrictions enforced on the server side.
-
-\textbf{JSON Web Tokens (JWT) with Spring Security}~\cite{SpringSecurity} enables stateless
-authentication: after login, the server issues a signed token that the client stores and sends
-with every subsequent request. The server validates the token signature without consulting a
-session store, which simplifies horizontal scaling.
-
-\textbf{Server-side sessions} with Spring Session require a shared session store (such as Redis)
-across instances and add network latency to every request. For a stateless REST API served to a
-browser-based SPA, this overhead is unnecessary.
-
-\textbf{OAuth~2.0 only} (without local credentials) would prevent users without a Google or
-GitHub account from registering, which is inappropriate for a faculty application where students
-may not use third-party providers for academic accounts.
-
-JWT with Spring Security was selected because it achieves stateless session management (directly
-satisfying NFR-02), requires no external session store, and Spring Security's filter chain
-integrates the JWT validation and role check into a single, reusable \texttt{OncePerRequestFilter}
-implementation. Google OAuth~2.0 login is supported as an optional alternative authentication
-path alongside the primary local credential flow.
-
-% ----------------------------------------------------------------
-\subsection{Real-Time Communication}
-\label{subsec:websocket-tech}
-
-The study-session feature requires real-time event delivery to all connected participants without
-polling, as required by the real-time study-session feature.
-
-
-\textbf{WebSocket with STOMP over SockJS}~\cite{SockJS} layers a publish-subscribe model on top
-of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
-per-session topics, allowing the server to push participant-list updates and activity events to
-all subscribers without the clients polling.
-
-\textbf{Server-Sent Events (SSE)} provide a unidirectional push channel from server to client.
-They lack the bidirectional subscription model needed for clients to send activity events (such as
-a hand-raise) back to the server over the same connection.
-
-\textbf{Long Polling} achieves real-time delivery but requires each client to maintain a pending
-request and re-establish it after every response, producing significant per-client overhead on
-the server.
-
-WebSocket with STOMP over SockJS was selected because the bidirectional subscription model covers
-both server-to-client pushes (participant list updates, activity events) and client-to-server
-messages (hand raises) over a single connection, and Spring Boot's built-in STOMP message broker
-requires no additional infrastructure.
-
-% ----------------------------------------------------------------
-\subsection{File Storage}
-\label{subsec:storage-tech}
-
-FR-01 and FR-02 require file upload and retrieval for Course Materials and Private Workspace
-materials. The storage backend must be swappable between a local development mode and a
-production cloud target.
-
-\textbf{Local file storage} (writing files to a directory under the working directory) is zero-cost
-and requires no external service in development. It is unsuitable for production because files are
-lost when the container is recreated and cannot be shared across multiple server instances.
-
-\textbf{Google Cloud Storage (GCS)} is a managed object store with high durability, direct URL
-serving, and a Java client library. It requires a GCP project and credentials, which adds setup
-overhead during development.
-
-A \texttt{FileStorageService} interface with two concrete implementations was designed:
-\texttt{LocalFileStorageService} for development and \texttt{GcsFileStorageService} for production.
-The active implementation is selected by a Spring profile, keeping the storage backend transparent
-to the rest of the application and satisfying NFR-04. The interface defines three methods:
-\texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed
-by FR-01 and FR-02.
-
-% ----------------------------------------------------------------
-\section{Database Schema}
-\label{sec:database-schema}
-
-The relational schema follows directly from the domain model described in
-section~\ref{sec:domain-model}. Each entity maps to a dedicated table, and all foreign-key
-relationships are enforced at the database level.
-
-The primary tables are \texttt{users}, \texttt{courses}, \texttt{course\_sections},
-\texttt{course\_materials}, \texttt{course\_enrollments}, \texttt{student\_workspaces},
-\texttt{workspace\_spaces}, \texttt{workspace\_sections}, \texttt{workspace\_materials},
-\texttt{contribution\_proposals}, and \texttt{conversations}. The
-\texttt{course\_enrollments} table carries a unique constraint on
-\texttt{(course\_id, student\_id)} to prevent duplicate enrollment rows. The
-\texttt{workspace\_materials} table carries the two boolean flags \texttt{isReference}
-and \texttt{isHidden} that implement the copy-on-write and soft-delete semantics described
-in section~\ref{sec:domain-model}.
-
-The AI conversation memory is stored in the \texttt{conversations} table as two \texttt{TEXT}
-columns: \texttt{summary} for the compressed long-term memory and \texttt{recent\_messages} for
-the JSON-serialised short-term buffer. This design avoids a separate message table and keeps the
-memory retrieval to a single row lookup by the client-generated UUID primary key. The current
-prototype does not use vector embeddings; document text is extracted at query time and injected
-into the prompt. A dedicated embedding column using \texttt{pgvector} is identified as a future
-extension that would replace on-the-fly extraction with indexed similarity search.
-
-% TODO: Insert ERD as Figure 3.2
+% TODO: Insert high-level system architecture diagram here
 % \begin{figure}[htbp]
 %     \centering
-%     \includegraphics[width=\textwidth]{images/fig_3_2_er-diagram.png}
-%     \caption{Entity-relationship diagram of the StudySpace database schema}
-%     \label{fig:er-diagram}
+%     \includegraphics[width=0.9\textwidth]{images/fig_2_1_system-architecture.png}
+%     \caption{Conceptual three-tier system architecture of StudySpace}
+%     \label{fig:conceptual-architecture}
 % \end{figure}
 
-% ----------------------------------------------------------------
-\section{System Architecture (Final)}
-\label{sec:system-architecture-final}
-
+\subsection{System Architecture}
+\label{subsec:system-architecture}
 StudySpace follows a three-tier architecture. The \emph{presentation layer} is a Next.js and
 React application running in the browser; it communicates with the backend via the REST API for
 most operations and via a persistent WebSocket (STOMP/SockJS) connection during active study
@@ -382,6 +182,109 @@ dependencies flowing only from controller to service to repository:
 %     \includegraphics[width=0.9\textwidth]{images/fig_3_3_system-architecture-final.png}
 %     \caption{Final system architecture of StudySpace}
 %     \label{fig:system-architecture-final}
+% \end{figure}
+
+% ----------------------------------------------------------------
+
+\subsection{Logical Architecture}
+\label{subsec:logical-architecture}
+\label{subsec:logical-architecture}
+
+The server-side application follows the Model-View-Controller (MVC) layered pattern. The
+\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
+the response. The \emph{service layer} contains all business logic, orchestrates data access, and
+enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
+provides data access through named query methods and custom queries for complex lookups. Entity
+classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
+contract and decouple the internal entity structure from the shape of the JSON responses, so the
+two can evolve independently.
+
+% TODO: Insert MVC layered architecture diagram here
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{images/fig_2_2_logical-architecture.png}
+%     \caption{Logical (MVC) architecture of the StudySpace backend}
+%     \label{fig:logical-architecture}
+% \end{figure}
+
+% ----------------------------------------------------------------
+
+
+% ----------------------------------------------------------------
+\section{File Storage}
+\label{sec:storage-tech}
+
+FR-01 and FR-02 require file upload and retrieval for Course Materials and Private Workspace
+materials. The storage backend must be swappable between a local development mode and a
+production cloud target.
+
+\textbf{Local file storage} (writing files to a directory under the working directory) is zero-cost
+and requires no external service in development. It is unsuitable for production because files are
+lost when the container is recreated and cannot be shared across multiple server instances.
+
+\textbf{Google Cloud Storage (GCS)} is a managed object store with high durability, direct URL
+serving, and a Java client library. It requires a GCP project and credentials, which adds setup
+overhead during development.
+
+A \texttt{FileStorageService} interface with two concrete implementations was designed:
+\texttt{LocalFileStorageService} for development and \texttt{GcsFileStorageService} for production.
+The active implementation is selected by a Spring profile, keeping the storage backend transparent
+to the rest of the application and satisfying NFR-04. The interface defines three methods:
+\texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed
+by FR-01 and FR-02.
+
+% ----------------------------------------------------------------
+\section{LLM API Integration}
+\label{sec:ai-tech}
+
+FR-04 requires an LLM API capable of answering questions grounded in a provided document context
+within a single prompt, without fine-tuning.
+
+\textbf{Google Gemini API (gemini-2.5-flash)} provides a large context window, competitive
+quality on open-domain question answering, and an official Java SDK that integrates directly with
+the Spring Boot application. The free tier is sufficient for prototype-level usage.
+
+\textbf{OpenAI GPT-4o} exposes a compatible REST interface and achieves comparable quality on
+question answering tasks. However, the Java SDK is less mature than the official Google GenAI
+SDK, and the cost per token is higher for the same context window size at the time of writing.
+
+The Google Gemini API was selected because the official Google GenAI Java SDK~\cite{GoogleGenAI}
+integrates directly with Spring Boot without additional HTTP client configuration, the
+\texttt{gemini-2.5-flash} model's context window comfortably accommodates the 10\,000-character
+document extract required by FR-04, and the free tier capacity is sufficient for the prototype.
+
+% ----------------------------------------------------------------
+\section{Database Schema}
+\label{sec:database-schema}
+
+The relational schema follows directly from the domain model described in
+section~\ref{sec:domain-model}. Each entity maps to a dedicated table, and all foreign-key
+relationships are enforced at the database level.
+
+The primary tables are \texttt{users}, \texttt{courses}, \texttt{course\_sections},
+\texttt{course\_materials}, \texttt{course\_enrollments}, \texttt{student\_workspaces},
+\texttt{workspace\_spaces}, \texttt{workspace\_sections}, \texttt{workspace\_materials},
+\texttt{contribution\_proposals}, and \texttt{conversations}. The
+\texttt{course\_enrollments} table carries a unique constraint on
+\texttt{(course\_id, student\_id)} to prevent duplicate enrollment rows. The
+\texttt{workspace\_materials} table carries the two boolean flags \texttt{isReference}
+and \texttt{isHidden} that implement the copy-on-write and soft-delete semantics described
+in section~\ref{sec:domain-model}.
+
+The AI conversation memory is stored in the \texttt{conversations} table as two \texttt{TEXT}
+columns: \texttt{summary} for the compressed long-term memory and \texttt{recent\_messages} for
+the JSON-serialised short-term buffer. This design avoids a separate message table and keeps the
+memory retrieval to a single row lookup by the client-generated UUID primary key. The current
+prototype does not use vector embeddings; document text is extracted at query time and injected
+into the prompt. A dedicated embedding column using \texttt{pgvector} is identified as a future
+extension that would replace on-the-fly extraction with indexed similarity search.
+
+% TODO: Insert ERD as Figure 3.2
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{images/fig_3_2_er-diagram.png}
+%     \caption{Entity-relationship diagram of the StudySpace database schema}
+%     \label{fig:er-diagram}
 % \end{figure}
 
 % ----------------------------------------------------------------
