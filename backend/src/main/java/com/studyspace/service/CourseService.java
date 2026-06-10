@@ -6,6 +6,8 @@ import com.studyspace.repository.*;
 import com.studyspace.types.EnrollmentStatus;
 import com.studyspace.types.MaterialType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -68,16 +70,16 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourseSummaryDTO> getAllPublishedCourses() {
-        return courseRepository.findByIsPublishedTrue()
-                .stream().map(this::toSummaryDTO).toList();
+    public Page<CourseSummaryDTO> getAllPublishedCourses(String search, Pageable pageable) {
+        return courseRepository.findByIsPublishedTrueWithSearch(search, pageable)
+                .map(this::toSummaryDTO);
     }
 
     @Transactional(readOnly = true)
-    public List<CourseSummaryDTO> getMyCourses(Long instructorId) {
+    public Page<CourseSummaryDTO> getMyCourses(Long instructorId, String search, Pageable pageable) {
         User instructor = findUser(instructorId);
-        return courseRepository.findByInstructor(instructor)
-                .stream().map(this::toSummaryDTO).toList();
+        return courseRepository.findByInstructorWithSearch(instructor, search, pageable)
+                .map(this::toSummaryDTO);
     }
 
     // ─── Section CRUD ───────────────────────────────────────────────────────────
@@ -189,12 +191,9 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourseEnrollmentDTO> getMyEnrollments(Long studentId) {
-        return enrollmentRepository.findByStudentId(studentId)
-                .stream()
-                .filter(e -> Boolean.TRUE.equals(e.getCourse().getIsPublished()))
-                .map(this::toEnrollmentDTO)
-                .toList();
+    public Page<CourseEnrollmentDTO> getMyEnrollments(Long studentId, String search, Pageable pageable) {
+        return enrollmentRepository.findPublishedByStudentIdWithSearch(studentId, search, pageable)
+                .map(this::toEnrollmentDTO);
     }
 
     // ─── Helpers & Mappers ───────────────────────────────────────────────────────

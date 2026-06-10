@@ -50,7 +50,7 @@ export function Sidebar() {
 					<Link key={item.href} href={item.href} passHref>
 						<Button
 							variant={isActive(item.href) ? "default" : "ghost"}
-							className="w-full justify-start gap-3"
+							className="w-full justify-start gap-3 mb-2"
 						>
 							<item.icon className="h-4 w-4" />
 							<span>{item.label}</span>

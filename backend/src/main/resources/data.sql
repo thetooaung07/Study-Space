@@ -111,12 +111,12 @@ ON CONFLICT (course_id, title) DO NOTHING;
 
 INSERT INTO course_materials (title, file_url, file_type, original_file_name, section_id, uploaded_at)
 VALUES
-('Limits Lecture Notes',       '/uploads/courses/limits-lecture-notes.pdf',  'PDF',    'limits-lecture-notes.pdf',  1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
-('Limits Practice Problems',   '/uploads/courses/limits-practice.pdf',        'PDF',    'limits-practice.pdf',       1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
-('Derivatives Slides',         '/uploads/courses/derivatives-slides.pdf',     'SLIDES', 'derivatives-slides.pdf',    2, CURRENT_TIMESTAMP - INTERVAL '12 days'),
-('OOP Cheatsheet',             '/uploads/courses/oop-cheatsheet.pdf',         'PDF',    'oop-cheatsheet.pdf',        4, CURRENT_TIMESTAMP - INTERVAL '9 days'),
-('Spring Boot Getting Started','/uploads/courses/spring-boot-intro.pdf',      'PDF',    'spring-boot-intro.pdf',     6, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-('DNA Structure Overview',     '/uploads/courses/dna-structure.pdf',          'PDF',    'dna-structure.pdf',         7, CURRENT_TIMESTAMP - INTERVAL '6 days' )
+('Limits Lecture Notes',       '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',  'PDF',    'limits-lecture-notes.pdf',  1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
+('Limits Practice Problems',   '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',        'PDF',    'limits-practice.pdf',       1, CURRENT_TIMESTAMP - INTERVAL '13 days'),
+('Derivatives Slides',         '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',     'SLIDES', 'derivatives-slides.pdf',    2, CURRENT_TIMESTAMP - INTERVAL '12 days'),
+('OOP Cheatsheet',             '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',         'PDF',    'oop-cheatsheet.pdf',        4, CURRENT_TIMESTAMP - INTERVAL '9 days'),
+('Spring Boot Getting Started','/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',      'PDF',    'spring-boot-intro.pdf',     6, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+('DNA Structure Overview',     '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',          'PDF',    'dna-structure.pdf',         7, CURRENT_TIMESTAMP - INTERVAL '6 days' )
 ON CONFLICT (section_id, title) DO NOTHING;
 
 
@@ -159,12 +159,12 @@ ON CONFLICT (space_id, title) DO NOTHING;
 
 INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
 SELECT * FROM (VALUES
-    (CAST('Cells Diagram' AS VARCHAR),               CAST('/uploads/workspaces/cells-diagram.pdf' AS VARCHAR),                                     CAST('PDF' AS VARCHAR), CAST('cells-diagram.pdf' AS VARCHAR),                false, false, CAST(1 AS BIGINT), CAST(CURRENT_TIMESTAMP - INTERVAL '5 days' AS TIMESTAMP)),
-    ('DNA Structure Overview',      '/uploads/courses/dna-structure.pdf',                                        'PDF', 'dna-structure.pdf',                true,  false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
-    ('Alice Extra DNA Notes',       '/uploads/workspaces/extra-dna-notes.pdf',                                   'PDF', 'extra-dna-notes.pdf',              false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
-    ('Advanced Calculus Reference', '/uploads/workspaces/ab077b9f-2bde-48ea-9656-d4dd1079357e.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
-    ('Linear Algebra Cheatsheet',   '/uploads/workspaces/c4c15291-3b4b-4954-b5f4-c3f4250b8cf0.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
-    ('Assignment 1 Submission',     '/uploads/workspaces/dc988dd8-0100-47c1-82d5-b0b5da5255db.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
+    (CAST('Cells Diagram' AS VARCHAR),               CAST('/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf' AS VARCHAR),                                     CAST('PDF' AS VARCHAR), CAST('cells-diagram.pdf' AS VARCHAR),                false, false, CAST(1 AS BIGINT), CAST(CURRENT_TIMESTAMP - INTERVAL '5 days' AS TIMESTAMP)),
+    ('DNA Structure Overview',      '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',                                        'PDF', 'dna-structure.pdf',                true,  false, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+    ('Alice Extra DNA Notes',       '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',                                   'PDF', 'extra-dna-notes.pdf',              false, false, 2, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+    ('Advanced Calculus Reference', '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',              'PDF', 'advanced-calculus-ref.pdf',        false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    ('Linear Algebra Cheatsheet',   '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',              'PDF', 'linear-algebra-cheatsheet.pdf',    false, false, 3, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+    ('Assignment 1 Submission',     '/uploads/courses/5d01869f-dd95-475f-8a80-6383ba13057c.pdf',              'PDF', 'assignment-1.pdf',                 false, false, 4, CURRENT_TIMESTAMP - INTERVAL '2 days')
 ) AS v(title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at)
 WHERE NOT EXISTS (
     SELECT 1 FROM workspace_materials wm WHERE wm.title = v.title AND wm.section_id = v.section_id
@@ -174,3 +174,152 @@ INSERT INTO contribution_proposals (status, message, target_course_id, target_se
 VALUES
 ('PENDING', 'I created an extra summary for the DNA structure that might be helpful for others!', 3, 7, 3, 4, 'Alice Johnson', CURRENT_TIMESTAMP - INTERVAL '1 day')
 ON CONFLICT (student_id, target_course_id, target_section_id, source_material_id) DO NOTHING;
+
+-- ============================================
+-- Extra Data for Pagination and Search Testing
+-- ============================================
+
+INSERT INTO courses (title, description, instructor_id, is_published, created_at, updated_at) VALUES
+('Data Structures and Algorithms', 'Learn about trees, graphs, dynamic programming.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Operating Systems', 'Memory management, processes, threads, file systems.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Computer Networks', 'TCP/IP, UDP, Routing protocols, Application layer.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Database Systems', 'SQL, normalization, transactions, concurrency.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Software Engineering', 'Agile, Scrum, SDLC, design patterns.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Machine Learning Fundamentals', 'Linear regression, neural networks, SVMs.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Artificial Intelligence', 'Search algorithms, logic, planning.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Human Computer Interaction', 'UI/UX design, usability testing, heuristics.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Cybersecurity Basics', 'Cryptography, network security, web security.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Cloud Computing', 'AWS, Azure, Docker, Kubernetes.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Mobile App Development', 'Android, iOS, React Native, Flutter.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Web Technologies', 'HTML, CSS, JS, REST, GraphQL.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Compiler Design', 'Lexical analysis, parsing, code generation.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Computer Graphics', 'OpenGL, ray tracing, transformations.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Distributed Systems', 'Consensus, Paxos, Raft, CAP theorem.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Quantum Computing', 'Qubits, quantum gates, Shor algorithm.', 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Blockchain Technologies', 'Bitcoin, Ethereum, smart contracts.', 2, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (title) DO NOTHING;
+
+INSERT INTO study_sessions (title, description, subject, start_time, end_time, duration_minutes, room_code, status, visibility, user_id, created_at) VALUES
+('Group study for OS Midterm', 'Covering chapters 1-5.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '22 hours', 120, 'ROOM-OS1', 'COMPLETED', 'PUBLIC', 1, CURRENT_TIMESTAMP),
+('Algorithms practice', 'Solving leetcode dynamic programming problems.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '46 hours', 120, 'ROOM-ALG1', 'COMPLETED', 'PUBLIC', 2, CURRENT_TIMESTAMP),
+('Database normalization workshop', 'Reviewing BCNF and 3NF.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '70 hours', 120, 'ROOM-DB1', 'COMPLETED', 'PUBLIC', 3, CURRENT_TIMESTAMP),
+('React hooks study', 'useEffect and useState deep dive.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '4 days', CURRENT_TIMESTAMP - INTERVAL '94 hours', 120, 'ROOM-WEB1', 'COMPLETED', 'PUBLIC', 4, CURRENT_TIMESTAMP),
+('AWS certification prep', 'Reviewing IAM and S3.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '118 hours', 120, 'ROOM-CLOUD1', 'COMPLETED', 'PUBLIC', 5, CURRENT_TIMESTAMP),
+('Machine Learning Study Group', 'Reviewing logistic regression.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '6 days', CURRENT_TIMESTAMP - INTERVAL '142 hours', 120, 'ROOM-ML1', 'COMPLETED', 'PUBLIC', 1, CURRENT_TIMESTAMP),
+('Cybersecurity CTF prep', 'Practicing on HackTheBox.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '166 hours', 120, 'ROOM-SEC1', 'COMPLETED', 'PUBLIC', 2, CURRENT_TIMESTAMP),
+('Distributed systems reading group', 'Reading the Dynamo paper.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '8 days', CURRENT_TIMESTAMP - INTERVAL '190 hours', 120, 'ROOM-DIST1', 'COMPLETED', 'PUBLIC', 3, CURRENT_TIMESTAMP),
+('Compiler design lab', 'Writing a simple lexer.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '9 days', CURRENT_TIMESTAMP - INTERVAL '214 hours', 120, 'ROOM-COMP1', 'COMPLETED', 'PUBLIC', 4, CURRENT_TIMESTAMP),
+('Mobile app hackathon prep', 'Brainstorming ideas.', 'PROGRAMMING', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP - INTERVAL '238 hours', 120, 'ROOM-MOB1', 'COMPLETED', 'PUBLIC', 5, CURRENT_TIMESTAMP)
+ON CONFLICT (room_code) DO NOTHING;
+
+-- ============================================
+-- Super User Data
+-- ============================================
+INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, current_streak, last_study_date, role, created_at, updated_at)
+VALUES
+('superuser1', 'super.user1@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Super User', '', 1000, 'ONLINE', 100, CURRENT_TIMESTAMP, 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO course_enrollments (course_id, student_id, status, enrolled_at)
+SELECT c.id, u.id, 'ACTIVE', CURRENT_TIMESTAMP 
+FROM courses c
+CROSS JOIN users u
+WHERE u.username = 'superuser1'
+ON CONFLICT (course_id, student_id) DO NOTHING;
+
+INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
+SELECT 'Super Workspace', 'All forked courses', id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM users WHERE username = 'superuser1'
+ON CONFLICT (owner_id, name) DO NOTHING;
+
+INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
+SELECT c.title || ' (Fork)', c.description, sw.id, c.id, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM courses c
+CROSS JOIN student_workspaces sw
+INNER JOIN users u ON sw.owner_id = u.id
+WHERE u.username = 'superuser1'
+ON CONFLICT (workspace_id, title) DO NOTHING;
+
+-- ============================================
+-- Extra Workspaces and Spaces for Collaboration
+-- ============================================
+
+-- Workspaces for John Doe (1) and Jane Smith (2)
+INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
+VALUES
+('John Collaboration Hub', 'Space for group study and notes sharing.', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Jane Biology Notes', 'Personal and shared biology notes.', 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (owner_id, name) DO NOTHING;
+
+-- Brand new spaces (not forked)
+INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, sharing_enabled, created_at, updated_at)
+VALUES
+('Calculus Group Study', 'Let''s solve problems together', (SELECT id FROM student_workspaces WHERE name = 'John Collaboration Hub' AND owner_id = 1), NULL, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('Genetics Lab Project', 'Research and notes on genetics', (SELECT id FROM student_workspaces WHERE name = 'Jane Biology Notes' AND owner_id = 2), NULL, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (workspace_id, title) DO NOTHING;
+
+-- Let superuser1 join these spaces
+INSERT INTO space_guests (space_id, user_id, joined_at)
+SELECT ws.id, u.id, CURRENT_TIMESTAMP
+FROM workspace_spaces ws
+CROSS JOIN users u
+WHERE u.username = 'superuser1' AND ws.title IN ('Calculus Group Study', 'Genetics Lab Project')
+ON CONFLICT (space_id, user_id) DO NOTHING;
+-- ============================================
+-- Super User Seed Data
+-- ============================================
+
+INSERT INTO users (username, email, password, full_name, profile_picture_url, total_study_minutes, current_status, current_streak, last_study_date, role, created_at, updated_at)
+VALUES ('superuser', 'super.user@example.com', '$2a$10$IZ7IMsbk36K8fIARPFOCAO0bG4AfTuPMSH9toeW/pt47yQyKLFDle', 'Super User', '', 1000, 'ONLINE', 100, CURRENT_TIMESTAMP, 'STUDENT', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (username) DO NOTHING;
+
+-- Enroll super user in all courses
+INSERT INTO course_enrollments (course_id, student_id, status, enrolled_at)
+SELECT id, (SELECT id FROM users WHERE username = 'superuser'), 'ACTIVE', CURRENT_TIMESTAMP FROM courses
+ON CONFLICT (course_id, student_id) DO NOTHING;
+
+-- Create a workspace for super user
+INSERT INTO student_workspaces (name, description, owner_id, created_at, updated_at)
+VALUES ('Super Workspace', 'Workspace for Super User', (SELECT id FROM users WHERE username = 'superuser'), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (owner_id, name) DO NOTHING;
+
+-- Fork all courses for super user
+INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
+SELECT title || ' (Fork)', 'Forked from course', (SELECT id FROM student_workspaces WHERE owner_id = (SELECT id FROM users WHERE username = 'superuser')), id, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM courses
+ON CONFLICT (workspace_id, title) DO NOTHING;
+
+-- Create some brand new spaces for other users
+INSERT INTO workspace_spaces (title, description, workspace_id, forked_from_course_id, is_published, created_at, updated_at)
+VALUES ('Alice Brand New Space', 'Brand new space for Alice', (SELECT id FROM student_workspaces WHERE name = 'Alice Study Space'), NULL, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+       ('Bob Brand New Space', 'Brand new space for Bob', (SELECT id FROM student_workspaces WHERE name = 'Bob Math Workspace'), NULL, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (workspace_id, title) DO NOTHING;
+
+-- Add super user as guest to those new spaces
+INSERT INTO space_guests (space_id, user_id, joined_at)
+VALUES ((SELECT id FROM workspace_spaces WHERE title = 'Alice Brand New Space'), (SELECT id FROM users WHERE username = 'superuser'), CURRENT_TIMESTAMP),
+       ((SELECT id FROM workspace_spaces WHERE title = 'Bob Brand New Space'), (SELECT id FROM users WHERE username = 'superuser'), CURRENT_TIMESTAMP)
+ON CONFLICT (space_id, user_id) DO NOTHING;
+
+-- ============================================
+-- Populate Sections and Materials for Forked Spaces
+-- ============================================
+
+-- Create sections for all forked spaces
+INSERT INTO workspace_sections (title, description, order_index, space_id, created_at, created_by)
+SELECT cs.title, cs.description, cs.order_index, ws.id, CURRENT_TIMESTAMP, sw.owner_id
+FROM course_sections cs
+JOIN workspace_spaces ws ON ws.forked_from_course_id = cs.course_id
+JOIN student_workspaces sw ON ws.workspace_id = sw.id
+ON CONFLICT (space_id, title) DO NOTHING;
+
+-- Create materials for all forked spaces
+INSERT INTO workspace_materials (title, file_url, file_type, original_file_name, is_reference, is_hidden, section_id, uploaded_at, created_by)
+SELECT cm.title, cm.file_url, cm.file_type, cm.original_file_name, true, false, ws_sec.id, CURRENT_TIMESTAMP, sw.owner_id
+FROM course_materials cm
+JOIN course_sections cs ON cm.section_id = cs.id
+JOIN workspace_spaces ws ON ws.forked_from_course_id = cs.course_id
+JOIN student_workspaces sw ON ws.workspace_id = sw.id
+JOIN workspace_sections ws_sec ON ws_sec.space_id = ws.id AND ws_sec.title = cs.title
+WHERE NOT EXISTS (
+    SELECT 1 FROM workspace_materials wm WHERE wm.section_id = ws_sec.id AND wm.title = cm.title
+);

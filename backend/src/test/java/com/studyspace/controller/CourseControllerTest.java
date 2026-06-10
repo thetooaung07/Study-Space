@@ -2,18 +2,12 @@ package com.studyspace.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyspace.dto.*;
-import com.studyspace.exception.GlobalExceptionHandler;
 import com.studyspace.service.CourseService;
 import com.studyspace.types.EnrollmentStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
@@ -22,28 +16,36 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.studyspace.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+
 /**
  * Standalone MockMvc unit tests for CourseController.
  * Exercises HTTP status codes and JSON response shape without loading Spring context.
  */
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(
+    controllers = CourseController.class,
+    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthenticationFilter.class)
+)
+@AutoConfigureMockMvc(addFilters = false)
 class CourseControllerTest {
 
-    @Mock
+    @MockitoBean
     private CourseService courseService;
 
-    @InjectMocks
-    private CourseController courseController;
-
+    @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(courseController)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-        objectMapper = new ObjectMapper();
     }
 
     // ─── POST /api/courses ────────────────────────────────────────────────────────
@@ -104,12 +106,13 @@ class CourseControllerTest {
         CourseSummaryDTO summary = CourseSummaryDTO.builder()
                 .id(1L).title("Algorithms").isPublished(true).build();
 
-        when(courseService.getAllPublishedCourses()).thenReturn(List.of(summary));
+        when(courseService.getAllPublishedCourses(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/api/courses"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].title").value("Algorithms"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Algorithms"));
     }
 
     // ─── GET /api/courses/{id} ────────────────────────────────────────────────────
@@ -215,11 +218,12 @@ class CourseControllerTest {
     @Test
     void getMyCourses_Returns200() throws Exception {
         CourseSummaryDTO summary = CourseSummaryDTO.builder().id(1L).title("My Course").build();
-        when(courseService.getMyCourses(10L)).thenReturn(List.of(summary));
+        when(courseService.getMyCourses(eq(10L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(summary)));
 
         mockMvc.perform(get("/api/courses/my").param("userId", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test
@@ -310,10 +314,11 @@ class CourseControllerTest {
     @Test
     void getMyEnrollments_Returns200() throws Exception {
         CourseEnrollmentDTO dto = CourseEnrollmentDTO.builder().id(1L).status(EnrollmentStatus.ACTIVE).build();
-        when(courseService.getMyEnrollments(2L)).thenReturn(List.of(dto));
+        when(courseService.getMyEnrollments(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/courses/my-enrollments").param("studentId", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
     }
 }

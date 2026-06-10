@@ -252,12 +252,13 @@ class WorkspaceServiceTest {
 
     @Test
     void getMyWorkspaces_ReturnsList() {
-        when(workspaceRepository.findByOwnerId(1L)).thenReturn(List.of(workspace));
+        when(workspaceRepository.findByOwnerId(eq(1L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(workspace)));
 
-        List<StudentWorkspaceDTO> result = workspaceService.getMyWorkspaces(1L);
+        org.springframework.data.domain.Page<StudentWorkspaceDTO> result = workspaceService.getMyWorkspaces(1L, org.springframework.data.domain.PageRequest.of(0, 10));
 
-        assertEquals(1, result.size());
-        assertEquals("My Workspace", result.get(0).getName());
+        assertEquals(1, result.getContent().size());
+        assertEquals("My Workspace", result.getContent().get(0).getName());
     }
 
     // ─── forkCourse ─────────────────────────────────────────────────────────────
@@ -441,11 +442,12 @@ class WorkspaceServiceTest {
     @Test
     void getSpacesByWorkspace_ReturnsList() {
         space.setWorkspace(workspace);
-        when(spaceRepository.findByWorkspaceId(10L)).thenReturn(List.of(space));
+        when(spaceRepository.findByWorkspaceId(eq(10L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(space)));
         
-        List<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L);
-        assertEquals(1, result.size());
-        assertEquals("DS Space", result.get(0).getTitle());
+        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L, org.springframework.data.domain.PageRequest.of(0, 10));
+        assertEquals(1, result.getContent().size());
+        assertEquals("DS Space", result.getContent().get(0).getTitle());
     }
 
     @Test
@@ -568,12 +570,13 @@ class WorkspaceServiceTest {
     @Test
     void getSharedSpaces_ReturnsList() {
         SpaceGuest guest = SpaceGuest.builder().space(space).user(other).build();
-        when(guestRepository.findByUserId(2L)).thenReturn(List.of(guest));
+        when(guestRepository.findByUserId(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(guest)));
         
-        List<WorkspaceSpaceDTO> result = workspaceService.getSharedSpaces(2L);
+        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSharedSpaces(2L, org.springframework.data.domain.PageRequest.of(0, 10));
         
-        assertEquals(1, result.size());
-        assertEquals("DS Space", result.get(0).getTitle());
+        assertEquals(1, result.getContent().size());
+        assertEquals("DS Space", result.getContent().get(0).getTitle());
     }
 
     @Test

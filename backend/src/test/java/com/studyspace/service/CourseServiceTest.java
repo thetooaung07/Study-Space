@@ -96,13 +96,14 @@ class CourseServiceTest {
     @Test
     void getMyCourses_Success() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(instructor));
-        when(courseRepository.findByInstructor(instructor)).thenReturn(List.of(course));
+        when(courseRepository.findByInstructor(eq(instructor), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(course)));
         when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
 
-        List<CourseSummaryDTO> result = courseService.getMyCourses(1L);
+        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getMyCourses(1L, org.springframework.data.domain.PageRequest.of(0, 10));
 
-        assertEquals(1, result.size());
-        assertEquals("Data Structures", result.get(0).getTitle());
+        assertEquals(1, result.getContent().size());
+        assertEquals("Data Structures", result.getContent().get(0).getTitle());
     }
 
     // ─── updateCourse ───────────────────────────────────────────────────────────
@@ -247,9 +248,8 @@ class CourseServiceTest {
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
-        when(enrollmentRepository.existsByCourseIdAndStudentId(10L, 2L)).thenReturn(false);
+        when(enrollmentRepository.findByCourseIdAndStudentId(10L, 2L)).thenReturn(Optional.empty());
         when(enrollmentRepository.save(any(CourseEnrollment.class))).thenReturn(enrollment);
-        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(1L);
 
         CourseEnrollmentDTO result = courseService.enrollStudent(10L, 2L);
 
@@ -268,11 +268,10 @@ class CourseServiceTest {
 
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
-        when(enrollmentRepository.existsByCourseIdAndStudentId(10L, 2L)).thenReturn(true);
+
         when(enrollmentRepository.findByCourseIdAndStudentId(10L, 2L))
                 .thenReturn(Optional.of(droppedEnrollment));
         when(enrollmentRepository.save(any(CourseEnrollment.class))).thenReturn(droppedEnrollment);
-        when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(1L);
 
         CourseEnrollmentDTO result = courseService.enrollStudent(10L, 2L);
 
@@ -357,12 +356,14 @@ class CourseServiceTest {
         CourseEnrollment e = CourseEnrollment.builder()
                 .id(40L).course(unpublished).student(student).status(EnrollmentStatus.ACTIVE).build();
 
-        when(enrollmentRepository.findByStudentId(2L)).thenReturn(List.of(e));
+        // The repository method findPublishedByStudentId will filter out unpublished courses
+        when(enrollmentRepository.findPublishedByStudentId(eq(2L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
 
-        List<CourseEnrollmentDTO> result = courseService.getMyEnrollments(2L);
+        org.springframework.data.domain.Page<CourseEnrollmentDTO> result = courseService.getMyEnrollments(2L, org.springframework.data.domain.PageRequest.of(0, 10));
 
         // Unpublished course should be filtered out
-        assertTrue(result.isEmpty());
+        assertTrue(result.getContent().isEmpty());
     }
 
     // ─── getAllPublishedCourses ───────────────────────────────────────────────────
@@ -370,13 +371,14 @@ class CourseServiceTest {
     @Test
     void getAllPublishedCourses_ReturnsList() {
         course.setIsPublished(true);
-        when(courseRepository.findByIsPublishedTrue()).thenReturn(List.of(course));
+        when(courseRepository.findByIsPublishedTrue(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(course)));
         when(enrollmentRepository.countByCourseIdAndStatus(10L, EnrollmentStatus.ACTIVE)).thenReturn(0L);
 
-        List<CourseSummaryDTO> result = courseService.getAllPublishedCourses();
+        org.springframework.data.domain.Page<CourseSummaryDTO> result = courseService.getAllPublishedCourses(org.springframework.data.domain.PageRequest.of(0, 10));
 
-        assertEquals(1, result.size());
-        assertEquals("Data Structures", result.get(0).getTitle());
+        assertEquals(1, result.getContent().size());
+        assertEquals("Data Structures", result.getContent().get(0).getTitle());
     }
 
     // ─── updateSection ──────────────────────────────────────────────────────────

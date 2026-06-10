@@ -163,7 +163,7 @@ export function CourseDetail({ course, userId, isEnrolled: initialEnrolled = fal
 		setLoadingWorkspaces(true);
 		try {
 			const ws = await workspacesApi.getMyWorkspaces(userId);
-			setWorkspaces(ws);
+			setWorkspaces(ws.content);
 		} catch (e) {
 			console.error(e);
 		} finally {

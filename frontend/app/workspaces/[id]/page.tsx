@@ -18,10 +18,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { workspacesApi } from "@/lib/workspace-api";
+import { WORKSPACE_SPACES_PAGE_SIZE } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import type { StudentWorkspace, WorkspaceSpace } from "@/types/workspaces";
+import { PaginationControls } from "@/components/common/pagination-controls";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 export default function WorkspaceDetailPage() {
 	const { id } = useParams<{ id: string }>();
@@ -29,7 +33,18 @@ export default function WorkspaceDetailPage() {
 	const { user } = useAuth();
 	const [workspace, setWorkspace] = useState<StudentWorkspace | null>(null);
 	const [spaces, setSpaces] = useState<WorkspaceSpace[]>([]);
+	const [spacesPage, setSpacesPage] = useState(0);
+	const [spacesTotalPages, setSpacesTotalPages] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [loadingSpaces, setLoadingSpaces] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [inputValue, setInputValue] = useState("");
+
+	const handleSearch = (e: React.FormEvent) => {
+		e.preventDefault();
+		setSearchQuery(inputValue);
+		setSpacesPage(0);
+	};
 
 	// Create space
 	const [showCreate, setShowCreate] = useState(false);
@@ -50,27 +65,46 @@ export default function WorkspaceDetailPage() {
 	// page creates/forks spaces and navigates to them. We list spaces by
 	// re-fetching. For now, I'll track spaces locally.
 
-	// Refresh workspace + spaces
-	const refresh = async () => {
+	// Refresh workspace details
+	const refreshWorkspace = async () => {
 		if (!user) return;
-		setLoading(true);
 		try {
-			const [ws, ss] = await Promise.all([
-				workspacesApi.getById(Number(id)),
-				workspacesApi.getSpaces(Number(id)),
-			]);
+			const ws = await workspacesApi.getById(Number(id));
 			setWorkspace(ws);
-			setSpaces(ss);
 		} catch (e: any) {
-			console.error("Refresh failed", e);
+			console.error("Refresh workspace failed", e);
 		} finally {
 			setLoading(false);
 		}
 	};
 
+	// Fetch paginated spaces
+	const fetchSpaces = async () => {
+		if (!user) return;
+		setLoadingSpaces(true);
+		try {
+			const res = await workspacesApi.getSpaces(
+				Number(id),
+				spacesPage,
+				WORKSPACE_SPACES_PAGE_SIZE,
+				searchQuery || undefined,
+			);
+			setSpaces(res.content);
+			setSpacesTotalPages(res.totalPages);
+		} catch (e: any) {
+			console.error("Fetch spaces failed", e);
+		} finally {
+			setLoadingSpaces(false);
+		}
+	};
+
 	useEffect(() => {
-		refresh();
+		refreshWorkspace();
 	}, [id, user]);
+
+	useEffect(() => {
+		fetchSpaces();
+	}, [id, user, spacesPage, searchQuery]);
 
 	const handleCreateSpace = async () => {
 		if (!user || !title.trim()) return;
@@ -142,7 +176,7 @@ export default function WorkspaceDetailPage() {
 			<div className="flex flex-col flex-1 overflow-hidden">
 				<Header />
 				<main className="flex-1 overflow-auto">
-					<div className="p-6 max-w-5xl mx-auto space-y-6">
+					<div className="p-6 max-w-6xl mx-auto space-y-6">
 						{/* Back + Title */}
 						<div>
 							<Button variant="ghost" size="sm" className="mb-2" asChild>
@@ -151,7 +185,7 @@ export default function WorkspaceDetailPage() {
 									Back to Workspaces
 								</Link>
 							</Button>
-							<div className="flex items-start justify-between">
+							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
 								<div>
 									<h1 className="text-2xl font-bold text-foreground">{workspace.name}</h1>
 									{workspace.description && (
@@ -161,61 +195,81 @@ export default function WorkspaceDetailPage() {
 										{workspace.spaceCount} {workspace.spaceCount === 1 ? "space" : "spaces"}
 									</p>
 								</div>
-								<div className="flex gap-2">
-									{/* Create from scratch */}
-									<Dialog open={showCreate} onOpenChange={setShowCreate}>
-										<DialogTrigger asChild>
-											<Button variant="outline" size="sm">
-												<Plus className="mr-1.5 h-4 w-4" />
-												New Space
-											</Button>
-										</DialogTrigger>
-										<DialogContent>
-											<DialogHeader>
-												<DialogTitle>Create New Space</DialogTitle>
-											</DialogHeader>
-											<div className="space-y-4 pt-2">
-												<div className="space-y-2">
-													<Label>Title</Label>
-													<Input
-														placeholder="e.g. Operating Systems Notes"
-														value={title}
-														onChange={(e) => setTitle(e.target.value)}
-													/>
-												</div>
-												<div className="space-y-2">
-													<Label>Description (optional)</Label>
-													<Textarea
-														placeholder="What is this space for?"
-														value={desc}
-														onChange={(e) => setDesc(e.target.value)}
-														rows={3}
-													/>
-												</div>
-												<Button
-													onClick={handleCreateSpace}
-													disabled={creating || !title.trim()}
-													className="w-full"
-												>
-													{creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-													Create Space
-												</Button>
-											</div>
-										</DialogContent>
-									</Dialog>
+								<form
+									onSubmit={handleSearch}
+									className="flex gap-2 w-full sm:w-auto flex-col sm:flex-row"
+								>
+									<div className="relative flex-1 sm:w-64">
+										<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+										<Input
+											placeholder="Search spaces…"
+											value={inputValue}
+											onChange={(e) => setInputValue(e.target.value)}
+											className="pl-9 bg-input w-full"
+										/>
+									</div>
+									<div className="flex gap-2">
+										<Button asChild className="max-h-9" variant="outline">
+											<Link href="/courses">
+												<Compass className="mr-1.5 h-4 w-4" />
+												Explore Courses
+											</Link>
+										</Button>
 
-									<Button size="sm" asChild>
-										<Link href="/courses">
-											<Compass className="mr-1.5 h-4 w-4" />
-											Explore Courses
-										</Link>
-									</Button>
-								</div>
+										<Dialog open={showCreate} onOpenChange={setShowCreate}>
+											<DialogTrigger asChild>
+												<Button>
+													<Plus className="mr-1.5 h-4 w-4" />
+													New Space
+												</Button>
+											</DialogTrigger>
+											<DialogContent>
+												<DialogHeader>
+													<DialogTitle>Create New Space</DialogTitle>
+												</DialogHeader>
+												<div className="space-y-4 pt-2">
+													<div className="space-y-2">
+														<Label>Title</Label>
+														<Input
+															placeholder="e.g. Operating Systems Notes"
+															value={title}
+															onChange={(e) => setTitle(e.target.value)}
+														/>
+													</div>
+													<div className="space-y-2">
+														<Label>Description (optional)</Label>
+														<Textarea
+															placeholder="What is this space for?"
+															value={desc}
+															onChange={(e) => setDesc(e.target.value)}
+															rows={3}
+														/>
+													</div>
+													<Button
+														onClick={handleCreateSpace}
+														disabled={creating || !title.trim()}
+														className="w-full"
+													>
+														{creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+														Create Space
+													</Button>
+												</div>
+											</DialogContent>
+										</Dialog>
+									</div>
+								</form>
 							</div>
 						</div>
 
 						{/* Spaces Grid */}
-						{spaces.length === 0 && workspace.spaceCount === 0 ? (
+						{loadingSpaces ? (
+							<div className="flex justify-center items-center py-12">
+								<div className="text-sm text-muted-foreground animate-pulse flex items-center gap-2">
+									<Loader2 className="h-4 w-4 animate-spin" />
+									Loading spaces...
+								</div>
+							</div>
+						) : spaces.length === 0 && workspace.spaceCount === 0 ? (
 							<Card className="border-dashed">
 								<CardContent className="flex flex-col items-center justify-center py-16 text-center">
 									<BookOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
@@ -234,19 +288,22 @@ export default function WorkspaceDetailPage() {
 										onClick={() => router.push(`/workspaces/${id}/spaces/${space.id}`)}
 									>
 										<CardContent className="p-5 space-y-3">
-											<div className="flex items-start justify-between">
-												<div>
-													<h3 className="font-semibold text-foreground text-sm">
+											<div className="flex items-center justify-between gap-2">
+												<div className="min-w-0 flex-1">
+													<h3
+														className="font-semibold text-foreground text-sm truncate"
+														title={space.title}
+													>
 														{space.title}
 													</h3>
-													<div className="flex items-center gap-1.5 mt-1">
+													<div className="flex flex-wrap items-center gap-1.5 mt-1">
 														{space.forkedFromCourseTitle && (
 															<Badge variant="secondary" className="text-[10px]">
 																<GitFork className="mr-1 h-3 w-3" />
 																{space.forkedFromCourseTitle}
 															</Badge>
 														)}
-														<Badge variant="outline" className="text-[10px]">
+														<Badge variant="outline" className="text-[10px] shrink-0">
 															{space.sections.length} sections
 														</Badge>
 													</div>
@@ -256,7 +313,7 @@ export default function WorkspaceDetailPage() {
 														<Button
 															variant="ghost"
 															size="icon"
-															className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+															className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity -mt-0.5 shrink-0"
 														>
 															<MoreHorizontal className="h-4 w-4" />
 														</Button>
@@ -295,6 +352,11 @@ export default function WorkspaceDetailPage() {
 								))}
 							</div>
 						)}
+						<PaginationControls
+							currentPage={spacesPage}
+							totalPages={spacesTotalPages}
+							onPageChange={setSpacesPage}
+						/>
 					</div>
 				</main>
 			</div>
@@ -331,7 +393,12 @@ export default function WorkspaceDetailPage() {
 						</div>
 						<Button
 							onClick={handleEditSpace}
-							disabled={editingSpace || !editSpaceTitle.trim() || (editSpaceTitle.trim() === editSpaceTarget?.title && editSpaceDesc.trim() === (editSpaceTarget?.description || ""))}
+							disabled={
+								editingSpace ||
+								!editSpaceTitle.trim() ||
+								(editSpaceTitle.trim() === editSpaceTarget?.title &&
+									editSpaceDesc.trim() === (editSpaceTarget?.description || ""))
+							}
 							className="w-full"
 						>
 							{editingSpace && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

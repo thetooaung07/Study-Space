@@ -1,6 +1,8 @@
 export const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8080";
 export const API_BASE_URL = `${SERVER_BASE_URL}/api`;
 export const WS_BASE_URL = `${SERVER_BASE_URL}/ws`;
+export const DEFAULT_PAGE_SIZE = 6;
+export const WORKSPACE_SPACES_PAGE_SIZE = 9;
 
 export class ApiError extends Error {
 	constructor(

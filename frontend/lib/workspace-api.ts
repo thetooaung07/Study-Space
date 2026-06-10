@@ -12,19 +12,21 @@ import type {
 	ReviewProposalRequest,
 } from "@/types/workspaces";
 
-import { API_BASE_URL } from "./api";
+import { API_BASE_URL, DEFAULT_PAGE_SIZE } from "./api";
+import { PaginatedResponse } from "@/types/pagination";
 
 // ─── Workspace endpoints ────────────────────────────────────────────────────
 
 export const workspacesApi = {
 	/** Get my workspaces */
-	getMyWorkspaces: (userId: number): Promise<StudentWorkspace[]> => api.get(`/workspaces/my?userId=${userId}`),
+	getMyWorkspaces: (userId: number, page: number = 0, size: number = DEFAULT_PAGE_SIZE, search?: string): Promise<PaginatedResponse<StudentWorkspace>> => 
+		api.get(`/workspaces/my?userId=${userId}&page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
 
 	/** Get public workspaces (paginated) */
 	getPublicWorkspaces: (
 		page: number = 0,
-		size: number = 10,
-	): Promise<{ content: StudentWorkspace[]; totalPages: number; number: number }> =>
+		size: number = DEFAULT_PAGE_SIZE,
+	): Promise<PaginatedResponse<StudentWorkspace>> =>
 		api.get(`/workspaces/public?page=${page}&size=${size}`),
 
 	/** Get workspace detail */
@@ -47,7 +49,8 @@ export const workspacesApi = {
 
 	// ─── Spaces ──────────────────────────────────────────────────────────────
 
-	getSpaces: (workspaceId: number): Promise<WorkspaceSpace[]> => api.get(`/workspaces/${workspaceId}/spaces`),
+	getSpaces: (workspaceId: number, page: number = 0, size: number = DEFAULT_PAGE_SIZE, search?: string): Promise<PaginatedResponse<WorkspaceSpace>> => 
+		api.get(`/workspaces/${workspaceId}/spaces?page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
 
 	createSpace: (workspaceId: number, userId: number, data: CreateSpaceRequest): Promise<WorkspaceSpace> =>
 		api.post(`/workspaces/${workspaceId}/spaces?userId=${userId}`, data),
@@ -89,8 +92,8 @@ export const workspacesApi = {
 	removeGuest: (spaceId: number, guestUserId: number, userId: number): Promise<void> =>
 		api.delete(`/workspaces/spaces/${spaceId}/guests/${guestUserId}?userId=${userId}`),
 
-	getSharedSpaces: (userId: number): Promise<WorkspaceSpace[]> =>
-		api.get(`/workspaces/shared?userId=${userId}`),
+	getSharedSpaces: (userId: number, page: number = 0, size: number = DEFAULT_PAGE_SIZE): Promise<PaginatedResponse<WorkspaceSpace>> =>
+		api.get(`/workspaces/shared?userId=${userId}&page=${page}&size=${size}`),
 
 	leaveSpace: (spaceId: number, userId: number): Promise<void> =>
 		api.delete(`/workspaces/spaces/${spaceId}/leave?userId=${userId}`),

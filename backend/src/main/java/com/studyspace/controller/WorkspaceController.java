@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 
 @RestController
@@ -31,16 +33,19 @@ public class WorkspaceController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<StudentWorkspaceDTO>> getMyWorkspaces(@RequestParam Long userId) {
-        return ResponseEntity.ok(workspaceService.getMyWorkspaces(userId));
+    public ResponseEntity<Page<StudentWorkspaceDTO>> getMyWorkspaces(
+            @RequestParam Long userId,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(workspaceService.getMyWorkspaces(userId, search, PageRequest.of(page, size)));
     }
 
     @GetMapping("/public")
-    public ResponseEntity<org.springframework.data.domain.Page<StudentWorkspaceDTO>> getPublicWorkspaces(
+    public ResponseEntity<Page<StudentWorkspaceDTO>> getPublicWorkspaces(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(
-                org.springframework.data.domain.PageRequest.of(page, size)));
+        return ResponseEntity.ok(workspaceService.getPublicWorkspaces(PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")
@@ -76,8 +81,12 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}/spaces")
-    public ResponseEntity<List<WorkspaceSpaceDTO>> getSpaces(@PathVariable Long id) {
-        return ResponseEntity.ok(workspaceService.getSpacesByWorkspace(id));
+    public ResponseEntity<Page<WorkspaceSpaceDTO>> getSpaces(
+            @PathVariable Long id,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(workspaceService.getSpacesByWorkspace(id, search, PageRequest.of(page, size)));
     }
 
     @PostMapping("/{id}/spaces/fork")
@@ -153,8 +162,11 @@ public class WorkspaceController {
     }
 
     @GetMapping("/shared")
-    public ResponseEntity<List<WorkspaceSpaceDTO>> getSharedSpaces(@RequestParam Long userId) {
-        return ResponseEntity.ok(workspaceService.getSharedSpaces(userId));
+    public ResponseEntity<Page<WorkspaceSpaceDTO>> getSharedSpaces(
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(workspaceService.getSharedSpaces(userId, PageRequest.of(page, size)));
     }
 
     @DeleteMapping("/spaces/{spaceId}/guests/{guestUserId}")

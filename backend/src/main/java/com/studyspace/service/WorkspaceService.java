@@ -9,8 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.SecureRandom;
 import java.util.List;
+import java.security.SecureRandom;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 
 @Service
 @RequiredArgsConstructor
@@ -63,14 +66,13 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
-    public List<StudentWorkspaceDTO> getMyWorkspaces(Long ownerId) {
-        return workspaceRepository.findByOwnerId(ownerId)
-                .stream().map(this::toWorkspaceDTO).toList();
+    public Page<StudentWorkspaceDTO> getMyWorkspaces(Long ownerId, String search, Pageable pageable) {
+        return workspaceRepository.findByOwnerIdWithSearch(ownerId, search, pageable)
+                .map(this::toWorkspaceDTO);
     }
 
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<StudentWorkspaceDTO> getPublicWorkspaces(
-            org.springframework.data.domain.Pageable pageable) {
+    public Page<StudentWorkspaceDTO> getPublicWorkspaces(Pageable pageable) {
         return workspaceRepository.findAll(pageable).map(this::toWorkspaceDTO);
     }
 
@@ -93,9 +95,9 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkspaceSpaceDTO> getSpacesByWorkspace(Long workspaceId) {
-        return spaceRepository.findByWorkspaceId(workspaceId)
-                .stream().map(s -> toSpaceDTO(s, s.getWorkspace().getOwner().getId())).toList();
+    public Page<WorkspaceSpaceDTO> getSpacesByWorkspace(Long workspaceId, String search, Pageable pageable) {
+        return spaceRepository.findByWorkspaceIdWithSearch(workspaceId, search, pageable)
+                .map(s -> toSpaceDTO(s, s.getWorkspace().getOwner().getId()));
     }
 
     /**
@@ -249,11 +251,10 @@ public class WorkspaceService {
 
     /** Returns all spaces the user has joined as a guest. */
     @Transactional(readOnly = true)
-    public List<WorkspaceSpaceDTO> getSharedSpaces(Long userId) {
-        return guestRepository.findByUserId(userId).stream()
+    public Page<WorkspaceSpaceDTO> getSharedSpaces(Long userId, Pageable pageable) {
+        return guestRepository.findByUserId(userId, pageable)
                 .map(SpaceGuest::getSpace)
-                .map(s -> toSpaceDTO(s, userId))
-                .toList();
+                .map(s -> toSpaceDTO(s, userId));
     }
 
     /** Owner removes a guest from their space. */

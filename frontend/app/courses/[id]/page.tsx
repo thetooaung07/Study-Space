@@ -28,8 +28,8 @@ export default function CourseDetailPage() {
 				}
 				setCourse(c);
 				if (user) {
-					const enrollments = await coursesApi.getMyEnrollments(user.id).catch(() => []);
-					setIsEnrolled(enrollments.some((e) => e.courseId === c.id && e.status === "ACTIVE"));
+					const enrollments = await coursesApi.getMyEnrollments(user.id).catch(() => ({ content: [] }));
+					setIsEnrolled(enrollments.content.some((e) => e.courseId === c.id && e.status === "ACTIVE"));
 				}
 			})
 			.catch((e) => setError(e.message))

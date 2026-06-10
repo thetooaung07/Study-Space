@@ -68,12 +68,13 @@ class WorkspaceControllerTest {
     void getMyWorkspaces() throws Exception {
         StudentWorkspaceDTO dto = StudentWorkspaceDTO.builder().id(1L).build();
 
-        when(workspaceService.getMyWorkspaces(1L)).thenReturn(List.of(dto));
+        when(workspaceService.getMyWorkspaces(eq(1L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/workspaces/my")
                 .param("userId", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1));
+                .andExpect(jsonPath("$.content[0].id").value(1));
     }
 
     @Test
@@ -153,11 +154,12 @@ class WorkspaceControllerTest {
     @WithMockUser
     void getSpaces() throws Exception {
         WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
-        when(workspaceService.getSpacesByWorkspace(1L)).thenReturn(List.of(dto));
+        when(workspaceService.getSpacesByWorkspace(eq(1L), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/workspaces/1/spaces"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test

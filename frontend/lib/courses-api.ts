@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, DEFAULT_PAGE_SIZE } from "./api";
 import type {
   Course,
   CourseSummary,
@@ -11,16 +11,18 @@ import type {
 } from "@/types/courses";
 
 import { API_BASE_URL } from "./api";
+import { PaginatedResponse } from "@/types/pagination";
 
 // ─── Course endpoints ──────────────────────────────────────────────────────────
 
 export const coursesApi = {
   /** Get all published courses (catalog) */
-  getAll: (): Promise<CourseSummary[]> => api.get("/courses"),
+  getAll: (page: number = 0, size: number = DEFAULT_PAGE_SIZE, search?: string): Promise<PaginatedResponse<CourseSummary>> =>
+    api.get(`/courses?page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
 
   /** Get instructor's own courses */
-  getMyCourses: (userId: number): Promise<CourseSummary[]> =>
-    api.get(`/courses/my?userId=${userId}`),
+  getMyCourses: (userId: number, page: number = 0, size: number = DEFAULT_PAGE_SIZE, search?: string): Promise<PaginatedResponse<CourseSummary>> =>
+    api.get(`/courses/my?userId=${userId}&page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
 
   /** Get full course detail */
   getById: (id: number): Promise<Course> => api.get(`/courses/${id}`),
@@ -110,8 +112,8 @@ export const coursesApi = {
   getEnrollments: (courseId: number, userId: number): Promise<CourseEnrollment[]> =>
     api.get(`/courses/${courseId}/enrollments?userId=${userId}`),
 
-  getMyEnrollments: (studentId: number): Promise<CourseEnrollment[]> =>
-    api.get(`/courses/my-enrollments?studentId=${studentId}`),
+  getMyEnrollments: (studentId: number, page: number = 0, size: number = DEFAULT_PAGE_SIZE, search?: string): Promise<PaginatedResponse<CourseEnrollment>> =>
+    api.get(`/courses/my-enrollments?studentId=${studentId}&page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`),
 
   updateEnrollmentStatus: async (
     enrollmentId: number,

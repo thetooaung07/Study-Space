@@ -291,17 +291,22 @@ export default function SpaceManagePage() {
 								{/* Header */}
 								<div>
 									<Button variant="ghost" size="sm" className="mb-2" asChild>
-										<Link href={`/workspaces/${workspaceId}`}>
+										<Link href={space.isGuest ? "/workspaces" : `/workspaces/${workspaceId}`}>
 											<ArrowLeft className="mr-1.5 h-4 w-4" />
-											Back to Workspace
+											{space.isGuest ? "Back to Workspaces" : "Back to Workspace"}
 										</Link>
 									</Button>
-									<div className="flex items-start justify-between">
-										<div>
+									<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+										<div className="min-w-0 flex-1 pr-0 sm:pr-4">
 											<div className="flex flex-wrap items-center gap-2">
-												<h1 className="text-2xl font-bold text-foreground">{space.title}</h1>
+												<h1 className="text-2xl font-bold text-foreground min-w-0 truncate">
+													{space.title}
+												</h1>
 												{space.forkedFromCourseTitle && space.forkedFromCourseId && (
-													<Link href={`/courses/${space.forkedFromCourseId}`}>
+													<Link
+														href={`/courses/${space.forkedFromCourseId}`}
+														className="shrink-0 mt-1"
+													>
 														<Badge
 															variant="secondary"
 															className="text-xs hover:bg-secondary/80 transition-colors cursor-pointer hover:underline"
@@ -323,38 +328,33 @@ export default function SpaceManagePage() {
 												materials
 											</p>
 										</div>
-										<div className="flex gap-2">
+										<div className="flex flex-wrap gap-2 shrink-0">
+											{!space.isGuest && (
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => {
+														setEditSpaceTitle(space.title);
+														setEditSpaceDesc(space.description || "");
+														setShowEditSpace(true);
+													}}
+												>
+													<Pencil className="mr-1.5 h-4 w-4" />
+													Edit Space
+												</Button>
+											)}
 											{space.forkedFromCourseId && !space.isGuest && (
 												<Button size="sm" asChild>
 													<Link href={`/workspaces/${workspaceId}/spaces/${spaceId}/propose`}>
 														<Send className="mr-1.5 h-4 w-4" />
-														Propose Contribution
+														Propose Merge
 													</Link>
 												</Button>
 											)}
-											{!space.isGuest && (
-												<>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => setShowShare(true)}
-													>
-														<Users className="mr-1.5 h-4 w-4" />
-														Share Space
-													</Button>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => {
-															setEditSpaceTitle(space.title);
-															setEditSpaceDesc(space.description || "");
-															setShowEditSpace(true);
-														}}
-													>
-														<Pencil className="h-6 w-4" />
-													</Button>
-												</>
-											)}
+											<Button size="sm" variant="outline" onClick={() => setShowShare(true)}>
+												<Users className="mr-1.5 h-4 w-4" />
+												Share Space
+											</Button>
 										</div>
 									</div>
 								</div>

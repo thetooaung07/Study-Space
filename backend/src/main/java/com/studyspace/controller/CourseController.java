@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import java.util.List;
 
 @RestController
@@ -54,13 +56,20 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CourseSummaryDTO>> getAllPublishedCourses() {
-        return ResponseEntity.ok(courseService.getAllPublishedCourses());
+    public ResponseEntity<Page<CourseSummaryDTO>> getAllPublishedCourses(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(courseService.getAllPublishedCourses(search, PageRequest.of(page, size)));
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<CourseSummaryDTO>> getMyCourses(@RequestParam Long userId) {
-        return ResponseEntity.ok(courseService.getMyCourses(userId));
+    public ResponseEntity<Page<CourseSummaryDTO>> getMyCourses(
+            @RequestParam Long userId,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(courseService.getMyCourses(userId, search, PageRequest.of(page, size)));
     }
 
     @GetMapping("/{id}")
@@ -147,7 +156,11 @@ public class CourseController {
     }
 
     @GetMapping("/my-enrollments")
-    public ResponseEntity<List<CourseEnrollmentDTO>> getMyEnrollments(@RequestParam Long studentId) {
-        return ResponseEntity.ok(courseService.getMyEnrollments(studentId));
+    public ResponseEntity<Page<CourseEnrollmentDTO>> getMyEnrollments(
+            @RequestParam Long studentId,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(courseService.getMyEnrollments(studentId, search, PageRequest.of(page, size)));
     }
 }
