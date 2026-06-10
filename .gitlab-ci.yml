@@ -51,22 +51,39 @@ backend_test:
             - backend/build/reports/jacoco/test/jacocoTestReport.xml
         when: always
 
-# # ----------------------------------------
-# #  Frontend Test + Coverage
-# # ----------------------------------------
-# frontend_test:
-#     stage: test
-#     image: node:20-alpine
-#     needs:
-#         - job: frontend_build
-#           artifacts: false # no build output needed to run tests
-#     script:
-#         - cd frontend
-#         - npm run test:coverage
-#     artifacts:
-#         paths:
-#             - frontend/coverage/lcov.info
-#         when: always
+# ----------------------------------------
+#  Frontend Unit Test
+# ----------------------------------------
+frontend_unit_test:
+    stage: test
+    image: node:20-alpine
+    needs:
+        - job: frontend_build
+          artifacts: false # no build output needed to run tests
+    script:
+        - cd frontend
+        - npm install
+        - npm run test -- --run
+
+# ----------------------------------------
+#  Frontend E2E Test
+# ----------------------------------------
+frontend_e2e_test:
+    stage: test
+    image: mcr.microsoft.com/playwright:v1.50.0-jammy
+    needs:
+        - job: frontend_build
+          artifacts: false # no build output needed to run tests
+    script:
+        - cd frontend
+        - npm install
+        - npx playwright install --with-deps
+        - npm run test:e2e
+    artifacts:
+        paths:
+            - frontend/playwright-report/
+            - frontend/test-results/
+        when: always
 
 # ----------------------------------------
 # 4. Dependency Security Scan
@@ -94,7 +111,7 @@ dependency_check:
     allow_failure: true
 
 # ----------------------------------------
-# 5. Unified SonarQube Analysis
+# 5. SonarQube Analysis
 # ----------------------------------------
 sonarQube:
     stage: analyze
