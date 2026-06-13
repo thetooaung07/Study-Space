@@ -48,18 +48,17 @@ export default function CoursesPage() {
 					.getMyEnrollments(user.id, page, DEFAULT_PAGE_SIZE, searchQuery || undefined)
 					.then((res) => {
 						setCourses(
-							res.content
-								.map((e) => ({
-									id: e.courseId,
-									title: e.courseTitle,
-									description: e.courseDescription || "",
-									instructorId: e.instructorId,
-									instructorName: e.instructorName,
-									isPublished: true,
-									createdAt: e.enrolledAt,
-									enrollmentCount: e.enrollmentCount,
-									sectionCount: e.sectionCount,
-								})),
+							res.content.map((e) => ({
+								id: e.courseId,
+								title: e.courseTitle,
+								description: e.courseDescription ?? "",
+								instructorId: e.instructorId,
+								instructorName: e.instructorName,
+								isPublished: true,
+								createdAt: e.enrolledAt,
+								enrollmentCount: e.enrollmentCount,
+								sectionCount: e.sectionCount,
+							})),
 						);
 						setTotalPages(res.totalPages);
 					})
@@ -102,9 +101,9 @@ export default function CoursesPage() {
 		return (
 			<>
 				<TabsContent value="all" className="m-0 mt-4">
-					<CourseCatalog 
-						courses={courses} 
-						as="student" 
+					<CourseCatalog
+						courses={courses}
+						as="student"
 						searchQuery={searchQuery}
 						onSearchChange={(q) => {
 							setSearchQuery(q);
@@ -161,7 +160,11 @@ export default function CoursesPage() {
 							)}
 						</div>
 
-						<Tabs value={activeTab} onValueChange={(val) => handleTabChange(val as "all" | "my")} className="w-full">
+						<Tabs
+							value={activeTab}
+							onValueChange={(val) => handleTabChange(val as "all" | "my")}
+							className="w-full"
+						>
 							<TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
 								<TabsTrigger value="all">All Courses</TabsTrigger>
 								<TabsTrigger value="my">

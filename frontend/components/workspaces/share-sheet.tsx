@@ -19,7 +19,7 @@ interface ShareSheetProps {
 	onUpdated: (updated: WorkspaceSpaceDTO) => void;
 }
 
-export function ShareSheet({ space, userId, onClose, onUpdated }: ShareSheetProps) {
+export function ShareSheet({ space, userId, onClose, onUpdated }: Readonly<ShareSheetProps>) {
 	const [settings, setSettings] = useState<ShareSettingsDTO>({
 		sharingEnabled: space.sharingEnabled ?? false,
 		inviteCode: space.inviteCode ?? null,
@@ -28,7 +28,6 @@ export function ShareSheet({ space, userId, onClose, onUpdated }: ShareSheetProp
 	const [copied, setCopied] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [guests, setGuests] = useState<SpaceGuestEntry[]>([]);
-	const [guestsLoaded, setGuestsLoaded] = useState(false);
 
 	async function toggleSharing() {
 		setLoading(true);
@@ -39,7 +38,7 @@ export function ShareSheet({ space, userId, onClose, onUpdated }: ShareSheetProp
 			} else {
 				const result = await api.post<ShareSettingsDTO>(
 					`/workspaces/spaces/${space.id}/sharing/enable?userId=${userId}`,
-					{}
+					{},
 				);
 				setSettings(result);
 			}
@@ -54,7 +53,7 @@ export function ShareSheet({ space, userId, onClose, onUpdated }: ShareSheetProp
 		try {
 			const result = await api.post<ShareSettingsDTO>(
 				`/workspaces/spaces/${space.id}/sharing/regenerate?userId=${userId}`,
-				{}
+				{},
 			);
 			setSettings(result);
 		} finally {
@@ -149,14 +148,16 @@ export function ShareSheet({ space, userId, onClose, onUpdated }: ShareSheetProp
 								Guests ({settings.guestCount})
 							</p>
 						</div>
-						{settings.guestCount === 0 && (
-							<p className="text-sm text-muted-foreground">No guests yet.</p>
-						)}
+						{settings.guestCount === 0 && <p className="text-sm text-muted-foreground">No guests yet.</p>}
 						{guests.map((g) => (
 							<div key={g.id} className="flex items-center justify-between py-1.5">
 								<div className="flex items-center gap-2">
 									{g.profilePictureUrl ? (
-										<img src={g.profilePictureUrl} alt={g.fullName} className="w-7 h-7 rounded-full" />
+										<img
+											src={g.profilePictureUrl}
+											alt={g.fullName}
+											className="w-7 h-7 rounded-full"
+										/>
 									) : (
 										<div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
 											{g.fullName.charAt(0)}

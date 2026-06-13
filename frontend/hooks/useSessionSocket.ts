@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { Client, IMessage } from "@stomp/stompjs";
-import { useAuth } from "@/context/auth-context";
 import { WS_BASE_URL } from "@/lib/api";
 import { StudySessionDTO, ActivityDTO } from "@/types";
 

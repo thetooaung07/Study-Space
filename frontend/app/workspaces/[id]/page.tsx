@@ -2,7 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Plus, Loader2, Trash2, GitFork, BookOpen, MoreHorizontal, ArrowLeft, Compass, Pencil } from "lucide-react";
+import {
+	Search,
+	Plus,
+	Loader2,
+	Trash2,
+	GitFork,
+	BookOpen,
+	MoreHorizontal,
+	ArrowLeft,
+	Compass,
+	Pencil,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +29,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
-import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { workspacesApi } from "@/lib/workspace-api";
 import { WORKSPACE_SPACES_PAGE_SIZE } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import type { StudentWorkspace, WorkspaceSpace } from "@/types/workspaces";
 import { PaginationControls } from "@/components/common/pagination-controls";
 import Link from "next/link";
-import { Search } from "lucide-react";
 
 export default function WorkspaceDetailPage() {
 	const { id } = useParams<{ id: string }>();

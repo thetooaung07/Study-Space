@@ -22,7 +22,7 @@ import {
 	Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -473,7 +473,7 @@ export default function SpaceManagePage() {
 																					href={`${API_BASE_URL}/files/download?materialId=${
 																						m.id
 																					}&type=WORKSPACE&token=${
-																						localStorage.getItem("token") ||
+																						localStorage.getItem("token") ??
 																						""
 																					}`}
 																					target="_blank"
@@ -507,7 +507,7 @@ export default function SpaceManagePage() {
 																					href={`${API_BASE_URL}/files/download?materialId=${
 																						m.id
 																					}&type=WORKSPACE&token=${
-																						localStorage.getItem("token") ||
+																						localStorage.getItem("token") ??
 																						""
 																					}`}
 																					target="_blank"

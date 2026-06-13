@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Link2, FileText, AlertCircle, Sparkles, MessageSquare } from "lucide-react";
+import { Send, Link2, FileText, MessageSquare } from "lucide-react";
 import { SpaceMessage, WorkspaceMaterial } from "@/types/workspaces";
 import { format } from "date-fns";
-import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { useSpaceSocket } from "@/hooks/useSpaceSocket";
 import { MaterialType } from "@/types/courses";
