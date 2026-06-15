@@ -14,7 +14,7 @@
 - **Java 21** or higher
 - **Node.js 18+** and npm
 - **Docker** and Docker Compose (recommended)
-- **Maven** (or use the included `mvnw` wrapper)
+- **Gradle** (or use the included `gradlew` wrapper)
 
 ### Running with Docker (Recommended)
 
@@ -41,16 +41,13 @@ docker-compose up --build
 cd backend
 
 # Build the project
-mvn clean install
+./gradlew build
 
 # Run tests
-mvn test
+./gradlew test
 
 # Start the application
-mvn spring-boot:run
-
-# Or using Maven wrapper
-./mvnw spring-boot:run
+./gradlew bootRun
 ```
 
 The backend will start on `http://localhost:8080`
@@ -93,7 +90,7 @@ Once the backend is running, access the **Swagger UI** for interactive API testi
 - **ORM**: Hibernate/JPA
 - **Security**: Spring Security with JWT, OAuth2
 - **API Documentation**: Springdoc OpenAPI (Swagger)
-- **Build Tool**: Maven
+- **Build Tool**: Gradle
 - **Testing**: JUnit 5, Mockito, Spring Test
 
 ### Frontend
@@ -366,10 +363,10 @@ The project includes comprehensive automated tests covering **three different te
 cd backend
 
 # Run all tests
-mvn test
+./gradlew test
 
 # Run specific test class
-mvn test -Dtest=UserServiceTest
+./gradlew test --tests UserServiceTest
 ```
 
 ## 📁 Project Structure
@@ -391,7 +388,8 @@ StudySpace/
 │   │   │       ├── application.yml
 │   │   │       └── data-postgres.sql
 │   │   └── test/                   # Automated tests
-│   └── pom.xml                     # Maven dependencies
+│   ├── build.gradle                # Gradle dependencies
+│   └── settings.gradle             # Gradle settings
 │
 ├── frontend/                       # Next.js frontend
 │   ├── app/                        # App router pages
