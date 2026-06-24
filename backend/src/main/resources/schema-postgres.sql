@@ -243,9 +243,12 @@ CREATE TABLE IF NOT EXISTS space_messages (
 
 CREATE TABLE IF NOT EXISTS conversations (
     id         VARCHAR(36) PRIMARY KEY,
+    user_id    BIGINT    NOT NULL,
+    title      VARCHAR(255) DEFAULT 'New Chat',
     summary    TEXT      DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -299,6 +302,7 @@ CREATE INDEX IF NOT EXISTS idx_space_guests_user            ON space_guests(user
 CREATE INDEX IF NOT EXISTS idx_space_messages_space         ON space_messages(space_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conversation        ON messages(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_conversation_updated         ON conversations(updated_at);
+CREATE INDEX IF NOT EXISTS idx_conversation_user            ON conversations(user_id);
 CREATE INDEX IF NOT EXISTS idx_doc_chunks_url               ON document_chunks(document_url);
 
 -- IVFFlat index for approximate nearest-neighbour cosine search

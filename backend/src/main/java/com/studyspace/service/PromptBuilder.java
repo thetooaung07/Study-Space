@@ -35,17 +35,28 @@ public class PromptBuilder {
      * @param recentMessages recent DB messages for this conversation (may be empty)
      * @param ragChunks      top-K semantically relevant document excerpts (may be empty)
      * @param userQuestion   the student's current question
+     * @param firstTurn      when {@code true}, instructs the LLM to prefix its reply with
+     *                       {@code TITLE: <5-8 word label>} so the backend can extract a
+     *                       meaningful conversation title without a separate API call
      * @return complete prompt string ready to send to the LLM provider
      */
     public String buildRuntimePrompt(String summary,
                                      List<Message> recentMessages,
                                      List<String> ragChunks,
-                                     String userQuestion) {
+                                     String userQuestion,
+                                     boolean firstTurn) {
         StringBuilder sb = new StringBuilder();
 
         // ── System preamble ─────────────────────────────────────────────────
         sb.append("You are a helpful academic teaching assistant for students using the StudySpace platform.\n");
-        sb.append("Answer clearly, concisely, and in Markdown where appropriate.\n\n");
+        sb.append("Answer clearly, concisely, and in Markdown where appropriate.\n");
+
+        if (firstTurn) {
+            sb.append("IMPORTANT: Begin your response with exactly one line in this format:\n");
+            sb.append("TITLE: <a concise 5-8 word summary of the student's question>\n");
+            sb.append("Then leave one blank line and write your full answer.\n");
+        }
+        sb.append("\n");
 
         appendSummary(sb, summary);
         appendRecentMessages(sb, recentMessages);
@@ -56,14 +67,27 @@ public class PromptBuilder {
         sb.append(userQuestion.trim());
 
         String prompt = sb.toString();
-        log.info("[PROMPT_BUILDER] Prompt assembled — {} chars | summary={} | recentMsgs={} | ragChunks={}",
+        log.info("[PROMPT_BUILDER] Prompt assembled — {} chars | summary={} | recentMsgs={} | ragChunks={} | firstTurn={}",
                 prompt.length(),
                 summary != null && !summary.isBlank(),
                 recentMessages != null ? recentMessages.size() : 0,
-                ragChunks != null ? ragChunks.size() : 0);
+                ragChunks != null ? ragChunks.size() : 0,
+                firstTurn);
 
         return prompt;
     }
+
+    /**
+     * Backward-compatible overload (firstTurn = false).
+     * Retained so existing callers need no changes.
+     */
+    public String buildRuntimePrompt(String summary,
+                                     List<Message> recentMessages,
+                                     List<String> ragChunks,
+                                     String userQuestion) {
+        return buildRuntimePrompt(summary, recentMessages, ragChunks, userQuestion, false);
+    }
+
 
     private void appendSummary(StringBuilder sb, String summary) {
         if (summary != null && !summary.isBlank()) {

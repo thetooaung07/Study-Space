@@ -4,6 +4,8 @@ import com.studyspace.entity.Conversation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Spring Data JPA repository for {@link Conversation}.
  *
@@ -12,5 +14,10 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, String> {
-    // No custom queries needed for the MVP phases.
+
+    /**
+     * Returns all conversations owned by the given user, newest-first.
+     * Used to populate the History popup in the AI chat panel.
+     */
+    List<Conversation> findByUserIdOrderByUpdatedAtDesc(Long userId);
 }

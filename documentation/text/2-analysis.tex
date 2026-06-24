@@ -52,7 +52,8 @@ practical to use within the scope of a bachelor thesis prototype.
 \subsection{Frontend Framework}
 \label{subsec:frontend-tech}
 
-FR-01 through FR-04 require a responsive, component-rich user interface that manages complex
+The core capabilities of the system (such as course administration, content cloning, contextual
+messaging, and AI assistance) require a responsive and component-rich user interface that manages complex
 shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
 simultaneously on the same screen.
 
@@ -73,7 +74,7 @@ module system exceeds what is justified for a single-team prototype of this scop
 React was selected because its component model aligns directly with the StudySpace screen layout
 (course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
 first-class, and its ecosystem provides the resizable panel, rich-text input, and WebSocket hook
-primitives needed by FR-02 and FR-03 without significant additional integration effort.
+primitives needed for the content extension and contextual messaging features without significant additional integration effort.
 
 React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
 routing via the App Router, server-side rendering where applicable, and built-in image
@@ -82,15 +83,15 @@ routing configuration and makes the project structure self-documenting through t
 layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
 \textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}, which provide accessible, unstyled
 component primitives that Tailwind classes are applied to. State management across the application
-uses \textbf{Redux Toolkit}~\cite{ReduxToolkit}, which offers predictable reducers and typed
-async thunks for all API interactions.
+uses React's native \textbf{Context API} and custom hooks, providing a lightweight, predictable
+data flow for all API interactions without the overhead of external state libraries.
 
 % ----------------------------------------------------------------
 \subsection{Backend Framework}
 \label{subsec:backend-tech}
 
-FR-05 requires robust authentication and role-based authorisation. FR-02 and FR-04 involve
-complex transactional operations over relational data. These requirements favour a statically
+The system requires robust access control with role-based authorisation. Furthermore, the content
+extension workflows and AI assistance feature involve complex transactional operations over relational data. These requirements favour a statically
 typed language with mature transaction management and security libraries.
 
 \textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
@@ -103,7 +104,7 @@ programming.
 
 \textbf{Node.js with NestJS or Express} excels in I/O-bound tasks due to its event-driven
 architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
-transactional operations required by the Content Extension System (FR-02), and the ORM ecosystem
+transactional operations required by the Content Extension System, and the ORM ecosystem
 does not reach the integration depth and stability of Spring Data JPA.
 
 \textbf{Python with Django or FastAPI} is excellent for rapid prototyping and AI integration.
@@ -113,9 +114,9 @@ concurrent CPU-bound tasks.
 
 Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model
 maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
-authentication and method-level authorisation out of the box (directly addressing FR-05), and the
-mature transaction management ensures referential integrity across the complex clone and proposal
-approval operations required by FR-02.
+authentication and method-level authorisation out of the box (directly addressing the access
+control requirements), and the mature transaction management ensures referential integrity across the complex clone and proposal
+approval operations required by the content extension workflow.
 
 % ----------------------------------------------------------------
 \subsection{Database and Vector Store}
@@ -123,7 +124,7 @@ approval operations required by FR-02.
 
 The application's data model is inherently relational: users own workspaces, workspaces belong
 to courses, clone records track inheritance, and proposals reference both student materials and
-instructor courses. FR-02 requires ACID transaction guarantees across multi-entity writes.
+instructor courses. The content extension system requires ACID transaction guarantees across multi-entity writes.
 
 \textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
 system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
@@ -138,17 +139,16 @@ inconsistency when a Course Material is approved and must be reflected in both t
 the course tables atomically.
 
 PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
-transactions are required for the clone and approval workflows (FR-02), and foreign-key
-constraints enforce referential integrity between proposals and their source materials. The AI
-assistant (FR-04) does not require a dedicated vector store at this prototype stage because the
-document text is extracted at query time and injected directly into the prompt; full vector
-embeddings are identified as a future extension in section~\ref{sec:future-work}.
+transactions are required for the clone and approval workflows, and foreign-key
+constraints enforce referential integrity between proposals and their source materials.
+Additionally, the AI assistant leverages the \texttt{pgvector} extension to provide similarity
+search over document embeddings directly within the same database, eliminating the need for a separate dedicated vector store.
 
 % ----------------------------------------------------------------
 \subsection{Authentication and Authorisation}
 \label{subsec:auth-tech}
 
-FR-05 requires stateless authentication suitable for a REST API consumed by a single-page
+The access control system requires stateless authentication suitable for a REST API consumed by a single-page
 application, with role-based restrictions enforced on the server side.
 
 \textbf{JSON Web Tokens (JWT) with Spring Security}~\cite{SpringSecurity} enables stateless
@@ -174,7 +174,7 @@ path alongside the primary local credential flow.
 \subsection{Real-Time Communication}
 \label{subsec:websocket-tech}
 
-The Contextual Messaging System (FR-03) requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
+The Contextual Messaging System requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
 
 
 \textbf{WebSocket with STOMP over SockJS}~\cite{SockJS} layers a publish-subscribe model on top
@@ -216,7 +216,7 @@ Given the performance advantages of its modern execution pipeline and its seamle
 \subsubsection{End-to-End Testing}
 \label{subsubsec:e2e-testing}
 
-End-to-end testing simulates real user behaviour by driving an actual web browser, ensuring that the frontend, backend, and database interact correctly. This is particularly important for StudySpace, as features like the Merge Proposal workflow (FR-02) and the real-time Contextual Messaging System (FR-03) involve complex cross-tier interactions. Cypress and Playwright are the leading solutions for modern web applications.
+End-to-end testing simulates real user behaviour by driving an actual web browser, ensuring that the frontend, backend, and database interact correctly. This is particularly important for StudySpace, as features like the Merge Proposal workflow and the real-time Contextual Messaging System involve complex cross-tier interactions. Cypress and Playwright are the leading solutions for modern web applications.
 
 Cypress~\cite{Cypress} offers a highly visual, interactive test runner that executes directly within the browser alongside the application under test. This architecture provides excellent debugging capabilities and a shallow learning curve. However, Cypress traditionally struggles with testing multi-tab workflows and cross-origin navigations, which can be problematic when testing OAuth flows or interactions that open course materials in new tabs. Furthermore, its execution speed is relatively slow when running large test suites in headless Continuous Integration (CI) environments.
 
@@ -256,7 +256,7 @@ independently, and submit a Merge Proposal for the Instructor to review and opti
 
 When a student clones a course, the backend performs a deep copy of the course structure into a
 new \texttt{StudentWorkspace}: every section and every Course Material is mirrored as a
-\texttt{WorkspaceSection} and a \texttt{WorkspaceMaterial}. Cloned materials carry the flag
+\texttt{Workspace\allowbreak Section} and a \texttt{Workspace\allowbreak Material}. Cloned materials carry the flag
 \texttt{isReference = true}, meaning they point to the original file URL rather than a new copy,
 which saves storage. The student may then upload additional materials into the Private Workspace.
 When satisfied, the student submits a Merge Proposal, which the Instructor reviews in a dedicated
@@ -312,34 +312,21 @@ response if it attempts a restricted operation.
 The following non-functional requirements define the quality constraints the system must satisfy
 regardless of the specific feature being used.
 
-\begin{table}[htbp]
-    \centering
-    \caption{Non-functional requirements}
-    \label{tab:nonfunctional-requirements}
-    \renewcommand{\arraystretch}{1.4}
-    \begin{tabularx}{\textwidth}{|p{1.5cm}|X|}
-        \hline
-        \textbf{ID} & \textbf{Description} \\
-        \hline
-        NFR-01 & \textbf{Usability}: The interface should be straightforward enough for
-                 students with no prior training to use without a manual. \\
-        \hline
-        NFR-02 & \textbf{Security}: All endpoints except login and registration must
-                 require a valid JWT token. Role-based access must be enforced on the
-                 server side. \\
-        \hline
-        NFR-03 & \textbf{Performance}: Course and workspace pages should load within
-                 three seconds under normal conditions. \\
-        \hline
-        NFR-04 & \textbf{Maintainability}: The backend and frontend must be clearly
-                 separated and independently deployable. The project structure should
-                 follow established conventions for its respective framework. \\
-        \hline
-        NFR-05 & \textbf{Deployability}: The entire application must be runnable with
-                 a single Docker Compose command without manual environment setup. \\
-        \hline
-    \end{tabularx}
-\end{table}
+\begin{itemize}
+    \item \textbf{NFR-01 (Usability)}: The interface should be straightforward enough for
+          students with no prior training to use without a manual.
+    \item \textbf{NFR-02 (Security)}: All endpoints except login and registration must
+          require a valid JWT token. Role-based access must be enforced on the server side.
+    \item \textbf{NFR-03 (Performance)}: Course and workspace pages should load within
+          three seconds under normal conditions.
+    \item \textbf{NFR-04 (Maintainability)}: The backend and frontend must be clearly
+          separated and independently deployable. The project structure should
+          follow established conventions for its respective framework.
+    \item \textbf{NFR-05 (Deployability)}: The frontend and backend must be clearly
+          separated and independently deployable via automated CI/CD pipelines to
+          modern cloud platforms. Local development should still be achievable with
+          a single Docker Compose command.
+\end{itemize}
 
 % ----------------------------------------------------------------
 \section{Use Cases}
@@ -381,7 +368,7 @@ are stated for the non-trivial cases that have dependencies on prior system stat
     \item \textbf{\texttt{Clone course to Private Workspace}}: Pre-condition: the student is
           enrolled in a published course. The student triggers a clone action; the backend creates
           a Private Workspace containing mirror copies of all sections and Course Materials.
-    \item \textbf{\texttt{Submit Merge Proposal}}: Pre-condition: the student owns a Private
+    \item \textbf{Submit Merge Proposal}: Pre-condition: the student owns a Private
           Workspace with at least one non-reference material or a modified reference material.
           The student selects materials and a target section, optionally adds a message, and
           submits the proposal for Instructor review.

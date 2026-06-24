@@ -2,6 +2,7 @@ package com.studyspace.service;
 
 import com.studyspace.entity.Conversation;
 import com.studyspace.entity.Message;
+import com.studyspace.dto.ChatQueryResponse;
 import com.studyspace.repository.ConversationRepository;
 import com.studyspace.repository.MessageRepository;
 import com.studyspace.service.llm.LlmProvider;
@@ -58,15 +59,15 @@ class MemoryManagerTest {
         String expectedAnswer = "This is a stateless answer.";
         List<String> chunks = List.of("chunk1");
         
-        when(promptBuilder.buildRuntimePrompt(eq(""), eq(List.of()), eq(chunks), eq(question)))
+        when(promptBuilder.buildRuntimePrompt(eq(""), eq(List.of()), eq(chunks), eq(question), anyBoolean()))
                 .thenReturn("stateless-prompt");
         when(llmProvider.generate("stateless-prompt")).thenReturn(expectedAnswer);
 
         // Act
-        String answer = memoryManager.handleQuery(null, question, chunks, "gemini");
+        ChatQueryResponse response = memoryManager.handleQuery(null, 1L, question, chunks, "gemini", null);
 
         // Assert
-        assertEquals(expectedAnswer, answer);
+        assertEquals(expectedAnswer, response.getAnswer());
         
         verify(conversationRepository, never()).findById(anyString());
         verify(conversationRepository, never()).save(any());
@@ -92,17 +93,17 @@ class MemoryManagerTest {
         when(conversationRepository.findById(convId)).thenReturn(Optional.of(existingConv));
         when(messageRepository.findTop10ByConversationIdOrderByCreatedAtAsc(convId))
                 .thenReturn(List.of(recentMsg));
-        when(promptBuilder.buildRuntimePrompt(eq("Existing summary"), eq(List.of(recentMsg)), eq(chunks), eq(question)))
+        when(promptBuilder.buildRuntimePrompt(eq("Existing summary"), eq(List.of(recentMsg)), eq(chunks), eq(question), anyBoolean()))
                 .thenReturn("stateful-prompt");
         when(llmProvider.generate("stateful-prompt")).thenReturn(expectedAnswer);
         
         when(messageRepository.countByConversationId(convId)).thenReturn((long) MemoryManager.COMPRESSION_THRESHOLD);
 
         // Act
-        String answer = memoryManager.handleQuery(convId, question, chunks, "openai");
+        ChatQueryResponse response = memoryManager.handleQuery(convId, 1L, question, chunks, "openai", null);
 
         // Assert
-        assertEquals(expectedAnswer, answer);
+        assertEquals(expectedAnswer, response.getAnswer());
         
         verify(conversationRepository, never()).save(any(Conversation.class));
         verify(messageRepository, times(2)).save(any(Message.class)); // 1 user msg, 1 assistant msg
@@ -121,17 +122,17 @@ class MemoryManagerTest {
         when(conversationRepository.save(any(Conversation.class))).thenAnswer(inv -> inv.getArgument(0));
         
         when(messageRepository.findTop10ByConversationIdOrderByCreatedAtAsc(convId)).thenReturn(List.of());
-        when(promptBuilder.buildRuntimePrompt(eq(""), eq(List.of()), eq(chunks), eq(question)))
+        when(promptBuilder.buildRuntimePrompt(eq(""), eq(List.of()), eq(chunks), eq(question), anyBoolean()))
                 .thenReturn("new-prompt");
         when(llmProvider.generate("new-prompt")).thenReturn(expectedAnswer);
         
         when(messageRepository.countByConversationId(convId)).thenReturn((long) MemoryManager.COMPRESSION_THRESHOLD + 1);
 
         // Act
-        String answer = memoryManager.handleQuery(convId, question, chunks, "gemini");
+        ChatQueryResponse response = memoryManager.handleQuery(convId, 1L, question, chunks, "gemini", null);
 
         // Assert
-        assertEquals(expectedAnswer, answer);
+        assertEquals(expectedAnswer, response.getAnswer());
         
         verify(conversationRepository, times(1)).save(any(Conversation.class));
         verify(messageRepository, times(2)).save(any(Message.class));

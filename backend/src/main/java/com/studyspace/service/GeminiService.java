@@ -102,7 +102,7 @@ public class GeminiService {
 
 
     /**
-     * Sends a multimodal {@link Content} request to {@code gemini-2.0-flash}.
+     * Sends a multimodal {@link Content} request to {@code gemini-3-flash-preview}.
      *
      * <p>Used by {@link com.studyspace.service.DocumentVectorService} to extract
      * text from image-heavy or scanned PDFs by passing the raw PDF bytes alongside
@@ -116,7 +116,7 @@ public class GeminiService {
         log.info("[GEMINI] generateMultimodal() — multimodal PDF extraction call");
         try {
             GenerateContentResponse response =
-                    client.models.generateContent("gemini-2.0-flash", content, null);
+                    client.models.generateContent("gemini-3-flash-preview", content, null);
             log.info("[GEMINI] Multimodal response — {} chars",
                     response.text() != null ? response.text().length() : 0);
             return response;

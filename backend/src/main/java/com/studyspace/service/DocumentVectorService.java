@@ -199,7 +199,6 @@ public class DocumentVectorService {
                     com.google.genai.types.Content.fromParts(filePart, instruction);
 
             com.google.genai.types.GenerateContentResponse response =
-                    // Use gemini-2.0-flash for its multimodal and vision capabilities
                     geminiService.generateMultimodal(content);
             String extracted = response != null ? response.text() : "";
             log.info("[DOC_VECTOR] Gemini multimodal extracted {} chars", extracted.length());

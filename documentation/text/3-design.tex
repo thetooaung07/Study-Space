@@ -14,9 +14,10 @@ will be accessed and experienced by its users.
 \section{Domain Model}
 \label{sec:domain-model}
 
-The domain model consists of the entities that carry the application's persistent state. Each
-entity is described below, and the complete UML class diagram is presented in
-Figure~\ref{fig:uml-class-diagram} at the end of this section.
+The domain model consists of the entities that carry the application's persistent state. To ensure clarity, the complete model is divided into four functional subsystems corresponding to the core features described in Chapter~\ref{ch:analysis}. Each subsystem and its entities are described below. Additionally, the complete machine-readable domain model schema is provided in the enclosed electronic media as an attached resource.
+
+\subsection{User Management and Access Control}
+\label{subsec:domain-user}
 
 \textbf{User} is the central actor entity. It stores the account credentials (username, email,
 and bcrypt-hashed password), the display name, a profile picture URL, and a role field that
@@ -25,6 +26,20 @@ cumulative study-time counter and a current-streak counter that are updated by t
 subsystem. A user can create many \texttt{Course} records (as an Instructor), own many
 \texttt{StudentWorkspace} records (as a Student), and participate in many \texttt{StudySession}
 records through the \texttt{SessionParticipant} junction entity.
+
+\textbf{Activity} represents an event logged by the gamification subsystem, such as completing a
+study session. It carries a type, an optional text message, a timestamp, and a reference to the
+owning user, optionally linked to a specific study session.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/1_user_domain_model.png}
+    \caption{User management and access control domain model}
+    \label{fig:user-domain-model}
+\end{figure}
+
+\subsection{Course Administration Module}
+\label{subsec:domain-course}
 
 \textbf{Course} represents a published course created by one Instructor. It carries a title, a
 text description, a boolean \texttt{isPublished} flag that controls student visibility, and a
@@ -52,6 +67,16 @@ timestamp of the initial enrollment. A unique constraint on the pair \texttt{(co
 student\_id)} prevents duplicate enrollment rows. Setting the status to \texttt{DROPPED} rather
 than deleting the row preserves the enrollment history and allows re-activation.
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/2_course_admin_domain_model.png}
+    \caption{Course administration domain model}
+    \label{fig:course-admin-domain-model}
+\end{figure}
+
+\subsection{Content Extension System}
+\label{subsec:domain-content-ext}
+
 \textbf{StudentWorkspace} is the root entity of a student's Private Workspace. It holds a name,
 a description, a reference to the owning \texttt{User}, and a list of \texttt{WorkspaceSpace}
 records. The workspace is the container that the student manages independently; it does not belong
@@ -75,24 +100,37 @@ and deleting it would violate referential integrity.
 field (\texttt{PENDING}, \texttt{APPROVED}, \texttt{REJECTED}) drives the Instructor review
 workflow. When no existing section is targeted, the \texttt{proposedSectionTitle} field holds the
 name of a new section to be created on approval. The \texttt{reviewedAt} timestamp is set when
-the Instructor takes action, and the \texttt{contributorDisplayName} is copied from the student's
+the Instructor takes action, and the \texttt{contributor\allowbreak Display\allowbreak Name} is copied from the student's
 profile at submission time so it remains stable even if the student later changes their name.
 
-\textbf{Conversation} persists the AI chat memory for a single user session. Rather than storing
-every message individually in a separate table, the entity uses a hybrid memory model: a
-\texttt{summary} text column holds a compressed rolling summary of older turns, updated by a
-separate LLM call when the recent buffer overflows, and a \texttt{recentMessages} column stores
-a JSON-serialised list of the most recent turns as plain text (compatible with PostgreSQL
-\texttt{TEXT} and H2 for testing). The entity's primary key is a client-generated UUID string,
-so no database sequence is required.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/3_content_extension_model.png}
+    \caption{Content extension domain model}
+    \label{fig:content-extension-domain-model}
+\end{figure}
 
-% TODO: Insert UML class diagram as Figure 3.1
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{images/fig_3_1_uml-class-diagram.png}
-%     \caption{UML class diagram of the StudySpace domain model}
-%     \label{fig:uml-class-diagram}
-% \end{figure}
+\subsection{Contextual Messaging \& Collaboration}
+\label{subsec:domain-collaboration}
+
+\textbf{StudySession} and \textbf{SessionParticipant} manage real-time group study rooms, tracking
+the session lifecycle, visibility, and the cumulative study time of each participating student.
+
+\textbf{SpaceGuest} and \textbf{SpaceMessage} enable real-time collaboration within a published
+Workspace Space, linking external users and their chat messages to the target space.
+
+\textbf{Conversation} persists the AI chat memory for a single user session. Rather than storing
+every message individually in a single blob, the entity is part of a normalised schema tracking the
+user owner and the conversation title. Individual message turns are stored in the \textbf{Message}
+table. The conversation's primary key is a client-generated UUID string, so no database sequence
+is required.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/4_contextual_message_domain_model.png}
+    \caption{Contextual messaging and collaboration domain model}
+    \label{fig:contextual-message-domain-model}
+\end{figure}
 
 % ----------------------------------------------------------------
 \section{System and Logical Architecture}
@@ -137,8 +175,11 @@ sessions. The \emph{business logic layer} is a Spring Boot application that hand
 data access, real-time session broadcasting, and LLM API calls. The \emph{data layer} is a
 PostgreSQL database that stores all persistent data.
 
-All three tiers are defined in \texttt{docker-compose.yml} and run in the same Docker network,
-so they can reach each other by service name without exposing internal ports to the host.
+For local development, all three tiers can be orchestrated using \texttt{docker-compose.yml}
+to run in the same virtual network. For production deployment, the architecture is decoupled: the frontend
+is deployed to a dedicated hosting platform (e.g., Vercel), the backend runs as a containerised
+service on a cloud platform (e.g., Render), and file storage is handled by an S3-compatible service
+(e.g., Tigris). This decoupling ensures independent scalability and simplifies deployment pipelines.
 
 The backend is organised into the following packages, each with a single responsibility and
 dependencies flowing only from controller to service to repository:
@@ -226,8 +267,8 @@ lost when the container is recreated and cannot be shared across multiple server
 serving, and a Java client library. It requires a GCP project and credentials, which adds setup
 overhead during development.
 
-A \texttt{FileStorageService} interface with two concrete implementations was designed:
-\texttt{LocalFileStorageService} for development and \texttt{GcsFileStorageService} for production.
+A \texttt{FileStorage\allowbreak Service} interface with two concrete implementations was designed:
+\texttt{Local\allowbreak FileStorage\allowbreak Service} for development and \texttt{Gcs\allowbreak FileStorage\allowbreak Service} for production.
 The active implementation is selected by a Spring profile, keeping the storage backend transparent
 to the rest of the application and satisfying NFR-04. The interface defines three methods:
 \texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed
@@ -240,18 +281,17 @@ by FR-01 and FR-02.
 FR-04 requires an LLM API capable of answering questions grounded in a provided document context
 within a single prompt, without fine-tuning.
 
-\textbf{Google Gemini API (gemini-2.5-flash)} provides a large context window, competitive
+\textbf{Google Gemini API (gemini-3-flash-preview)} provides a large context window, competitive
 quality on open-domain question answering, and an official Java SDK that integrates directly with
 the Spring Boot application. The free tier is sufficient for prototype-level usage.
 
-\textbf{OpenAI GPT-4o} exposes a compatible REST interface and achieves comparable quality on
-question answering tasks. However, the Java SDK is less mature than the official Google GenAI
-SDK, and the cost per token is higher for the same context window size at the time of writing.
+\textbf{OpenAI GPT-5.4-\allowbreak mini} exposes a compatible REST interface and achieves comparable quality on
+question answering tasks. However, the Java SDK is less mature than the official Google GenAI SDK, and the cost per token is higher for the same context window size at the time of writing.
 
-The Google Gemini API was selected because the official Google GenAI Java SDK~\cite{GoogleGenAI}
+The Google Gemini API was selected as the default provider because the official Google GenAI Java SDK~\cite{GoogleGenAI}
 integrates directly with Spring Boot without additional HTTP client configuration, the
-\texttt{gemini-2.5-flash} model's context window comfortably accommodates the 10\,000-character
-document extract required by FR-04, and the free tier capacity is sufficient for the prototype.
+\texttt{gemini-3-flash-preview} model's context window comfortably accommodates the semantically relevant chunks
+retrieved from the \texttt{pgvector} database required by FR-04, and the free tier capacity is sufficient for the prototype.
 
 % ----------------------------------------------------------------
 \section{Database Schema}
@@ -261,23 +301,22 @@ The relational schema follows directly from the domain model described in
 section~\ref{sec:domain-model}. Each entity maps to a dedicated table, and all foreign-key
 relationships are enforced at the database level.
 
-The primary tables are \texttt{users}, \texttt{courses}, \texttt{course\_sections},
-\texttt{course\_materials}, \texttt{course\_enrollments}, \texttt{student\_workspaces},
-\texttt{workspace\_spaces}, \texttt{workspace\_sections}, \texttt{workspace\_materials},
-\texttt{contribution\_proposals}, and \texttt{conversations}. The
-\texttt{course\_enrollments} table carries a unique constraint on
-\texttt{(course\_id, student\_id)} to prevent duplicate enrollment rows. The
-\texttt{workspace\_materials} table carries the two boolean flags \texttt{isReference}
+The primary tables correspond to the core domain entities: users, courses, course enrollments,
+course sections and materials, and their workspace counterparts. The
+\texttt{course\_\allowbreak enrollments} table enforces a unique constraint on the column pair
+\texttt{(course\_id, \allowbreak student\_id)} to prevent duplicate enrollment rows. The
+\texttt{workspace\_\allowbreak materials} table carries the two boolean flags \texttt{isReference}
 and \texttt{isHidden} that implement the copy-on-write and soft-delete semantics described
 in section~\ref{sec:domain-model}.
 
-The AI conversation memory is stored in the \texttt{conversations} table as two \texttt{TEXT}
-columns: \texttt{summary} for the compressed long-term memory and \texttt{recent\_messages} for
-the JSON-serialised short-term buffer. This design avoids a separate message table and keeps the
-memory retrieval to a single row lookup by the client-generated UUID primary key. The current
-prototype does not use vector embeddings; document text is extracted at query time and injected
-into the prompt. A dedicated embedding column using \texttt{pgvector} is identified as a future
-extension that would replace on-the-fly extraction with indexed similarity search.
+The AI conversation memory utilises two tables: \texttt{conversations} stores the overarching
+context and the rolling \texttt{summary} of compressed long-term memory, while the
+\texttt{messages} table records individual chat interactions. This separation allows efficient
+querying of recent conversation history. For document-grounded question answering (FR-04),
+the system uses the \texttt{document\_chunks} table. This table leverages the
+\texttt{pgvector} PostgreSQL extension to store high-dimensional embeddings of document
+segments, enabling fast semantic similarity search during the retrieval-augmented generation
+process.
 
 % TODO: Insert ERD as Figure 3.2
 % \begin{figure}[htbp]
@@ -302,7 +341,7 @@ token. The client stores the token in memory and includes it in the \texttt{Auth
 header of all subsequent requests. The server's \texttt{JwtAuthenticationFilter} validates the
 token on each request before passing control to the controller.
 
-The full API is documented through the Swagger UI available at \texttt{/swagger-ui/index.html}
+The full API is documented through the Swagger UI available at \texttt{/swagger\allowbreak -ui/\allowbreak index.html}
 when the backend is running, auto-generated by Springdoc OpenAPI from controller annotations.
 
 % ----------------------------------------------------------------

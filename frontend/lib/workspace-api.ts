@@ -192,7 +192,7 @@ export const contributionsApi = {
 		api.get(`/contributions/course/${courseId}/accepted`),
 };
 
-// ─── AI Chat endpoints ───────────────────────────────────────────────────────
+// ─── AI Chat types & endpoints ─────────────────────────────────────────────
 
 export interface ChatQueryRequest {
 	/**
@@ -206,18 +206,64 @@ export interface ChatQueryRequest {
 	documentUrl?: string;
 	documentTitle?: string;
 	provider?: "gemini" | "openai";
+	/** ID of the authenticated user — required for lazy conversation creation. */
+	userId?: number;
 }
 
 export interface ChatQueryResponse {
 	answer: string;
 	contextDocumentTitle: string | null;
+	/**
+	 * LLM-generated conversation title, non-null only on the very first turn
+	 * of a new conversation. The frontend uses this to update the History popup.
+	 */
+	conversationTitle: string | null;
+}
+
+/** Lightweight summary entry shown in the History popup list. */
+export interface ConversationSummary {
+	id: string;
+	title: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+/** A single persisted message turn returned when reloading a past conversation. */
+export interface HistoryMessage {
+	id: number;
+	/** "user" | "assistant" */
+	role: string;
+	content: string;
+	createdAt: string;
 }
 
 export const chatApi = {
 	/**
-	 * Ask Gemini a question with optional PDF document context and conversation memory.
+	 * Ask the AI a question with optional PDF document context and conversation memory.
 	 * Passes the material's fileUrl directly – no re-upload required.
 	 * When conversationId is provided the backend maintains rolling memory across turns.
+	 * On the very first turn of a new conversation, the response includes conversationTitle.
 	 */
 	query: (data: ChatQueryRequest): Promise<ChatQueryResponse> => api.post("/chat/query", data),
+
+	/**
+	 * Returns the user's conversation list ordered newest-first.
+	 * Called on mount to populate the History popup.
+	 */
+	listConversations: (userId: number): Promise<ConversationSummary[]> =>
+		api.get(`/chat/conversations?userId=${userId}`),
+
+	/**
+	 * Hard-deletes a conversation and all its messages.
+	 * The frontend removes the entry from its local list immediately.
+	 */
+	deleteConversation: (id: string, userId: number): Promise<void> =>
+		api.delete(`/chat/conversations/${id}?userId=${userId}`),
+
+	/**
+	 * Returns the full message history for a past conversation.
+	 * Called when the user selects an entry from the History popup.
+	 */
+	getMessages: (id: string, userId: number): Promise<HistoryMessage[]> =>
+		api.get(`/chat/conversations/${id}/messages?userId=${userId}`),
 };

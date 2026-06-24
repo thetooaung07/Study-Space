@@ -38,5 +38,12 @@ public class ChatQueryRequest {
      * Falls back to Gemini if absent or unrecognised.
      */
     private String provider;
+
+    /**
+     * ID of the authenticated user making the request.
+     * Required when {@code conversationId} is provided so the backend can create
+     * or verify ownership of the conversation row on the first turn.
+     */
+    private Long userId;
 }
 

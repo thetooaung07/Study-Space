@@ -2,7 +2,9 @@ package com.studyspace.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.studyspace.dto.ChatQueryRequest;
+import com.studyspace.dto.ChatQueryResponse;
 import com.studyspace.security.JwtAuthenticationFilter;
+import com.studyspace.service.ConversationService;
 import com.studyspace.service.DocumentVectorService;
 import com.studyspace.service.MemoryManager;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,9 @@ class ChatControllerTest {
     @MockitoBean
     private MemoryManager memoryManager;
 
+    @MockitoBean
+    private ConversationService conversationService;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -50,8 +55,10 @@ class ChatControllerTest {
         req.setQuestion("What is this?");
         req.setConversationId("1");
 
-        when(memoryManager.handleQuery(eq("1"), eq("What is this?"), anyList(), isNull()))
-                .thenReturn("This is a test response.");
+        ChatQueryResponse resp = new ChatQueryResponse();
+        resp.setAnswer("This is a test response.");
+        when(memoryManager.handleQuery(eq("1"), any(), eq("What is this?"), anyList(), isNull(), isNull()))
+                .thenReturn(resp);
 
         mockMvc.perform(post("/api/chat/query")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -71,8 +78,11 @@ class ChatControllerTest {
         when(documentVectorService.retrieveRelevantChunks(anyString(), anyInt()))
                 .thenReturn(List.of("chunk1", "chunk2"));
         
-        when(memoryManager.handleQuery(isNull(), eq("Explain this doc."), eq(List.of("chunk1", "chunk2")), isNull()))
-                .thenReturn("Doc explained.");
+        ChatQueryResponse resp = new ChatQueryResponse();
+        resp.setAnswer("Doc explained.");
+        resp.setContextDocumentTitle("Test Doc");
+        when(memoryManager.handleQuery(isNull(), any(), eq("Explain this doc."), eq(List.of("chunk1", "chunk2")), isNull(), eq("Test Doc")))
+                .thenReturn(resp);
 
         mockMvc.perform(post("/api/chat/query")
                 .contentType(MediaType.APPLICATION_JSON)

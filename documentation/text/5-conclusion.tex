@@ -35,12 +35,6 @@ scroll-hijacking issue in the AI panel, resolved by a programmatic scroll guard.
 The current prototype has several documented limitations that were explicitly deferred to keep the
 scope manageable for a bachelor thesis.
 
-The AI querying feature (FR-04) extracts document text at query time by parsing the file on every
-request, which imposes latency and cost proportional to the document size. A future extension
-would replace on-the-fly extraction with pre-computed vector embeddings stored in a pgvector
-column, enabling indexed similarity search that scales to large course document collections
-without re-parsing on each query.
-
 The Contextual Anchor in the messaging system (FR-03) currently stores only the material
 identifier and title in the token. A natural extension is to support page-level or section-level
 anchors, where the token also encodes a byte offset or a page number, allowing the receiving
@@ -55,7 +49,8 @@ The study session feature, implemented through the WebSocket infrastructure, pro
 participant tracking and a shared activity feed. Based on the testing conducted in section~\ref{sec:impl-testing}, a shared collaborative document or whiteboard within the session
 would significantly increase the usefulness of synchronous study sessions.
 
-Finally, the application was developed and tested locally and in a single-instance Docker
-deployment. Making the application horizontally scalable would require the WebSocket session
+Finally, the application was developed with a containerised local environment and deployed to modern
+PaaS platforms (Vercel and Render). While these platforms handle initial scaling automatically, making
+the backend truly horizontally scalable under heavy load would require the WebSocket session
 state to be shared through an external STOMP broker such as RabbitMQ or ActiveMQ, and the JWT
 secret to be provided through a secure vault rather than an environment variable.

@@ -25,6 +25,9 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     /** Returns the 5 oldest messages for a conversation (for async compression). */
     List<Message> findTop5ByConversationIdOrderByCreatedAtAsc(String conversationId);
 
+    /** Returns ALL messages for a conversation ordered oldest-first (for history reload). */
+    List<Message> findByConversationIdOrderByCreatedAtAsc(String conversationId);
+
     /** Count of all turns in a conversation — used to decide when to compress. */
     long countByConversationId(String conversationId);
 

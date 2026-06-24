@@ -32,6 +32,23 @@ public class Conversation {
     private String id;
 
     /**
+     * The user who owns this conversation.
+     * Every conversation is strictly private — one owner, no sharing.
+     */
+    @Column(name = "user_id", nullable = false, updatable = false)
+    private Long userId;
+
+    /**
+     * Human-readable label shown in the History popup.
+     * Set to 'New Chat' on creation; overwritten by the backend on the first
+     * assistant turn by extracting the {@code TITLE: <label>} prefix from the
+     * raw LLM output (see {@link com.studyspace.service.MemoryManager}).
+     */
+    @Column(length = 255)
+    @Builder.Default
+    private String title = "New Chat";
+
+    /**
      * Compressed long-term memory updated by a separate Gemini call
      * whenever the recent message buffer overflows.
      */

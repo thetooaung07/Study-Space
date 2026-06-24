@@ -28,12 +28,12 @@ service layer.
 % \end{figure}
 
 The course management page presents the Instructor with a list of sections and a file upload
-button per section. Selecting a file triggers a \texttt{multipart/form-data} request to the
+button per section. Selecting a file triggers a multipart form data request to the
 backend; the Instructor does not see storage paths or file types, which are resolved automatically
 by the backend.
 
-The \texttt{CourseService} delegates all file operations to the \texttt{FileStorageService}
-interface. When \texttt{uploadMaterial} is called, the service stores the file, infers the
+The \texttt{Course\allowbreak Service} delegates all file operations to the \texttt{File\allowbreak Storage\allowbreak Service}
+interface. When \texttt{upload\allowbreak Material} is called, the service stores the file, infers the
 \texttt{MaterialType} from the file extension, and persists the resulting URL in the
 \texttt{CourseMaterial} entity. The ownership check in \texttt{assertInstructor} ensures that
 only the course owner can modify sections or materials; any other authenticated user receives an
@@ -41,21 +41,18 @@ HTTP~403 response. The listing below shows the upload method, which encapsulates
 under twenty lines.
 
 \begin{lstlisting}[language=Java, caption={Code listing 4.1 --- Course material upload with storage abstraction (CourseService.java)}, label=lst:course-upload]
-public CourseMaterialDTO uploadMaterial(
-        Long sectionId, Long requestingUserId,
-        MultipartFile file, String title) {
+public CourseMaterialDTO uploadMaterial(Long sectionId, Long requestingUserId,
+                                        MultipartFile file, String title) {
     CourseSection section = findSection(sectionId);
     // Only the course instructor may upload
     assertInstructor(section.getCourse(), requestingUserId);
 
     // FileStorageService is injected; impl selected by Spring profile
     String fileUrl = fileStorageService.store(file, "courses");
-    MaterialType fileType = detectFileType(
-            file.getOriginalFilename(), file.getContentType());
+    MaterialType fileType = detectFileType(file.getOriginalFilename());
 
     CourseMaterial material = CourseMaterial.builder()
-            .title(title).fileUrl(fileUrl)
-            .fileType(fileType)
+            .title(title).fileUrl(fileUrl).fileType(fileType)
             .originalFileName(file.getOriginalFilename())
             .section(section).build();
     return toMaterialDTO(materialRepository.save(material));
@@ -91,37 +88,39 @@ section allows the student to add new materials. The Merge Proposal dialog appea
 student selects one or more materials and clicks the contribute button; the student picks a
 target section (or names a new one) and submits.
 
-When \texttt{forkCourse} is called on \texttt{WorkspaceService}, the backend iterates over all
-sections and Course Materials of the source course and creates \texttt{WorkspaceSection} and
-\texttt{WorkspaceMaterial} rows that point to the original file URLs (\texttt{isReference = true})
+When \texttt{fork\allowbreak Course} is called on \texttt{Workspace\allowbreak Service}, the backend iterates over all
+sections and Course Materials of the source course and creates \texttt{Workspace\allowbreak Section} and
+\texttt{Workspace\allowbreak Material} rows that point to the original file URLs (\texttt{isReference = true})
 rather than copying the files. Only materials uploaded by the student later are stored as new
 files (\texttt{isReference = false}). When a student removes a reference material from their view,
-\texttt{deleteMaterial} in \texttt{WorkspaceService} sets \texttt{isHidden = true} on the row
-instead of deleting it, because the row may still be referenced by a \texttt{ContributionProposal}
-foreign key. The listing below shows this soft-delete logic.
+\texttt{delete\allowbreak Material} in \texttt{Workspace\allowbreak Service} checks for active \texttt{Contribution\allowbreak Proposal}s.
+If a proposal exists, it sets \texttt{isHidden = true} on the row instead of deleting it to preserve
+referential integrity; otherwise, it deletes the reference cleanly. The listing below shows this logic.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.2 --- Soft-delete for reference materials (WorkspaceService.java)}, label=lst:soft-delete]
+\begin{lstlisting}[language=Java, caption={Code listing 4.2 --- Delete strategy for reference materials (WorkspaceService.java)}, label=lst:soft-delete]
 public void deleteMaterial(Long materialId, Long userId) {
-    WorkspaceMaterial material = materialRepository
-            .findById(materialId)
-            .orElseThrow(() ->
-                new RuntimeException("Material not found: " + materialId));
-    assertOwner(material.getSection().getSpace().getWorkspace(), userId);
+    WorkspaceMaterial material = materialRepository.findById(materialId)
+            .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
 
-    if (Boolean.TRUE.equals(material.getIsReference())) {
+    // Authorisation checks omitted for brevity
+    
+    boolean hasProposal = proposalRepository.existsBySourceMaterialId(materialId);
+    if (hasProposal) {
         // Soft-delete: keep the row so ContributionProposal FK stays intact
         material.setIsHidden(true);
         materialRepository.save(material);
     } else {
-        // Hard-delete: student's own file, safe to remove
-        fileStorageService.delete(material.getFileUrl());
+        // Safe to hard-delete
+        if (!Boolean.TRUE.equals(material.getIsReference())) {
+            fileStorageService.delete(material.getFileUrl());
+        }
         materialRepository.delete(material);
     }
 }
 \end{lstlisting}
 
 The two-branch delete strategy preserves referential integrity without requiring a separate
-audit table or a deferred constraint. The \texttt{WorkspaceSectionDTO} mapper already filters
+audit table or a deferred constraint. The \texttt{Workspace\allowbreak Section\allowbreak DTO} mapper already filters
 hidden materials before returning the section content to the frontend, so the student's view is
 consistent with the logical deletion even though the database row remains.
 
@@ -147,32 +146,37 @@ The chat panel is shown after a student typed \texttt{@lecture} and the autocomp
 appeared. After selecting a Course Material, a styled chip replaces the \texttt{@}-query in the
 input. The submitted message is rendered with a clickable badge that opens the file.
 
-The message input uses a \texttt{<div contentEditable>} element rather than a
+The message input uses a \texttt{<div content\allowbreak Editable>} element rather than a
 \texttt{<textarea>} because \texttt{<textarea>} can only hold plain text, whereas a
-\texttt{contentEditable} div can host arbitrary DOM nodes. When the user selects a Course
+\texttt{content\allowbreak Editable} div can host arbitrary DOM nodes. When the user selects a Course
 Material from the autocomplete, the \texttt{insertTag} function deletes the \texttt{@<query>}
-text and inserts a \texttt{<span>} element with \texttt{contentEditable="false"} and
-\texttt{data-materialId}, \texttt{data-materialTitle}, and \texttt{data-materialUrl} attributes.
-Before submission, \texttt{parseInput} serialises the span into the token
-\texttt{@[<id>:<title>]}, which is stored as the message text. On render, a regular expression
+text and inserts a \texttt{<span>} element with \texttt{content\allowbreak Editable="false"} and
+\texttt{data-\allowbreak material\allowbreak Id}, \texttt{data-\allowbreak material\allowbreak Title}, and \texttt{data-\allowbreak material\allowbreak Url} attributes.
+Before submission, \texttt{parse\allowbreak Input} serialises the span into the token
+\texttt{@\allowbreak [\allowbreak <id>\allowbreak :\allowbreak <title>\allowbreak ]}, which is stored as the message text. On render, a regular expression
 parses the token back into a \texttt{<Badge>} component. The listing below shows the serialisation
 step.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.3 --- DOM serialisation to portable anchor token (contextual-chat.tsx)}, label=lst:anchor-token]
+\begin{lstlisting}[language=TypeScript, caption={Code listing 4.3 --- DOM serialisation to portable anchor token (member-chat.tsx)}, label=lst:anchor-token]
 // Walks the contentEditable div's child nodes and builds the token string
-function parseInput(div: HTMLDivElement): string {
-  let result = "";
-  div.childNodes.forEach((node) => {
+const parseInput = (): string => {
+  if (!inputRef.current) return "";
+  let question = "";
+  for (const node of Array.from(inputRef.current.childNodes)) {
     if (node.nodeType === Node.TEXT_NODE) {
-      result += node.textContent ?? "";          // plain text
-    } else if (node instanceof HTMLElement
-               && node.dataset.materialId) {
-      // Non-editable chip -> portable anchor token
-      result += `@[${node.dataset.materialId}:${node.dataset.materialTitle}]`;
+      question += node.textContent;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (el.dataset.materialId) {
+        // Non-editable chip -> portable anchor token
+        question += `@[${el.dataset.materialId}:${el.dataset.materialTitle}]`;
+      } else {
+        question += el.textContent ?? "";
+      }
     }
-  });
-  return result.trim();
-}
+  }
+  return question.trim();
+};
 \end{lstlisting}
 
 The token format \texttt{@[id:title]} is compact, survives JSON serialisation, and is
@@ -183,7 +187,7 @@ while the title provides a human-readable fallback if the material is later rena
 \subsection{Workspace Collaboration}
 \label{subsec:impl-workspace-collaboration}
 
-To facilitate peer-to-peer discussion, Private Workspaces must support collaboration among multiple students. The system achieves this by allowing the workspace owner to add other users as members. The \texttt{WorkspaceService} manages this by persisting a list of \texttt{SpaceMemberDTO} objects associated with the space. Before a user can post or view messages in the chat, the \texttt{assertMember} security check verifies their membership. This transforms the Private Workspace from an isolated clone into a collaborative study environment, directly supporting the interactive requirements of FR-03.
+To facilitate peer-to-peer discussion, Private Workspaces must support collaboration among multiple students. The system achieves this by allowing the workspace owner to add other users as members. The \texttt{Workspace\allowbreak Service} manages this by persisting a list of \texttt{Space\allowbreak MemberDTO} objects associated with the space. Before a user can post or view messages in the chat, the \texttt{assert\allowbreak Member} security check verifies their membership. This transforms the Private Workspace from an isolated clone into a collaborative study environment, directly supporting the interactive requirements of FR-03.
 
 \subsection{Real-Time Communication via WebSockets}
 \label{subsec:impl-chat-sockets}
@@ -193,22 +197,29 @@ For the discussion to be truly interactive, messages must be delivered to all wo
 When a user submits a message, the \texttt{SpaceChatController} intercepts the HTTP \texttt{POST} request, saves the message to the database, and immediately broadcasts the message payload to the STOMP destination corresponding to the workspace ID.
 
 \begin{lstlisting}[language=Java, caption={Code listing 4.4 --- WebSocket broadcast for workspace chat (SpaceChatController.java)}, label=lst:socket-broadcast]
-@PostMapping("/{spaceId}/messages")
-public ResponseEntity<MessageDTO> postMessage(
+@PostMapping
+public ResponseEntity<SpaceMessageDTO> sendMessage(
         @PathVariable Long spaceId,
-        @RequestBody MessageRequest request) {
-    MessageDTO savedMessage = chatService.saveMessage(spaceId, request);
+        @RequestBody Map<String, Object> payload) {
     
+    // Parse payload and save SpaceMessage entity...
+    SpaceMessageDTO dto = SpaceMessageDTO.builder()
+            .content(message.getContent())
+            .spaceId(message.getSpace().getId())
+            // ... other fields omitted for brevity
+            .build();
+
     // Broadcast to space members over WebSocket channel
-    messagingTemplate.convertAndSend(
-        "/topic/space/" + spaceId + "/chat", 
-        savedMessage
-    );
-    return ResponseEntity.ok(savedMessage);
+    String destination = "/topic/space/" + spaceId + "/chat";
+    messagingTemplate.convertAndSend(destination, dto);
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(dto);
 }
 \end{lstlisting}
 
-On the frontend, the React application uses a WebSocket hook to subscribe to the \texttt{/topic/space/\{spaceId\}/chat} channel. Upon receiving a message event, the client appends the new message to the Redux state, triggering an immediate UI update for all connected members.
+On the frontend, the React application uses a WebSocket hook to subscribe to the
+\texttt{/topic/space/\{spaceId\}/chat} channel. Upon receiving a message event, the client appends
+the new message to the local component state, triggering an immediate UI update for all connected members.
 
 % ----------------------------------------------------------------
 \section{AI-Based Content Querying (FR-04)}
@@ -233,31 +244,32 @@ displayed with a typewriter animation. The panel is collapsible so the student c
 Course Material alongside the answer.
 
 When the user submits a question, the frontend sends the question and the selected
-\texttt{documentUrl} to \texttt{POST /api/chat/query}. \texttt{DocumentService} normalises the
-URL (handling HTTP/HTTPS remote URLs, \texttt{file://} URIs, and bare local paths) and extracts
-the plain text using Apache PDFBox~\cite{ApachePDFBox}. \texttt{GeminiService} then constructs a
-three-part prompt (system instruction, document context truncated to 10\,000 characters, and the
-user's question) and calls the Gemini API via the Google GenAI Java SDK~\cite{GoogleGenAI}. The
-listing below shows the prompt construction.
+workspace references to \texttt{POST /api/chat/query}. The \texttt{Document\allowbreak Vector\allowbreak Service}
+retrieves semantically relevant document excerpts from the \texttt{pgvector} database
+by comparing the vector embedding of the user's question against the stored document
+chunks (which are extracted via Apache PDFBox~\cite{ApachePDFBox} and embedded during file upload).
+The \texttt{Prompt\allowbreak Builder} then constructs a comprehensive prompt
+consisting of a system preamble, conversation history, the retrieved RAG excerpts, and the user's question. Finally, the configured
+\texttt{LlmProvider} calls the underlying API (e.g., via the Google GenAI Java SDK~\cite{GoogleGenAI}).
+The listing below shows the structured prompt assembly.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.5 --- Structured prompt construction (GeminiService.java)}, label=lst:gemini-prompt]
-String systemInstruction =
-    "You are a teaching assistant. Prefer the provided document " +
-    "context over your own knowledge when it is relevant.";
+\begin{lstlisting}[language=Java, caption={Code listing 4.5 --- Structured prompt construction (PromptBuilder.java)}, label=lst:prompt-builder]
+public String buildRuntimePrompt(String summary, List<Message> recentMessages,
+                                 List<String> ragChunks, String userQuestion) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("You are a teaching assistant. Prefer the provided document " +
+              "context over your own knowledge when it is relevant.\n\n");
 
-// Truncate to control cost and stay within the context window
-String truncatedContext = docText.length() > 10_000
-    ? docText.substring(0, 10_000) + "\n[...document truncated...]"
-    : docText;
-
-String prompt = String.format(
-    "Document context:\n%s\n\nStudent question: %s",
-    truncatedContext, question);
-
-GenerateContentResponse response = client
-    .models.generateContent(MODEL, prompt,
-        GenerateContentConfig.builder()
-            .systemInstruction(systemInstruction).build());
+    if (summary != null && !summary.isBlank()) {
+        sb.append("[Previous context]\n").append(summary).append("\n\n");
+    }
+    if (ragChunks != null && !ragChunks.isEmpty()) {
+        sb.append("[Document Excerpts]\n");
+        ragChunks.forEach(chunk -> sb.append(chunk).append("\n---\n"));
+    }
+    sb.append("[Current Question]\n").append(userQuestion);
+    return sb.toString();
+}
 \end{lstlisting}
 
 The system instruction instructs the model to prefer the document context, which is the core
@@ -293,24 +305,28 @@ the JWT stored in the React context.
 When a user authenticates, \texttt{AuthService} validates the credentials, looks up the
 \texttt{User} entity, and calls \texttt{JwtUtil.generateToken} to produce a signed JWT embedding
 the user's email as the subject. The token is signed with HMAC-SHA256 and expires after ten
-hours. On every subsequent request, \texttt{JwtAuthenticationFilter} extracts the token from the
-\texttt{Authorization: Bearer} header, validates the signature and expiry, loads the
+hours. On every subsequent request, \texttt{Jwt\allowbreak Authentication\allowbreak Filter} extracts the token from the
+\texttt{Authorization:\allowbreak Bearer} header, validates the signature and expiry, loads the
 \texttt{UserDetails} by email, and populates the Spring Security context. The listing below
 shows the core of the filter.
 
 \begin{lstlisting}[language=Java, caption={Code listing 4.6 --- JWT validation in the authentication filter (JwtAuthenticationFilter.java)}, label=lst:jwt-filter]
 // Runs once per request; short-circuits if no token is present
 String authHeader = request.getHeader("Authorization");
+String jwt = null;
+
 if (authHeader != null && authHeader.startsWith("Bearer ")) {
     jwt = authHeader.substring(7); // strip "Bearer " prefix
+} else if (request.getParameter("token") != null) {
+    jwt = request.getParameter("token"); // WebSocket fallback
 }
+
 if (jwt == null) { filterChain.doFilter(request, response); return; }
 
-userEmail = jwtUtil.extractUsername(jwt); // decode subject claim
+String userEmail = jwtUtil.extractUsername(jwt); // decode subject claim
 if (userEmail != null
         && SecurityContextHolder.getContext().getAuthentication() == null) {
-    UserDetails userDetails =
-        userDetailsService.loadUserByUsername(userEmail);
+    UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
     if (jwtUtil.isTokenValid(jwt, userDetails)) {
         // Populate security context so @PreAuthorize annotations work
         UsernamePasswordAuthenticationToken authToken =
@@ -340,16 +356,16 @@ Boot Test framework.
 
 \emph{Unit tests} cover individual service classes in isolation. Dependencies are substituted
 with Mockito mocks so that each test exercises exactly one unit. Examples include
-\texttt{UserServiceTest}, \texttt{StudyGroupServiceTest}, and \texttt{GamificationServiceTest}.
+\texttt{User\allowbreak Service\allowbreak Test}, \texttt{StudyGroup\allowbreak Service\allowbreak Test}, and \newline \texttt{Gamification\allowbreak Service\allowbreak Test}.
 
 \emph{Repository tests} verify that the Spring Data JPA repositories produce correct SQL and
 return expected entity graphs. They run against an in-process H2 database seeded with test data.
-\texttt{UserRepositoryTest} checks that user look-up by email and username behaves correctly.
+\texttt{User\allowbreak RepositoryTest} checks that user look-up by email and username behaves correctly.
 
-\emph{Integration tests} exercise complete request-response cycles through the Spring MVC layer.
-\texttt{UserControllerIntegrationTest} and \texttt{StudySessionControllerIntegrationTest} spin
-up a \texttt{@SpringBootTest} application context, issue HTTP requests via \texttt{MockMvc}, and
-assert on the HTTP status code and the JSON response body. \texttt{GlobalExceptionHandlerTest}
+\emph{Integration tests} exercise complete request-response cycles through the \newline Spring MVC layer.
+\texttt{User\allowbreak Controller\allowbreak Integration\allowbreak Test} and \texttt{StudySession\allowbreak Controller\allowbreak Integration\allowbreak Test} spin
+up a \texttt{@Spring\allowbreak BootTest} application context, issue HTTP requests via \texttt{MockMvc}, and
+assert on the HTTP status code and the JSON response body. \texttt{Global\allowbreak Exception\allowbreak HandlerTest}
 verifies that the centralised exception handler maps domain exceptions to the correct HTTP status
 codes.
 
@@ -363,9 +379,9 @@ has manually scrolled upward.
 \subsection{Frontend Automated Tests}
 \label{subsec:frontend-tests}
 
-Complementing the backend testing suite, the frontend employs a dual-framework testing strategy to verify user interfaces and application flows.
+Complementing the backend testing suite, the frontend employs a dual testing framework strategy to verify user interfaces and application flows.
 
-\emph{Unit and integration tests} are executed using Vitest and the React Testing Library. Components such as the authentication forms are mounted in an isolated \texttt{jsdom} environment. By mocking the Next.js router and Redux store, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
+\emph{Unit and integration tests} are executed using Vitest and the React Testing Library. Components such as the authentication forms are mounted in an isolated \texttt{jsdom} environment. By mocking the Next.js router and authentication contexts, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
 
 \emph{End-to-end (E2E) tests} are orchestrated with Playwright. These tests spin up a headless browser (such as Chromium) and navigate through complete user journeys. By leveraging Playwright's network interception capabilities, the tests mock the backend API responses. This approach ensures that the frontend behaves correctly under various backend states---such as a successful login or an HTTP 401 Unauthorized response---in a highly deterministic and fast-executing manner.
 
@@ -447,8 +463,8 @@ with general knowledge; no error is shown.
     \item Using \texttt{curl} or Swagger UI, call
           \texttt{POST /api/courses} (Instructor-only endpoint) with the Student JWT.
     \item Expected: the server returns HTTP~403 Forbidden with an error body.
-    \item Repeat for \texttt{PUT /api/courses/\{id\}/sections}
-          and \texttt{POST /api/proposals/\{id\}/review}.
+    \item Repeat for \texttt{PUT \allowbreak /api/\allowbreak courses/\allowbreak \{id\}/\allowbreak sections}
+          and \newline \texttt{POST \allowbreak /api/\allowbreak proposals/\allowbreak \{id\}/\allowbreak review}.
 
     \item In each case confirm the response is 403 and the operation has no effect.
 \end{enumerate}
@@ -473,12 +489,12 @@ changelog generation.
 \subsection{CI/CD Pipeline}
 \label{subsec:cicd}
 
-A GitHub Actions workflow runs on every push to the \texttt{main} branch and on every pull
-request targeting it. The pipeline consists of three sequential jobs. The first job compiles the
-backend with Maven and runs the full JUnit test suite; if any test fails, the remaining jobs are
-skipped. The second job installs frontend dependencies with \texttt{npm ci} and runs the TypeScript
-type-checker and linter. The third job builds both Docker images and verifies that the
-\texttt{docker compose up} command completes without errors.
+A GitLab CI/CD pipeline runs automatically on every push. The pipeline defines multiple stages to
+guarantee code quality and automate deployment. The first stages build the backend with Gradle and
+the frontend with \texttt{npm}, followed by comprehensive unit, integration, and end-to-end (Playwright)
+testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check and
+SonarQube. If all checks pass on the main branch, the final stage automatically deploys the frontend
+to Vercel. A separate pipeline hook triggers the backend container deployment to the Render cloud platform.
 
 % TODO: Insert CI/CD pipeline diagram as Figure 4.6
 % \begin{figure}[htbp]

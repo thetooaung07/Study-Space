@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
 	Send,
 	Link2,
@@ -14,15 +14,18 @@ import {
 	AlertCircle,
 	ChevronDown,
 	Check,
+	History,
+	SquarePen,
+	Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { WorkspaceMaterial } from "@/types/workspaces";
 import type { MaterialType } from "@/types/courses";
 import { useAuth } from "@/context/auth-context";
-import { ChatQueryRequest, ChatQueryResponse, chatApi } from "@/lib/workspace-api";
+import { ChatQueryRequest, ChatQueryResponse, ConversationSummary, HistoryMessage, chatApi } from "@/lib/workspace-api";
 import { API_BASE_URL } from "@/lib/api";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -268,6 +271,13 @@ interface Message {
 	provider?: "gemini" | "openai";
 }
 
+const WELCOME_MESSAGE: Message = {
+	id: "welcome",
+	role: "system",
+	text: "Welcome! Ask me anything about your study materials. Tag a file with @ to give me context from a specific document.",
+	timestamp: new Date(),
+};
+
 interface ContextualChatProps {
 	materials: WorkspaceMaterial[];
 }
@@ -276,7 +286,7 @@ interface ContextualChatProps {
 
 const getSenderName = (msg: Message, isMe: boolean, isAI: boolean, isError: boolean) => {
 	if (isMe) return "You";
-	if (isAI) return msg.provider === "openai" ? "GPT-5.4 mini" : "Gemini 3.5 Flash";
+	if (isAI) return msg.provider === "openai" ? "GPT-5.4 mini" : "Gemini 3 Flash";
 	if (isError) return "Error";
 	return msg.userName;
 };
@@ -353,25 +363,20 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	const { user } = useAuth();
 	const [provider, setProvider] = useState<"gemini" | "openai">("gemini");
 	const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
+	const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
+	// ── Conversation history state ────────────────────────────────────────────
+	const [conversations, setConversations] = useState<ConversationSummary[]>([]);
 	/**
-	 * Stable session UUID — generated once per component mount.
-	 * Sent with every query so the backend can correlate turns into one Conversation.
+	 * UUID for the current (possibly not-yet-persisted) conversation.
+	 * Generated fresh on mount and on every "New Chat" action.
+	 * The backend creates the DB row lazily on the first POST /api/chat/query.
 	 */
-	const [conversationId] = useState<string>(() => {
-		const id = crypto.randomUUID();
-		console.log("[CHAT] New conversation session started — conversationId:", id);
-		return id;
-	});
+	const pendingConversationIdRef = useRef<string>(crypto.randomUUID());
+	/** UUID of the conversation currently loaded in the panel (null = fresh unsaved chat). */
+	const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
-	const [messages, setMessages] = useState<Message[]>([
-		{
-			id: "welcome",
-			role: "system",
-			text: "Welcome! Ask me anything about your study materials. Tag a file with @ to give me context from a specific document.",
-			timestamp: new Date(),
-		},
-	]);
+	const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
 	const [tagQuery, setTagQuery] = useState<string | null>(null);
 	const [selectedTagIndex, setSelectedTagIndex] = useState(0);
 	const [isLoading, setIsLoading] = useState(false);
@@ -382,6 +387,73 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	/** true while the user has scrolled away from the bottom */
 	const userScrolledRef = useRef(false);
+
+	// ── Load conversation history on mount ────────────────────────────────────
+
+	useEffect(() => {
+		if (!user) return;
+		chatApi.listConversations(user.id)
+			.then(setConversations)
+			.catch((err) => console.warn("[CHAT] Failed to load conversation history", err));
+	}, [user]);
+
+	// ── Reset UUID when starting a fresh chat ──────────────────────────────────
+
+	const handleNewChat = useCallback(() => {
+		pendingConversationIdRef.current = crypto.randomUUID();
+		setActiveConversationId(null);
+		setMessages([WELCOME_MESSAGE]);
+		setIsHistoryOpen(false);
+		console.log("[CHAT] New chat started — pendingId:", pendingConversationIdRef.current);
+	}, []);
+
+	// ── Load a past conversation ──────────────────────────────────────────────
+
+	const handleLoadConversation = useCallback(async (conv: ConversationSummary) => {
+		if (!user) return;
+		try {
+			console.log("[CHAT] Loading conversation", { convId: conv.id, userId: user.id });
+			const history: HistoryMessage[] = await chatApi.getMessages(conv.id, user.id);
+			console.log("[CHAT] getMessages response", { count: history.length, first: history[0] ?? null });
+			const mapped: Message[] = history.map((m) => ({
+				id: String(m.id),
+				role: m.role === "assistant" ? "ai" : "user",
+				text: m.content,
+				timestamp: new Date(m.createdAt),
+			}));
+			setMessages(mapped.length > 0 ? mapped : [WELCOME_MESSAGE]);
+			setActiveConversationId(conv.id);
+			pendingConversationIdRef.current = conv.id;
+			setIsHistoryOpen(false);
+		} catch (err: any) {
+			console.error("[CHAT] Failed to load conversation", conv.id, err);
+			// Show the error visibly in the panel instead of silent empty state
+			setMessages([
+				{
+					id: "load-error",
+					role: "error",
+					text: `Failed to load conversation: ${err?.message ?? "Unknown error"}`,
+					timestamp: new Date(),
+				},
+			]);
+			setIsHistoryOpen(false);
+		}
+	}, [user]);
+
+	// ── Delete a conversation ────────────────────────────────────────────────
+
+	const handleDeleteConversation = useCallback(async (convId: string, e: React.MouseEvent) => {
+		e.stopPropagation();
+		if (!user) return;
+		try {
+			await chatApi.deleteConversation(convId, user.id);
+			setConversations((prev) => prev.filter((c) => c.id !== convId));
+			// If we just deleted the active conversation, reset to fresh panel
+			if (convId === activeConversationId) handleNewChat();
+		} catch (err) {
+			console.error("[CHAT] Failed to delete conversation", convId, err);
+		}
+	}, [user, activeConversationId, handleNewChat]);
 
 	// ── Resize handle ────────────────────────────────────────────────────────
 
@@ -563,13 +635,16 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		return { question: question.trim(), documentUrl, documentTitle };
 	};
 
-	// ── Send message → call Gemini ────────────────────────────────────────────
+	// ── Send message → call AI ────────────────────────────────────────────────
 
 	const handleSendMessage = async () => {
 		if (!inputRef.current || !user || isLoading) return;
 
 		const { question, documentUrl, documentTitle } = parseInput();
 		if (!question) return;
+
+		// Use the pending UUID (either a fresh one or the ID of a resumed conversation)
+		const conversationId = pendingConversationIdRef.current;
 
 		// Optimistically add user message
 		const userMsg: Message = {
@@ -585,7 +660,6 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		setTagQuery(null);
 		setIsLoading(true);
 
-		// ── Debug log: outgoing request ──────────────────────────────────────
 		console.log("[CHAT] Sending query", {
 			conversationId,
 			questionLength: question.length,
@@ -595,14 +669,21 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 		});
 
 		try {
-			const requestPayload = { conversationId, question, documentUrl, documentTitle, provider };
+			const requestPayload: ChatQueryRequest = {
+				conversationId,
+				question,
+				documentUrl,
+				documentTitle,
+				provider,
+				userId: user.id,
+			};
 			const res = await chatApi.query(requestPayload);
 
-			// ── Debug log: incoming response ─────────────────────────────────
 			console.log("[CHAT] Response received", {
 				conversationId,
 				answerLength: res.answer?.length ?? 0,
 				contextDocumentTitle: res.contextDocumentTitle ?? null,
+				conversationTitle: res.conversationTitle ?? null,
 			});
 
 			const aiMsg: Message = {
@@ -615,8 +696,19 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 			};
 			setStreamingId(aiMsg.id);
 			setMessages((prev) => [...prev, aiMsg]);
-			// user just got a new reply — snap back to bottom
 			userScrolledRef.current = false;
+
+			// ── Update history list after first turn ─────────────────────────
+			if (res.conversationTitle) {
+				const newEntry: ConversationSummary = {
+					id: conversationId,
+					title: res.conversationTitle,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				};
+				setConversations((prev) => [newEntry, ...prev]);
+				setActiveConversationId(conversationId);
+			}
 		} catch (err: any) {
 			console.error("[CHAT] Query failed", { conversationId, error: err?.message });
 			const errMsg: Message = {
@@ -683,6 +775,89 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 					</h3>
 					<p className="text-xs text-muted-foreground">Ask questions · Tag @ files for context</p>
 				</div>
+
+				{/* Header action icons */}
+				<div className="flex items-center gap-1 relative">
+					{/* History popup trigger */}
+					<button
+						type="button"
+						title="Chat history"
+						onClick={() => setIsHistoryOpen((p) => !p)}
+						className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+					>
+						<History className="h-4 w-4" />
+					</button>
+
+					{/* New Chat */}
+					<button
+						type="button"
+						title="New chat"
+						onClick={handleNewChat}
+						className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+					>
+						<SquarePen className="h-4 w-4" />
+					</button>
+
+					{/* History popup overlay + dropdown */}
+					{isHistoryOpen && (
+						<>
+							{/* Click-away */}
+							<button
+								type="button"
+								aria-label="Close history"
+								className="fixed inset-0 z-20 cursor-default w-full h-full bg-transparent border-none p-0 m-0"
+								onClick={() => setIsHistoryOpen(false)}
+							/>
+							<div className="absolute right-0 top-full mt-1.5 w-72 bg-popover border border-border rounded-lg shadow-lg p-1 z-30 animate-in fade-in slide-in-from-top-2 duration-150">
+								<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-b border-border mb-1">
+									Chat History
+								</div>
+								{conversations.length === 0 ? (
+									<div className="px-3 py-4 text-xs text-muted-foreground text-center">
+										No conversations yet
+									</div>
+								) : (
+									<div className="max-h-64 overflow-y-auto">
+										{conversations.map((conv) => (
+											<div
+												key={conv.id}
+												role="button"
+												tabIndex={0}
+												onClick={() => handleLoadConversation(conv)}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.preventDefault();
+														handleLoadConversation(conv);
+													}
+												}}
+												className={`group w-full flex items-center justify-between gap-2 px-2 py-2 text-left rounded-md transition-colors text-sm cursor-pointer ${
+													conv.id === activeConversationId
+														? "bg-accent text-accent-foreground"
+														: "hover:bg-muted"
+												}`}
+											>
+												<div className="flex flex-col min-w-0">
+													<span className="truncate text-xs font-medium">{conv.title}</span>
+													<span className="text-[10px] text-muted-foreground">
+														{formatDistanceToNow(new Date(conv.updatedAt), { addSuffix: true })}
+													</span>
+												</div>
+												<button
+													type="button"
+													onClick={(e) => handleDeleteConversation(conv.id, e)}
+													className="shrink-0 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 hover:text-destructive transition-all"
+													title="Delete conversation"
+												>
+													<Trash2 className="h-3 w-3" />
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+							</div>
+						</>
+					)}
+				</div>
 			</div>
 
 			{/* Messages */}
@@ -704,7 +879,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 							<div className="flex items-center gap-1.5 mb-1 px-1">
 								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
 								<span className="text-xs font-medium">
-									{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3.5 Flash"}
+									{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3 Flash"}
 								</span>
 							</div>
 							<div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 rounded-tl-none flex items-center gap-2 text-sm text-muted-foreground">
@@ -782,7 +957,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 								className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all duration-200 border border-border/60 bg-muted/30 hover:border-border shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
 							>
 								<Sparkles className="h-3 w-3 text-primary animate-pulse" />
-								<span>{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3.5 Flash"}</span>
+								<span>{provider === "openai" ? "GPT-5.4 mini" : "Gemini 3 Flash"}</span>
 								<ChevronDown className="h-3 w-3 opacity-60 transition-opacity duration-200" />
 							</button>
 
@@ -812,7 +987,7 @@ export function ContextualChat({ materials }: Readonly<ContextualChatProps>) {
 											<div className="flex flex-col items-start gap-0.5">
 												<span className="text-xs font-semibold flex items-center gap-1">
 													<Sparkles className="h-3 w-3" />
-													Gemini 3.5 Flash
+													Gemini 3 Flash
 												</span>
 												<span className="text-[10px] opacity-75">Default model</span>
 											</div>

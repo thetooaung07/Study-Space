@@ -90,7 +90,7 @@ class GeminiServiceTest {
 
     @Test
     void testGenerateMultimodal_Success() throws Exception {
-        when(mockModels.generateContent(eq("gemini-2.0-flash"), any(Content.class), any()))
+        when(mockModels.generateContent(eq("gemini-3-flash-preview"), any(Content.class), any()))
                 .thenReturn(mockResponse);
         when(mockResponse.text()).thenReturn("Extracted visual text");
 
@@ -152,7 +152,7 @@ class GeminiServiceTest {
 
     @Test
     void testGenerateMultimodal_Exception() throws Exception {
-        when(mockModels.generateContent(eq("gemini-2.0-flash"), any(Content.class), any()))
+        when(mockModels.generateContent(eq("gemini-3-flash-preview"), any(Content.class), any()))
                 .thenThrow(new RuntimeException("Multimodal Failed"));
 
         Content mockContent = mock(Content.class);
