@@ -116,7 +116,7 @@ public class GeminiService {
         log.info("[GEMINI] generateMultimodal() — multimodal PDF extraction call");
         try {
             GenerateContentResponse response =
-                    client.models.generateContent("gemini-3-flash-preview", content, null);
+                    client.models.generateContent(MODEL, content, null);
             log.info("[GEMINI] Multimodal response — {} chars",
                     response.text() != null ? response.text().length() : 0);
             return response;
