@@ -141,11 +141,11 @@ sonarQube:
 deploy_frontend:
     stage: deploy
     image: node:20-alpine
-    needs: []
-        # - job: frontend_unit_test
-        # - job: frontend_e2e_test
-        #   artifacts: false
-        # - job: sonarQube
+    needs:
+        - job: frontend_unit_test
+        - job: frontend_e2e_test
+          artifacts: false
+        - job: sonarQube
     script:
         - cd frontend
         - npm install -g vercel
