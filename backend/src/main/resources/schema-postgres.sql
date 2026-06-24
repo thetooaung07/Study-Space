@@ -3,27 +3,6 @@
 -- ==========================================
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- ==========================================
--- Drop existing tables to ensure clean seed
--- ==========================================
-DROP TABLE IF EXISTS document_chunks CASCADE;
-DROP TABLE IF EXISTS messages CASCADE;
-DROP TABLE IF EXISTS conversations CASCADE;
-DROP TABLE IF EXISTS space_messages CASCADE;
-DROP TABLE IF EXISTS space_guests CASCADE;
-DROP TABLE IF EXISTS contribution_proposals CASCADE;
-DROP TABLE IF EXISTS workspace_materials CASCADE;
-DROP TABLE IF EXISTS workspace_sections CASCADE;
-DROP TABLE IF EXISTS workspace_spaces CASCADE;
-DROP TABLE IF EXISTS student_workspaces CASCADE;
-DROP TABLE IF EXISTS course_enrollments CASCADE;
-DROP TABLE IF EXISTS course_materials CASCADE;
-DROP TABLE IF EXISTS course_sections CASCADE;
-DROP TABLE IF EXISTS courses CASCADE;
-DROP TABLE IF EXISTS activity CASCADE;
-DROP TABLE IF EXISTS session_participants CASCADE;
-DROP TABLE IF EXISTS study_sessions CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
 
 -- ==========================================
 -- Core User & Study Tables

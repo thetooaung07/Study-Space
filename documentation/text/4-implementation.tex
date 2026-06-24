@@ -124,6 +124,13 @@ audit table or a deferred constraint. The \texttt{Workspace\allowbreak Section\a
 hidden materials before returning the section content to the frontend, so the student's view is
 consistent with the logical deletion even though the database row remains.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/uml_diagrams/merge_contribution_sequence_diagram.png}
+    \caption{Merge proposal lifecycle sequence diagram: From student submission to instructor review and acceptance}
+    \label{fig:merge-sequence-diagram}
+\end{figure}
+
 % ----------------------------------------------------------------
 \section{Contextual Messaging System (FR-03)}
 \label{sec:impl-chat}
@@ -489,7 +496,7 @@ changelog generation.
 \subsection{CI/CD Pipeline}
 \label{subsec:cicd}
 
-A GitLab CI/CD pipeline runs automatically on every push. The pipeline defines multiple stages to
+A GitLab CI/CD pipeline runs automatically on every push on master branch. The pipeline defines multiple stages to
 guarantee code quality and automate deployment. The first stages build the backend with Gradle and
 the frontend with \texttt{npm}, followed by comprehensive unit, integration, and end-to-end (Playwright)
 testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check and
@@ -504,7 +511,7 @@ to Vercel. A separate pipeline hook triggers the backend container deployment to
 %     \label{fig:cicd-pipeline}
 % \end{figure}
 
-The pipeline enforces that \texttt{main} is always in a deployable state. No code reaches the
+The pipeline enforces that \texttt{master} is always in a deployable state. No code reaches the
 branch without passing the backend tests and the frontend type check, which together cover the
 most common categories of regression.
 
@@ -520,5 +527,4 @@ with Biber.
 The backend API is documented automatically by Springdoc OpenAPI, which generates a Swagger UI
 from the controller annotations and makes it available at \texttt{/swagger-ui/index.html} when
 the application is running. Public service methods carry JavaDoc comments that explain the
-purpose and contract of each operation. The \texttt{/docs/} directory in the repository root
-serves as a staging area for feature-level implementation notes used during thesis writing.
+purpose and contract of each operation.

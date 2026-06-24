@@ -5,155 +5,155 @@ stages:
     - analyze
     - deploy
 
-# # ----------------------------------------
-# # 1. Backend Compile
-# # ----------------------------------------
-# backend_build:
-#     stage: build
-#     image: eclipse-temurin:21-jdk
-#     script:
-#         - cd backend
-#         - chmod +x gradlew
-#         - ./gradlew classes
-#     artifacts:
-#         paths:
-#             - backend/build/classes/java/main/
+# ----------------------------------------
+# 1. Backend Compile
+# ----------------------------------------
+backend_build:
+    stage: build
+    image: eclipse-temurin:21-jdk
+    script:
+        - cd backend
+        - chmod +x gradlew
+        - ./gradlew classes
+    artifacts:
+        paths:
+            - backend/build/classes/java/main/
 #
-# # ----------------------------------------
-# # 2. Frontend Build
-# # ----------------------------------------
-# frontend_build:
-#     stage: build
-#     image: node:20-alpine
-#     script:
-#         - cd frontend
-#         - npm ci
-#         - npm run build
-#     artifacts:
-#         paths:
-#             - ./frontend/.next/
+# ----------------------------------------
+# 2. Frontend Build
+# ----------------------------------------
+frontend_build:
+    stage: build
+    image: node:20-alpine
+    script:
+        - cd frontend
+        - npm ci
+        - npm run build
+    artifacts:
+        paths:
+            - ./frontend/.next/
 #
-# # ----------------------------------------
-# # 3. Backend Test + Coverage
-# # ----------------------------------------
-# backend_test:
-#     stage: test
-#     image: eclipse-temurin:21-jdk
-#     needs:
-#         - job: backend_build
-#           artifacts: true
-#     script:
-#         - cd backend
-#         - chmod +x gradlew
-#         - ./gradlew test
-#         - ./gradlew jacocoTestReport
-#     artifacts:
-#         paths:
-#             - backend/build/reports/jacoco/test/jacocoTestReport.xml
-#         when: always
+# ----------------------------------------
+# 3. Backend Test + Coverage
+# ----------------------------------------
+backend_test:
+    stage: test
+    image: eclipse-temurin:21-jdk
+    needs:
+        - job: backend_build
+          artifacts: true
+    script:
+        - cd backend
+        - chmod +x gradlew
+        - ./gradlew test
+        - ./gradlew jacocoTestReport
+    artifacts:
+        paths:
+            - backend/build/reports/jacoco/test/jacocoTestReport.xml
+        when: always
 #
-# # ----------------------------------------
-# #  Frontend Unit Test
-# # ----------------------------------------
-# frontend_unit_test:
-#     stage: test
-#     image: node:20-alpine
-#     needs:
-#         - job: frontend_build
-#           artifacts: false # no build output needed to run tests
-#     script:
-#         - cd frontend
-#         - npm install
-#         - npm run test -- --run
+# ----------------------------------------
+#  Frontend Unit Test
+# ----------------------------------------
+frontend_unit_test:
+    stage: test
+    image: node:20-alpine
+    needs:
+        - job: frontend_build
+          artifacts: false # no build output needed to run tests
+    script:
+        - cd frontend
+        - npm install
+        - npm run test -- --run
 #
-# # ----------------------------------------
-# #  Frontend E2E Test
-# # ----------------------------------------
-# frontend_e2e_test:
-#     stage: test
-#     image: mcr.microsoft.com/playwright:v1.50.0-jammy
-#     needs:
-#         - job: frontend_build
-#           artifacts: false # no build output needed to run tests
-#     script:
-#         - cd frontend
-#         - npm install
-#         - npx playwright install --with-deps
-#         - npm run test:e2e
-#     artifacts:
-#         paths:
-#             - frontend/playwright-report/
-#             - frontend/test-results/
-#         when: always
+# ----------------------------------------
+#  Frontend E2E Test
+# ----------------------------------------
+frontend_e2e_test:
+    stage: test
+    image: mcr.microsoft.com/playwright:v1.50.0-jammy
+    needs:
+        - job: frontend_build
+          artifacts: false # no build output needed to run tests
+    script:
+        - cd frontend
+        - npm install
+        - npx playwright install --with-deps
+        - npm run test:e2e
+    artifacts:
+        paths:
+            - frontend/playwright-report/
+            - frontend/test-results/
+        when: always
 #
-# # ----------------------------------------
-# # 4. Dependency Security Scan
-# # ----------------------------------------
-# dependency_check:
-#     stage: scan
-#     image: eclipse-temurin:21-jdk
-#     needs:
-#         - job: backend_build
-#           artifacts: false
-#     script:
-#         - cd backend
-#         - chmod +x gradlew
-#         - ./gradlew dependencyCheckAnalyze
-#           -Dorg.owasp.dependencycheck.data.directory=$CI_PROJECT_DIR/backend/dependency-check-data
-#           --stacktrace
-#     artifacts:
-#         paths:
-#             - backend/build/reports/dependency-check-report.html
-#         when: always
-#     cache:
-#         - key: NVD-db-cache-v4
-#           paths:
-#               - backend/dependency-check-data/
-#     allow_failure: true
+# ----------------------------------------
+# 4. Dependency Security Scan
+# ----------------------------------------
+dependency_check:
+    stage: scan
+    image: eclipse-temurin:21-jdk
+    needs:
+        - job: backend_build
+          artifacts: false
+    script:
+        - cd backend
+        - chmod +x gradlew
+        - ./gradlew dependencyCheckAnalyze
+          -Dorg.owasp.dependencycheck.data.directory=$CI_PROJECT_DIR/backend/dependency-check-data
+          --stacktrace
+    artifacts:
+        paths:
+            - backend/build/reports/dependency-check-report.html
+        when: always
+    cache:
+        - key: NVD-db-cache-v4
+          paths:
+              - backend/dependency-check-data/
+    allow_failure: true
 #
-# # ----------------------------------------
-# # 5. SonarQube Analysis
-# # ----------------------------------------
-# sonarQube:
-#     stage: analyze
-#     image: sonarsource/sonar-scanner-cli:latest
-#     needs:
-#         - job: backend_build
-#           artifacts: true
-#         - job: frontend_build
-#           artifacts: false
-#         - job: backend_test
-#           artifacts: true
-#     script:
-#         - sonar-scanner
-#           -Dsonar.projectKey=$SONAR_PROJECT
-#           -Dsonar.projectName=$SONAR_PROJECT
-#           -Dsonar.host.url=$SONAR_URL
-#           -Dsonar.token=$SONAR_TOKEN
-#           -Dsonar.sources=backend/src/main,frontend
-#           -Dsonar.java.binaries=backend/build/classes/java/main/
-#           -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/coverage/**,**/playwright-report/**,**/test-results/**,frontend/components/ui/**,backend/**/dto/**,frontend/app/globals.css
-#           -Dsonar.coverage.jacoco.xmlReportPaths=backend/build/reports/jacoco/test/jacocoTestReport.xml
+# ----------------------------------------
+# 5. SonarQube Analysis
+# ----------------------------------------
+sonarQube:
+    stage: analyze
+    image: sonarsource/sonar-scanner-cli:latest
+    needs:
+        - job: backend_build
+          artifacts: true
+        - job: frontend_build
+          artifacts: false
+        - job: backend_test
+          artifacts: true
+    script:
+        - sonar-scanner
+          -Dsonar.projectKey=$SONAR_PROJECT
+          -Dsonar.projectName=$SONAR_PROJECT
+          -Dsonar.host.url=$SONAR_URL
+          -Dsonar.token=$SONAR_TOKEN
+          -Dsonar.sources=backend/src/main,frontend
+          -Dsonar.java.binaries=backend/build/classes/java/main/
+          -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/coverage/**,**/playwright-report/**,**/test-results/**,frontend/components/ui/**,backend/**/dto/**,frontend/app/globals.css
+          -Dsonar.coverage.jacoco.xmlReportPaths=backend/build/reports/jacoco/test/jacocoTestReport.xml
 #
-# # ----------------------------------------
-# # 6. Deploy Frontend to Vercel
-# # ----------------------------------------
-# deploy_frontend:
-#     stage: deploy
-#     image: node:20-alpine
-#     needs:
-#         - job: frontend_unit_test
-#         - job: frontend_e2e_test
-#           artifacts: false
-#         - job: sonarQube
-#     script:
-#         - cd frontend
-#         - npm install -g vercel
-#         - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-#         - vercel build --prod --token=$VERCEL_TOKEN
-#         - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-#     rules:
-#         - if: $CI_COMMIT_BRANCH == "master"
+# ----------------------------------------
+# 6. Deploy Frontend to Vercel
+# ----------------------------------------
+deploy_frontend:
+    stage: deploy
+    image: node:20-alpine
+    needs:
+        - job: frontend_unit_test
+        - job: frontend_e2e_test
+          artifacts: false
+        - job: sonarQube
+    script:
+        - cd frontend
+        - npm install -g vercel
+        - vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+        - vercel build --prod --token=$VERCEL_TOKEN
+        - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+    rules:
+        - if: $CI_COMMIT_BRANCH == "master"
 
 # ----------------------------------------
 # 7. Deploy Backend to Render
@@ -163,6 +163,10 @@ deploy_backend:
     image:
         name: gcr.io/kaniko-project/executor:v1.23.2-debug
         entrypoint: [""]
+    needs:
+        - job: backend_test
+          artifacts: false
+        - job: sonarQube
     script:
         # 1. Authenticate with Docker Hub
         - mkdir -p /kaniko/.docker
@@ -173,7 +177,7 @@ deploy_backend:
           --dockerfile $CI_PROJECT_DIR/backend/Dockerfile
           --destination $DOCKER_HUB_USERNAME/studyspace-backend:latest
           --destination $DOCKER_HUB_USERNAME/studyspace-backend:$CI_COMMIT_SHA
-        # 3. Trigger Render deploy hook (Commented out for the very first run!)
-        # - wget -q -O /dev/null --post-data="" $RENDER_DEPLOY_HOOK_URL
+        # 3. Trigger Render deploy hook
+        - wget -q -O /dev/null --post-data="" $RENDER_DEPLOY_HOOK_URL
     rules:
         - if: $CI_COMMIT_BRANCH == "master"

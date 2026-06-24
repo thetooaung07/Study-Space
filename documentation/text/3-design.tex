@@ -33,7 +33,7 @@ owning user, optionally linked to a specific study session.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/1_user_domain_model.png}
+    \includegraphics[width=0.9\textwidth]{images/domain/1_user_domain_model.png}
     \caption{User management and access control domain model}
     \label{fig:user-domain-model}
 \end{figure}
@@ -69,7 +69,7 @@ than deleting the row preserves the enrollment history and allows re-activation.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/2_course_admin_domain_model.png}
+    \includegraphics[width=0.9\textwidth]{images/domain/2_course_admin_domain_model.png}
     \caption{Course administration domain model}
     \label{fig:course-admin-domain-model}
 \end{figure}
@@ -105,7 +105,7 @@ profile at submission time so it remains stable even if the student later change
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/3_content_extension_model.png}
+    \includegraphics[width=0.9\textwidth]{images/domain/3_content_extension_model.png}
     \caption{Content extension domain model}
     \label{fig:content-extension-domain-model}
 \end{figure}
@@ -127,7 +127,7 @@ is required.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.9\textwidth]{images/4_contextual_message_domain_model.png}
+    \includegraphics[width=0.9\textwidth]{images/domain/4_contextual_message_domain_model.png}
     \caption{Contextual messaging and collaboration domain model}
     \label{fig:contextual-message-domain-model}
 \end{figure}
@@ -175,7 +175,7 @@ sessions. The \emph{business logic layer} is a Spring Boot application that hand
 data access, real-time session broadcasting, and LLM API calls. The \emph{data layer} is a
 PostgreSQL database that stores all persistent data.
 
-For local development, all three tiers can be orchestrated using \texttt{docker-compose.yml}
+For local development, all three tiers can be orchestrated using \texttt{docker-\allowbreak compose.yml}
 to run in the same virtual network. For production deployment, the architecture is decoupled: the frontend
 is deployed to a dedicated hosting platform (e.g., Vercel), the backend runs as a containerised
 service on a cloud platform (e.g., Render), and file storage is handled by an S3-compatible service
@@ -360,21 +360,43 @@ Workspaces, and their study sessions. Instructors additionally see course manage
 management, and Merge Proposal review links. The role check is performed client-side from the
 JWT payload, but all data-sensitive actions are re-validated server-side.
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_dashboard_view.png}
+    \caption{Student dashboard: The primary entry point featuring recent activities and quick navigation}
+    \label{fig:student-dashboard}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_sessions_view.png}
+    \caption{Study sessions view: Managing active and scheduled collaborative sessions}
+    \label{fig:student-sessions}
+\end{figure}
+
 \subsection{Course and Workspace Views}
 \label{subsec:course-workspace-views}
 
-The course list page shows all courses the user is enrolled in or manages. Selecting a workspace
+The course list page shows all courses the user is enrolled in or manages. 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/instructor_courses_view.png}
+    \caption{Instructor courses view: Managing active course structures and enrollments}
+    \label{fig:instructor-courses}
+\end{figure}
+
+Selecting a workspace
 opens the workspace viewer, which renders the Course Material alongside a contextual chat panel.
 Students can use the chat panel to discuss the course content and attach a Contextual Anchor to
 a specific Course Material using the \texttt{@}-mention system.
 
-% TODO: Insert workspace view wireframe as Figure 3.4
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_3_4_workspace-view.png}
-%     \caption{Workspace viewer wireframe: Course Material list with contextual chat panel}
-%     \label{fig:workspace-view}
-% \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_workspace_view.png}
+    \caption{Workspace viewer: Course Material list with contextual chat panel}
+    \label{fig:workspace-view}
+\end{figure}
 
 The workspace viewer places the material list on the left and the contextual chat panel on the
 right. This layout satisfies the FR-03 use case \texttt{Post contextual message} by keeping the
@@ -390,18 +412,24 @@ The Merge Proposal submission dialog allows the student to select materials and 
 section, optionally typing a proposed new section name if none of the existing sections is
 appropriate.
 
-% TODO: Insert merge proposal wireframe as Figure 3.5
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_3_5_merge-proposal.png}
-%     \caption{Merge Proposal submission dialog wireframe}
-%     \label{fig:merge-proposal}
-% \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_merge_proposal_view.png}
+    \caption{Merge Proposal submission dialog}
+    \label{fig:merge-proposal}
+\end{figure}
 
 The Merge Proposal dialog reflects the FR-02 use case \texttt{Submit Merge Proposal}: the student
 selects one or more materials, picks a target section or proposes a new one, and submits.
 The design keeps the form minimal to reduce friction and mirrors the Git-inspired workflow that
 technically experienced students will recognise.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/ui/instructor_review_contribution_view.png}
+    \caption{Instructor review view: Evaluating a student's merge proposal}
+    \label{fig:instructor-review}
+\end{figure}
 
 \subsection{AI Assistant Panel}
 \label{subsec:ai-panel}
@@ -412,13 +440,12 @@ the content of the currently open Course Material to the LLM API. The response i
 a conversational format with a typewriter animation. The panel is designed not to obscure the
 Course Material so the student can consult both simultaneously.
 
-% TODO: Insert AI panel wireframe as Figure 3.6
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/fig_3_6_ai-panel.png}
-%     \caption{AI assistant panel wireframe: question input and response display}
-%     \label{fig:ai-panel}
-% \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/ui/student_contextual_chat_ai_view.png}
+    \caption{AI assistant panel: Conversational interface for querying course materials}
+    \label{fig:ai-panel}
+\end{figure}
 
 The collapsible design satisfies FR-04 by making the AI assistant available at any point during
 material review without forcing the student to navigate to a separate page, preserving the reading

@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@Profile("local")
+@Profile("!gcs")
 @RequiredArgsConstructor
 public class LocalFileStorageService implements FileStorageService {
 
