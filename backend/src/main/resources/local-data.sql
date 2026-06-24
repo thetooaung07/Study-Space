@@ -79,7 +79,7 @@ VALUES
 ('JOINED',           'joined the session',                             CURRENT_TIMESTAMP - INTERVAL '96 hours',                         5, 3),
 ('MESSAGE',          'Hola! Vamos a practicar!',                       CURRENT_TIMESTAMP - INTERVAL '96 hours' + INTERVAL '10 minutes', 5, 5),
 ('MILESTONE_REACHED','Session completed: 45 minutes',                  CURRENT_TIMESTAMP - INTERVAL '95.25 hours',                      5, 5)
-ON CONFLICT (study_session_id, user_id, timestamp, type) DO NOTHING;
+;
 
 
 -- ============================================
