@@ -14,6 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for the Content Extension System (Feature F2) - Merge Proposals.
+ *
+ * <p>Handles the logic for submitting proposals from student workspaces to the main course
+ * and allows instructors to review (approve/reject) these proposals.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -30,6 +36,10 @@ public class ContributionService {
     /**
      * Submit contribution proposals for one or more workspace materials.
      * Creates one proposal per material (multi-select creates a batch).
+     *
+     * @param studentId the student submitting the proposal
+     * @param request the submission details including source materials and target section
+     * @return a list of created proposals
      */
     public List<ContributionProposalDTO> submitProposals(Long studentId, SubmitProposalRequest request) {
         User student = findUser(studentId);
@@ -82,8 +92,15 @@ public class ContributionService {
 
     /**
      * Instructor reviews a proposal — approve or reject.
-     * On approval: the workspace material is copied into the target course section
-     * with the contributor's name attached.
+     * 
+     * <p><strong>Approval Logic:</strong> On approval, the workspace material is physically
+     * copied into the target course section (using the file storage service) so the course
+     * has its own independent copy. The contributor's name is attached to the new course material.
+     *
+     * @param proposalId the ID of the proposal to review
+     * @param instructorId the instructor reviewing the proposal
+     * @param request the review decision and optional message
+     * @return the updated proposal
      */
     public ContributionProposalDTO reviewProposal(Long proposalId, Long instructorId, ReviewProposalRequest request) {
         ContributionProposal proposal = findProposal(proposalId);

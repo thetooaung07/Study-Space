@@ -16,7 +16,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-// User profile CRUD operations
+/**
+ * REST controller for Access Control (Feature F5) - User Profile Management.
+ *
+ * <p>Handles user profile CRUD operations, password changes, and status updates.
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

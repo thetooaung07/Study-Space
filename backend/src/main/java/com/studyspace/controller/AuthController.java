@@ -14,7 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
-// Handles login, registration, and authentication endpoints
+/**
+ * REST controller for Access Control (Feature F5).
+ *
+ * <p>Handles user registration, login, and fetching the current authenticated user.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

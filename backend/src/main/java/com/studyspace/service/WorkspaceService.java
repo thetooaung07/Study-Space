@@ -15,6 +15,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 
+/**
+ * Service implementation for the Content Extension System (Feature F2).
+ *
+ * <p>Manages workspaces, spaces, and handles complex operations like course forking
+ * (copy-on-write references) and soft-deletes for materials with active proposals.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -102,7 +108,14 @@ public class WorkspaceService {
 
     /**
      * Fork (deep-copy) a course into a workspace space.
-     * Materials are created as references (copy-on-write).
+     * Materials are created as references (copy-on-write) instead of duplicating the physical files.
+     * This saves storage and allows tracking the original source for future merge proposals.
+     *
+     * @param workspaceId the target workspace
+     * @param userId the user performing the fork
+     * @param courseId the source course to fork
+     * @param customTitle optional custom title for the new space
+     * @return the newly created space containing referenced materials
      */
     public WorkspaceSpaceDTO forkCourse(Long workspaceId, Long userId, Long courseId, String customTitle) {
         StudentWorkspace workspace = findWorkspace(workspaceId);
@@ -309,6 +322,11 @@ public class WorkspaceService {
 
     /**
      * Processes every material in a section before the section (or its ancestor) is deleted.
+     * 
+     * <p>Applies the same soft-delete logic as {@link #deleteMaterial(Long, Long)} to prevent
+     * breaking active contribution proposals when a parent section is deleted.
+     * 
+     * @param section the section being purged
      */
     private void purgeMaterials(WorkspaceSection section) {
         for (WorkspaceMaterial material : section.getMaterials()) {
@@ -349,6 +367,17 @@ public class WorkspaceService {
         return toMaterialDTO(materialRepository.save(material));
     }
 
+    /**
+     * Deletes a material from a workspace section.
+     *
+     * <p><strong>Soft Delete Logic:</strong> If the material has an active {@link com.studyspace.entity.ContributionProposal},
+     * it cannot be hard-deleted because the instructor needs to review it. Instead, the material
+     * is flagged as hidden ({@code isHidden = true}) and retained in the database until the proposal is resolved.
+     * If no active proposal exists, the physical file (if not a reference) and the DB record are permanently deleted.
+     *
+     * @param materialId the ID of the material to delete
+     * @param userId the ID of the user requesting the deletion (must be owner or creator)
+     */
     public void deleteMaterial(Long materialId, Long userId) {
         WorkspaceMaterial material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));

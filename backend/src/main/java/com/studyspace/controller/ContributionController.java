@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST controller for the Content Extension System (Feature F2) - Merge Proposals.
+ *
+ * <p>Handles the submission, review, and listing of contribution proposals.
+ */
 @RestController
 @RequestMapping("/api/contributions")
 @RequiredArgsConstructor

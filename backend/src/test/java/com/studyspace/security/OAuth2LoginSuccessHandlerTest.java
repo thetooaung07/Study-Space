@@ -18,6 +18,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import org.springframework.test.util.ReflectionTestUtils;
+
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +53,7 @@ class OAuth2LoginSuccessHandlerTest {
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         when(authentication.getPrincipal()).thenReturn(oAuth2User);
+        ReflectionTestUtils.setField(successHandler, "frontendCallbackUrl", "http://localhost:3000/auth/callback");
     }
 
     @Test

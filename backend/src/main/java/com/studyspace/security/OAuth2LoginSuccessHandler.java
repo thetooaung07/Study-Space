@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -25,7 +26,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
-    private static final String FRONTEND_URL = "http://localhost:3000/auth/callback";
+
+    @Value("${app.frontend.callback-url}")
+    private String frontendCallbackUrl;
+
     private static final String ATTR_LOGIN = "login";
 
     @Override
@@ -52,10 +56,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String token = jwtUtil.generateToken(userDetails);
         log.info("OAuth login successful for user: {} (ID: {})", user.getEmail(), user.getId());
 
-        String targetUrl = UriComponentsBuilder.fromUriString(FRONTEND_URL)
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendCallbackUrl)
                 .queryParam("token", token)
                 .build().toUriString();
-        log.debug("Redirecting to: {}", FRONTEND_URL);
+        log.debug("Redirecting to: {}", frontendCallbackUrl);
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

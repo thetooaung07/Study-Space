@@ -1,56 +1,59 @@
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-StudySpace was designed to address the tool fragmentation that forces students and instructors at
-higher-education faculties to operate across at least two or three disconnected platforms to
-accomplish tasks that are intrinsically linked: reading a document, asking a question about it,
-and contributing an improvement to it. The project demonstrates that a single, integrated
-environment can satisfy all four core collaboration needs simultaneously.
+Higher-education students and instructors routinely operate across multiple disconnected platforms
+to accomplish tasks that are intrinsically related: reading a Course Material, raising a question
+grounded in it, proposing an improvement to it, and receiving AI assistance about it. No existing
+tool examined during the analysis phase combined all four of these activities within a single,
+role-aware environment. This thesis set out to determine whether a unified web application could
+eliminate that fragmentation and preserve the connections between these activities for all
+participants.
 
-The course administration module (FR-01) was fully implemented as a hierarchical structure of
-courses, sections, and Course Materials with Instructor-controlled enrollment and a pluggable
-file storage backend that switches between local disk and Google Cloud Storage by changing a
-Spring profile. The Content Extension System (FR-02) realised the clone-then-propose workflow:
-students can fork any enrolled course into a Private Workspace, extend it with their own
-materials, and submit a Merge Proposal for the Instructor to review and publish, with the
-contributor's name recorded on the resulting Course Material. The Contextual Messaging System
-(FR-03) introduced a portable anchor token that survives serialisation and re-render, enabling
-any message in the workspace chat to carry a deep link to a specific Course Material that other
-students can click to open the file directly. The AI content querying feature (FR-04) integrated
-the Google Gemini API through a structured prompt pipeline that grounds the model's answers in
-the actual course document rather than in general knowledge, with a hybrid memory model that
-preserves conversation context across long sessions. The access control layer (FR-05) enforces
-role separation at the API level through a stateless JWT filter, ensuring that Student accounts
-cannot execute Instructor-only operations regardless of the client application used.
+The work proceeded in three stages. The analysis chapter defined five functional and five
+non-functional requirements derived from the identified problem, surveyed the existing platforms,
+and selected the technology stack through a structured comparison of alternatives. The design
+chapter translated those requirements into a relational data model, a layered backend
+architecture, and a set of user interface views. The implementation chapter described how each
+feature was built, the non-trivial algorithmic decisions involved, and how the application was
+tested and deployed.
 
-User and usability testing confirmed the correctness of the main flows and uncovered two bugs
-that were resolved during the implementation phase: a referential-integrity violation when
-removing reference materials, addressed by the soft-delete \texttt{isHidden} flag, and a
-scroll-hijacking issue in the AI panel, resolved by a programmatic scroll guard.
+The five functional requirements were addressed in full. A hierarchical course administration
+module allowed Instructors to publish structured content and manage enrollment. A content
+extension system enabled students to fork a course into a Private Workspace, develop their own
+materials independently, and submit a Merge Proposal for Instructor review and publication, with
+the contributor attributed on the resulting Course Material. A contextual messaging system
+introduced a portable anchor token that embeds a deep link to a specific Course Material into any
+chat message, preserving the connection between discussion and source material across the entire
+chat history. An AI assistant grounded its answers in the actual course document through a
+structured prompt pipeline and a hybrid memory model, rather than relying on general knowledge
+alone. An access control layer enforced role separation at the API level through stateless JWT
+authentication, ensuring that Student accounts could not execute Instructor-only operations.
+
+The primary contribution of this thesis is the integration of these four collaboration
+capabilities into a coherent, role-aware environment through a copy-on-write workspace model and
+a persistent Contextual Anchor mechanism. Neither the clone-then-propose contribution workflow
+nor the material-anchored chat token has a direct equivalent in any of the surveyed platforms.
+The resulting system was deployed as a publicly accessible prototype, demonstrating that the
+integration is practically realisable within the scope of a bachelor thesis.
 
 % ----------------------------------------------------------------
 \section{Future Work}
 \label{sec:future-work}
 
-The current prototype has several documented limitations that were explicitly deferred to keep the
-scope manageable for a bachelor thesis.
+The prototype established the core workflows but left several directions open for subsequent
+development.
 
-The Contextual Anchor in the messaging system (FR-03) currently stores only the material
-identifier and title in the token. A natural extension is to support page-level or section-level
-anchors, where the token also encodes a byte offset or a page number, allowing the receiving
-client to open the PDF viewer at the exact page the sender was looking at.
+The Contextual Anchor currently stores only the material identifier and title. A natural
+extension would be to encode a page number or byte offset alongside the material reference,
+allowing the receiving client to open the PDF viewer at the precise location the sender was
+viewing at the time of writing.
 
-The enrollment model (FR-01) supports two statuses (\texttt{ACTIVE} and \texttt{DROPPED}) but
-does not model enrollment requests or an Instructor approval step. In a real faculty deployment,
-courses that should not be publicly accessible would require an invitation or approval workflow
-before granting access to Course Materials.
+The enrollment model supports two statuses (\texttt{ACTIVE} and \texttt{DROPPED}) but does not
+include an enrollment request or Instructor approval step. A real faculty deployment would
+require an invitation or explicit approval workflow before granting student access to Course
+Materials in restricted courses.
 
-The study session feature, implemented through the WebSocket infrastructure, provides real-time
-participant tracking and a shared activity feed. Based on the testing conducted in section~\ref{sec:impl-testing}, a shared collaborative document or whiteboard within the session
-would significantly increase the usefulness of synchronous study sessions.
-
-Finally, the application was developed with a containerised local environment and deployed to modern
-PaaS platforms (Vercel and Render). While these platforms handle initial scaling automatically, making
-the backend truly horizontally scalable under heavy load would require the WebSocket session
-state to be shared through an external STOMP broker such as RabbitMQ or ActiveMQ, and the JWT
-secret to be provided through a secure vault rather than an environment variable.
+Finally, the backend was deployed to a single-instance PaaS environment. Achieving true
+horizontal scalability under concurrent load would require externalising the WebSocket session
+state through a shared STOMP broker such as RabbitMQ or ActiveMQ, and provisioning the JWT
+signing secret through a dedicated secrets vault rather than a plain environment variable.

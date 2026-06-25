@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StudySpace - Frontend
 
-## Getting Started
+StudySpace is a modern web application designed to unify course-material management and peer communication into a single, cohesive environment. The platform reduces tool fragmentation by combining course administration, student contributions (Merge Proposals), contextual messaging, and an AI assistant.
 
-First, run the development server:
+## Technical Details
 
+The frontend is built with performance, reusability, and modern developer experience in mind. 
+
+### Core Stack
+- **Framework:** [Next.js 16](https://nextjs.org/) (App Router) + [React 19](https://react.dev/)
+- **Language:** TypeScript
+- **Styling:** [Tailwind CSS 4](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
+- **Forms & Validation:** [React Hook Form](https://react-hook-form.com/)
+- **State Management:** React Context API & Custom Hooks
+- **Real-Time Communication:** `@stomp/stompjs` over `sockjs-client` (WebSockets)
+
+### Key Architectural Decisions
+- **Declarative UI Component Model:** The interface is decomposed into independent components, allowing complex shared state across simultaneous views (e.g., Course Material Viewer, Chat Panel, and AI Assistant Panel).
+- **Stateless Authentication:** Handles secure JWT-based authentication via HTTP-only or `Authorization: Bearer` token flows.
+- **Contextual Messaging:** Real-time chat uses STOMP over SockJS. Messages are parsed for `@[id:title]` markdown syntax to render clickable "Contextual Anchors" pointing to specific course materials.
+- **Built-in Quality Assurance:** Uses modern tools to ensure stability (Vitest for rapid unit testing and Playwright for complex browser-based E2E scenarios).
+
+---
+
+## Developer Guide
+
+### Prerequisites
+- **Node.js**: v22+ recommended
+- **Package Manager**: npm (or yarn / pnpm)
+
+### Getting Started
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   *Note: This command runs Next.js with the Turbopack engine for faster local compilation.*
+
+3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Project Structure
+
+- `app/`: Next.js App Router pages, layout files, and global providers.
+- `components/`: Reusable UI components. Includes primitives (like buttons and dialogs from Shadcn UI) and complex domain-specific blocks (like the AI panel or chat sidebar).
+- `lib/`: Utility functions, formatters, and external API client logic.
+- `hooks/`: Custom React hooks for encapsulating complex state or data-fetching logic.
+
+### Testing
+
+The project uses a dual-testing strategy to balance speed and realism.
+
+**Unit and Integration Testing (Vitest)**
+Used for testing individual components, hooks, and utility functions in isolation.
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Run tests in CLI mode
+npm run test
+
+# Open the Vitest UI in the browser for an interactive test runner
+npm run test:ui
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**End-to-End Testing (Playwright)**
+Used for testing complete multi-step user journeys (e.g., submitting a Merge Proposal, interacting with the AI).
+```bash
+# Run the complete E2E test suite
+npm run test:e2e
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Building for Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To create an optimized production build:
+```bash
+npm run build
+```
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To start the production server:
+```bash
+npm run start
+```

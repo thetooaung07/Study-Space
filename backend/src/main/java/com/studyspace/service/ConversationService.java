@@ -22,7 +22,7 @@ import java.util.List;
  * message history — the three operations needed to power the History popup in the UI.
  *
  * <p>All mutating operations verify that the requesting {@code userId} matches
- * {@link Conversation#getUserId()} to prevent cross-user access.
+ * the owner of the {@link Conversation} to prevent cross-user access.
  */
 @Service
 @RequiredArgsConstructor

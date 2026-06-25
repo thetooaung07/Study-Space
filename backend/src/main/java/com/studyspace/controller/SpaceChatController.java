@@ -17,6 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * REST controller for the Contextual Messaging System (Feature F3).
+ *
+ * <p>Handles fetching and sending real-time messages within a shared workspace space.
+ * Integrates with STOMP WebSockets for live broadcasting to connected clients.
+ */
 @RestController
 @RequestMapping("/api/workspaces/spaces/{spaceId}/messages")
 @RequiredArgsConstructor

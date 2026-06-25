@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
+/**
+ * Service implementation for Access Control (Feature F5) - User Profile Management.
+ *
+ * <p>Handles business logic for user profiles, including password changes and study minutes tracking.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

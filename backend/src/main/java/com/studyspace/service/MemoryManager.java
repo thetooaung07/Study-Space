@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Core orchestrator for the Hybrid Memory System.
  *
- * <h3>Architecture phases</h3>
+ * <h2>Architecture phases</h2>
  * <ul>
  *   <li><strong>Phase 1</strong> — Session lifecycle: load or create a {@link Conversation}.</li>
  *   <li><strong>Phase 2</strong> — Recent message buffer: fetch the last 10 DB rows for context.</li>
@@ -27,8 +27,8 @@ import java.util.List;
  *   <li><strong>Phase 5</strong> — Provider switch: Gemini or OpenAI resolved at call-time.</li>
  *   <li><strong>Phase 6</strong> — Auto-title: on the first turn of a new conversation the LLM
  *       prefixes its answer with {@code TITLE: <label>}; this method strips the prefix, persists
- *       the title to {@code conversations.title}, and returns the label in
- *       {@link ChatQueryResponse#getConversationTitle()} for the frontend History popup.</li>
+ *       the title to {@code conversations.title}, and returns the label via
+ *       {@link ChatQueryResponse} for the frontend History popup.</li>
  * </ul>
  */
 @Service

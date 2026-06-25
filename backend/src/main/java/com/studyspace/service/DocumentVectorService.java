@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Manages the RAG (Retrieval-Augmented Generation) vector store for Course Materials.
  *
- * <h3>Two-path PDF extraction</h3>
+ * <h2>Two-path PDF extraction</h2>
  * <ol>
  *   <li><strong>Text-native PDFs</strong> (lecture notes, papers): Apache PDFBox extracts
  *       the embedded text layer. Fast, free, and works offline.</li>
@@ -32,7 +32,7 @@ import java.util.List;
  *       directly, extracting text visible in images and diagrams.</li>
  * </ol>
  *
- * <h3>Re-ingestion strategy</h3>
+ * <h2>Re-ingestion strategy</h2>
  * Every call to {@link #ingestDocument} unconditionally deletes existing chunks for
  * the given URL before re-indexing. This keeps the store consistent without requiring
  * content-hash comparison.

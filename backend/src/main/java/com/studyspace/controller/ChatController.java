@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * REST controller for the AI-assisted chat feature (Feature F4).
  *
- * <h3>Endpoints</h3>
+ * <h2>Endpoints</h2>
  * <ul>
  *   <li>{@code POST   /api/chat/query}                        — send a question, get an AI answer</li>
  *   <li>{@code GET    /api/chat/conversations?userId=}         — list user's past conversations</li>
@@ -25,7 +25,7 @@ import java.util.List;
  *   <li>{@code GET    /api/chat/conversations/{id}/messages?userId=} — reload message history</li>
  * </ul>
  *
- * <h3>Memory and RAG phases wired in:</h3>
+ * <h2>Memory and RAG phases wired in:</h2>
  * <ul>
  *   <li>Phase 1 — Session lifecycle (lazy load/create via conversationId + userId)</li>
  *   <li>Phase 2 — Recent message buffer from DB</li>

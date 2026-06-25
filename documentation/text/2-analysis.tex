@@ -63,11 +63,11 @@ part of the view. The unidirectional data flow makes state changes predictable a
 during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
 rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
 
-\textbf{Vue.js} is a progressive framework with a smaller bundle size and a gentler learning
+\textbf{Vue.js}~\cite{Vuejs} is a progressive framework with a smaller bundle size and a gentler learning
 curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
 components, and the TypeScript integration, while improving, is less seamless than in React.
 
-\textbf{Angular} is a full-featured framework backed by Google that includes dependency injection,
+\textbf{Angular}~\cite{Angular} is a full-featured framework backed by Google that includes dependency injection,
 a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
 module system exceeds what is justified for a single-team prototype of this scope.
 
@@ -81,7 +81,7 @@ routing via the App Router, server-side rendering where applicable, and built-in
 optimisation. Compared to a plain Vite or Create React App setup, Next.js removes boilerplate
 routing configuration and makes the project structure self-documenting through the directory
 layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
-\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}, which provide accessible, unstyled
+\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}~\cite{RadixUI}, which provide accessible, unstyled
 component primitives that Tailwind classes are applied to. State management across the application
 uses React's native \textbf{Context API} and custom hooks, providing a lightweight, predictable
 data flow for all API interactions without the overhead of external state libraries.
@@ -100,19 +100,19 @@ approach applies sensible defaults automatically, embeds a Tomcat web server, an
 first-class integration with Spring Security, Spring Data JPA, Spring WebSocket, and Springdoc
 OpenAPI --- all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
 improve the throughput of concurrent request handling without the complexity of reactive
-programming.
+programming~\cite{VirtualThreadsJEP444}.
 
-\textbf{Node.js with NestJS or Express} excels in I/O-bound tasks due to its event-driven
+\textbf{Node.js}~\cite{Nodejs} with \textbf{NestJS}~\cite{NestJS} or \textbf{Express}~\cite{ExpressJS} excels in I/O-bound tasks due to its event-driven
 architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
 transactional operations required by the Content Extension System, and the ORM ecosystem
 does not reach the integration depth and stability of Spring Data JPA.
 
-\textbf{Python with Django or FastAPI} is excellent for rapid prototyping and AI integration.
+\textbf{Python}~\cite{Python} with \textbf{Django}~\cite{Django} or \textbf{FastAPI}~\cite{FastAPI} is excellent for rapid prototyping and AI integration.
 Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
 without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
 concurrent CPU-bound tasks.
 
-Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model
+Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model~\cite{FowlerEAA,RichardsSAP}
 maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
 authentication and method-level authorisation out of the box (directly addressing the access
 control requirements), and the mature transaction management ensures referential integrity across the complex clone and proposal
@@ -129,19 +129,19 @@ instructor courses. The content extension system requires ACID transaction guara
 \textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
 system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
 foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
-and higher-level access is provided by Spring Data JPA with Hibernate as the ORM provider.
+and higher-level access is provided by Spring Data JPA~\cite{SpringDataJPA} with Hibernate~\cite{Hibernate} as the ORM provider.
 
-\textbf{MongoDB} (NoSQL document store) and \textbf{Cassandra} (wide-column store) are optimised
+\textbf{MongoDB}~\cite{MongoDB} (NoSQL document store) and \textbf{Cassandra}~\cite{Cassandra} (wide-column store) are optimised
 for unstructured or semi-structured data and horizontal scalability. However, they lack strict
 schema enforcement and standard join operations. Using a document store would require significant
-denormalisation, duplicating data to avoid application-level joins, which introduces the risk of
+denormalisation, duplicating data to avoid application-level joins~\cite{NoSQLDistilled}, which introduces the risk of
 inconsistency when a Course Material is approved and must be reflected in both the workspace and
 the course tables atomically.
 
 PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
 transactions are required for the clone and approval workflows, and foreign-key
 constraints enforce referential integrity between proposals and their source materials.
-Additionally, the AI assistant leverages the \texttt{pgvector} extension to provide similarity
+Additionally, the AI assistant leverages the \texttt{pgvector} extension~\cite{pgvector} to provide similarity
 search over document embeddings directly within the same database, eliminating the need for a separate dedicated vector store.
 
 % ----------------------------------------------------------------
@@ -151,16 +151,16 @@ search over document embeddings directly within the same database, eliminating t
 The access control system requires stateless authentication suitable for a REST API consumed by a single-page
 application, with role-based restrictions enforced on the server side.
 
-\textbf{JSON Web Tokens (JWT) with Spring Security}~\cite{SpringSecurity} enables stateless
+\textbf{JSON Web Tokens (JWT)}~\cite{JWT_RFC7519} with Spring Security~\cite{SpringSecurity} enables stateless
 authentication: after login, the server issues a signed token that the client stores and sends
 with every subsequent request. The server validates the token signature without consulting a
 session store, which simplifies horizontal scaling.
 
-\textbf{Server-side sessions} with Spring Session require a shared session store (such as Redis)
+\textbf{Server-side sessions} with Spring Session~\cite{SpringSession} require a shared session store (such as Redis)
 across instances and add network latency to every request. For a stateless REST API served to a
 browser-based SPA, this overhead is unnecessary.
 
-\textbf{OAuth~2.0 only} (without local credentials) would prevent users without a Google or
+\textbf{OAuth~2.0 only}~\cite{OAuth2} (without local credentials) would prevent users without a Google or
 GitHub account from registering, which is inappropriate for a faculty application where students
 may not use third-party providers for academic accounts.
 
@@ -177,12 +177,12 @@ path alongside the primary local credential flow.
 The Contextual Messaging System requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
 
 
-\textbf{WebSocket with STOMP over SockJS}~\cite{SockJS} layers a publish-subscribe model on top
+\textbf{WebSocket}~\cite{WebSocketRFC6455} with \textbf{STOMP}~\cite{STOMP} over SockJS~\cite{SockJS} layers a publish-subscribe model on top
 of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
 per-session topics, allowing the server to push participant-list updates and activity events to
 all subscribers without the clients polling.
 
-\textbf{Server-Sent Events (SSE)} provide a unidirectional push channel from server to client.
+\textbf{Server-Sent Events (SSE)}~\cite{SSE} provide a unidirectional push channel from server to client.
 They lack the bidirectional subscription model needed for clients to send activity events (such as
 a hand-raise) back to the server over the same connection.
 
@@ -336,15 +336,14 @@ The system has two types of actors: \emph{Student} and \emph{Instructor}. The us
 describe the main interactions each actor has with the system, grouped by role. Pre-conditions
 are stated for the non-trivial cases that have dependencies on prior system state.
 
-% TODO: Insert use case diagram here
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_2_3_use-case-diagram.png}
-%     \caption{UML use case diagram for StudySpace}
-%     \label{fig:use-case-diagram}
-% \end{figure}
-
 \subsection*{Instructor Use Cases}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/instructor_uc_diagram.png}
+    \caption{UML use case diagram for Instructor}
+    \label{fig:instructor-use-case-diagram}
+\end{figure}
 
 \begin{itemize}
     \item \textbf{\texttt{Create course}}: The Instructor creates a course with a title and
@@ -352,7 +351,7 @@ are stated for the non-trivial cases that have dependencies on prior system stat
     \item \textbf{\texttt{Upload Course Material}}: Pre-condition: the course and at least one
           section exist. The Instructor selects a file, assigns a title, and uploads it into a
           named section. The backend infers the file type and persists the file URL.
-    \item \textbf{\texttt{Manage enrolments}}: The Instructor approves or drops individual
+    \item \textbf{\texttt{Manage enrollments}}: The Instructor approves or drops individual
           student enrollments from the course management panel.
     \item \textbf{\texttt{Review Merge Proposal}}: Pre-condition: at least one student has
           submitted a Merge Proposal for this course. The Instructor inspects the proposed
@@ -361,6 +360,13 @@ are stated for the non-trivial cases that have dependencies on prior system stat
 \end{itemize}
 
 \subsection*{Student Use Cases}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/student_uc_diagram.png}
+    \caption{UML use case diagram for Student}
+    \label{fig:student-use-case-diagram}
+\end{figure}
 
 \begin{itemize}
     \item \textbf{\texttt{Browse course materials}}: The student navigates to an enrolled course
@@ -372,7 +378,7 @@ are stated for the non-trivial cases that have dependencies on prior system stat
           Workspace with at least one non-reference material or a modified reference material.
           The student selects materials and a target section, optionally adds a message, and
           submits the proposal for Instructor review.
-    \item \textbf{\texttt{Post contextual message}}: The student types a message in the workspace
+    \item \textbf{\texttt{Sent contextual message}}: The student types a message in the workspace
           chat, uses \texttt{@} to attach a Contextual Anchor to a specific Course Material, and
           submits. All enrolled users can see the message and follow the anchor.
     \item \textbf{\texttt{Query AI assistant}}: The student opens the AI panel, selects a Course

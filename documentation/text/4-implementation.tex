@@ -355,16 +355,19 @@ simplifying horizontal scaling.
 \section{Testing}
 \label{sec:impl-testing}
 
+The application was verified through three complementary testing strategies. Automated tests
+validated the correctness of individual components and complete request-response cycles at the
+code level. Structured usability test scenarios were prepared to guide future evaluation with
+the target user group. The subsections below describe each layer in turn.
+
 \subsection{Backend Automated Tests}
 \label{subsec:backend-tests}
 
-The backend uses three levels of automated tests, all implemented with JUnit~5 and the Spring
+The backend uses three levels of automated tests, all implemented with JUnit~5~\cite{JUnit5} and the Spring
 Boot Test framework.
 
 \emph{Unit tests} cover individual service classes in isolation. Dependencies are substituted
-with Mockito mocks so that each test exercises exactly one unit. Examples include
-\texttt{User\allowbreak Service\allowbreak Test}, \texttt{StudyGroup\allowbreak Service\allowbreak Test}, and \newline \texttt{Gamification\allowbreak Service\allowbreak Test}.
-
+with Mockito~\cite{Mockito} mocks so that each test exercises exactly one unit.
 \emph{Repository tests} verify that the Spring Data JPA repositories produce correct SQL and
 return expected entity graphs. They run against an in-process H2 database seeded with test data.
 \texttt{User\allowbreak RepositoryTest} checks that user look-up by email and username behaves correctly.
@@ -395,8 +398,13 @@ Complementing the backend testing suite, the frontend employs a dual testing fra
 \subsection{User and Usability Tests}
 \label{subsec:user-tests}
 
-Each test below is written as a numbered step sequence. Pre-conditions and edge cases are noted
-inline.
+The following test scenarios were designed to validate the five functional requirements against
+the workflows described in the use cases in section~\ref{sec:use-cases}. Each scenario is
+specified as a numbered step sequence with explicit pre-conditions and expected outcomes, so
+that it can be executed by a member of the target user group (a student or Instructor at a
+higher-education faculty) without technical assistance. Formal usability testing with
+representative participants has not been conducted within the scope of this thesis; these
+scenarios constitute the prepared protocol for that future evaluation.
 
 \bigskip
 \noindent\textbf{Test 4.1 --- Upload and browse a Course Material (FR-01)}
@@ -480,8 +488,39 @@ with general knowledge; no error is shown.
 endpoint. Expected: the server returns HTTP~401 Unauthorized with the message ``Unauthorized''.
 
 % ----------------------------------------------------------------
+\section{Implementation Summary}
+\label{sec:impl-summary}
+
+The implementation chapter described the construction of StudySpace across five functional
+areas. The course administration module established the hierarchical data model of courses,
+sections, and Course Materials, with Instructor-controlled enrollment and a profile-switchable
+file storage backend that operates locally or through Google Cloud Storage without code changes.
+The content extension system realised the copy-on-write clone mechanism and the Merge Proposal
+workflow, including the soft-delete \texttt{isHidden} flag that preserves referential integrity
+when reference materials are involved in pending proposals. The contextual messaging system
+introduced the portable \texttt{@[id:title]} anchor token that survives serialisation,
+persists in the database, and renders as a clickable badge pointing to the referenced Course
+Material. The AI assistant feature integrated the Google Gemini API through a structured prompt
+pipeline with a hybrid short-term buffer and long-term summary memory, grounding every answer
+in the actual course document. The access control layer tied all features together through a
+stateless JWT filter and method-level authorisation annotations, enforcing role separation at the
+API boundary.
+
+Automated testing verified the correctness of the main flows across three levels: unit tests
+isolated service logic with Mockito, repository tests validated query correctness against an
+in-process database, and integration tests exercised complete HTTP request-response cycles
+through the Spring MVC layer. During testing, two defects were found and resolved: a
+referential-integrity violation when removing cloned materials, addressed by the soft-delete
+flag, and a scroll-hijacking issue in the AI panel, resolved by a programmatic scroll guard.
+The application was deployed to Vercel (frontend) and Render (backend) through an automated
+GitLab CI/CD pipeline that enforces all checks before any code reaches the production branch.
+
+% ----------------------------------------------------------------
 \section{Project Organisation}
 \label{sec:impl-project-org}
+
+This section describes the tooling and processes used to manage the codebase, automate quality
+checks and deployment, and maintain project documentation throughout the development lifecycle.
 
 \subsection{Workflow and Version Management}
 \label{subsec:workflow-vcs}
@@ -496,8 +535,8 @@ changelog generation.
 \subsection{CI/CD Pipeline}
 \label{subsec:cicd}
 
-A GitLab CI/CD pipeline runs automatically on every push on master branch. The pipeline defines multiple stages to
-guarantee code quality and automate deployment. The first stages build the backend with Gradle and
+A GitLab~\cite{GitLab} CI/CD pipeline runs automatically on every push on master branch. The pipeline defines multiple stages to
+guarantee code quality and automate deployment~\cite{ContinuousDelivery}. The first stages build the backend with Gradle~\cite{Gradle} and
 the frontend with \texttt{npm}, followed by comprehensive unit, integration, and end-to-end (Playwright)
 testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check and
 SonarQube. If all checks pass on the main branch, the final stage automatically deploys the frontend
@@ -528,3 +567,17 @@ The backend API is documented automatically by Springdoc OpenAPI, which generate
 from the controller annotations and makes it available at \texttt{/swagger-ui/index.html} when
 the application is running. Public service methods carry JavaDoc comments that explain the
 purpose and contract of each operation.
+
+The repository contains three README files that serve as the primary entry points for developers
+and operators. The root-level \texttt{README.md} describes the project purpose, lists the live
+deployment URLs, and outlines the monorepo layout. The \texttt{backend/README.md} covers the
+core technology stack, the key architectural decisions, and the full set of environment variables
+required to run the server locally or in a containerised environment. The
+\texttt{frontend/README.md} details the frontend stack, the key architectural patterns, and
+local setup instructions for the Next.js development server.
+
+A user guide and a developer guide are planned as supplementary documents to accompany the
+final submission. The user guide will walk through the main student and Instructor workflows
+with annotated screenshots. The developer guide will provide step-by-step instructions for
+setting up the full development environment, configuring the required environment variables,
+running the test suites, and deploying a new version through the CI/CD pipeline.

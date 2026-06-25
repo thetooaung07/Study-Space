@@ -14,6 +14,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Service implementation for the Course Administration Module (Feature F1).
+ *
+ * <p>Contains business logic for course creation, material uploads, and enrollments.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional

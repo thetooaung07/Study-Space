@@ -15,6 +15,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import java.util.List;
 
+/**
+ * REST controller for the Course Administration Module (Feature F1).
+ *
+ * <p>Handles course creation, section management, material uploads, and student enrollments.
+ */
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor

@@ -231,7 +231,7 @@ dependencies flowing only from controller to service to repository:
 \label{subsec:logical-architecture}
 \label{subsec:logical-architecture}
 
-The server-side application follows the Model-View-Controller (MVC) layered pattern. The
+The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The
 \emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
 the response. The \emph{service layer} contains all business logic, orchestrates data access, and
 enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}

@@ -12,6 +12,16 @@ Students and instructors no longer need to switch between separate learning mana
 - **AI-Assisted Search**: An integrated system that allows students to ask questions directly against their course documents and receive relevant answers.
 - **Role Management**: Distinct features and permissions assigned based on whether the user is a student or an instructor.
 
+## Live Demo
+
+The application is currently deployed and can be accessed at the following URLs:
+
+- **Frontend Application:** [https://study-space-gitlab.vercel.app/](https://study-space-gitlab.vercel.app/)
+- **Backend API:** [https://studyspace-backend-latest.onrender.com](https://studyspace-backend-latest.onrender.com)
+
+> [!NOTE]
+> The backend is hosted on a free Render tier. It spins down after a period of inactivity, so the initial request (e.g., logging in or loading courses) may take 1-2 minutes to wake the server up. Subsequent requests will be fast.
+
 ## Project Structure
 
 The project is organized into two main parts:

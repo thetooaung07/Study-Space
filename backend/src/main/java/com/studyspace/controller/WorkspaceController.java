@@ -12,8 +12,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import java.util.List;
 
+/**
+ * REST controller for the Content Extension System (Feature F2) workspaces and spaces.
+ *
+ * <p>Allows students to create private workspaces, fork courses, and manage personal or shared spaces.
+ */
 @RestController
 @RequestMapping("/api/workspaces")
 @RequiredArgsConstructor

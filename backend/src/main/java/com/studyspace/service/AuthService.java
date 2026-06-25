@@ -15,6 +15,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service implementation for Access Control (Feature F5).
+ *
+ * <p>Handles authentication logic, including JWT token generation and password hashing.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
