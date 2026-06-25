@@ -381,10 +381,7 @@ codes.
 
 During development, several important bugs were found and corrected through testing. A
 referential-integrity violation when deleting reference materials was resolved by introducing the
-soft-delete \texttt{isHidden} flag described in section~\ref{sec:impl-fork}. A scroll-hijacking
-issue in the AI chat panel was discovered during manual end-to-end testing and fixed by
-introducing a \texttt{userScrolledRef} guard that suppresses programmatic scroll when the user
-has manually scrolled upward.
+soft-delete \texttt{isHidden} flag described in section~\ref{sec:impl-fork}.
 
 \subsection{Frontend Automated Tests}
 \label{subsec:frontend-tests}
@@ -492,28 +489,18 @@ endpoint. Expected: the server returns HTTP~401 Unauthorized with the message ``
 \label{sec:impl-summary}
 
 The implementation chapter described the construction of StudySpace across five functional
-areas. The course administration module established the hierarchical data model of courses,
-sections, and Course Materials, with Instructor-controlled enrollment and a profile-switchable
-file storage backend that operates locally or through Google Cloud Storage without code changes.
-The content extension system realised the copy-on-write clone mechanism and the Merge Proposal
-workflow, including the soft-delete \texttt{isHidden} flag that preserves referential integrity
-when reference materials are involved in pending proposals. The contextual messaging system
-introduced the portable \texttt{@[id:title]} anchor token that survives serialisation,
-persists in the database, and renders as a clickable badge pointing to the referenced Course
-Material. The AI assistant feature integrated the Google Gemini API through a structured prompt
-pipeline with a hybrid short-term buffer and long-term summary memory, grounding every answer
-in the actual course document. The access control layer tied all features together through a
-stateless JWT filter and method-level authorisation annotations, enforcing role separation at the
-API boundary.
+areas. The course administration module established the data model and a profile-switchable
+file storage backend (Local/S3).
+The content extension system realised the clone mechanism and Merge Proposal workflow. The
+contextual messaging system introduced the portable anchor token, allowing users to reference
+specific Course Materials in chat. The AI assistant integrated the Google Gemini API through a
+structured prompt pipeline to ground answers in the actual course document. The access control
+layer tied all features together, enforcing role separation at the API boundary.
 
-Automated testing verified the correctness of the main flows across three levels: unit tests
-isolated service logic with Mockito, repository tests validated query correctness against an
-in-process database, and integration tests exercised complete HTTP request-response cycles
-through the Spring MVC layer. During testing, two defects were found and resolved: a
-referential-integrity violation when removing cloned materials, addressed by the soft-delete
-flag, and a scroll-hijacking issue in the AI panel, resolved by a programmatic scroll guard.
-The application was deployed to Vercel (frontend) and Render (backend) through an automated
-GitLab CI/CD pipeline that enforces all checks before any code reaches the production branch.
+Automated testing verified the correctness of the main flows across unit, repository, and
+integration levels. The application was deployed to Vercel (frontend) and Render (backend)
+through an automated GitLab CI/CD pipeline that enforces all checks before any code reaches
+production.
 
 % ----------------------------------------------------------------
 \section{Project Organisation}

@@ -21,7 +21,7 @@ public class ChatQueryRequest {
 
     /**
      * Optional URL of the document the student tagged with the @ shortcut.
-     * Can be a local path (development) or an HTTPS URL (S3/GCS in production).
+     * Can be a local path (development) or an HTTPS URL (S3/Tigris in production).
      * The frontend passes {@code WorkspaceMaterial.fileUrl} directly — no re-upload needed.
      */
     private String documentUrl;

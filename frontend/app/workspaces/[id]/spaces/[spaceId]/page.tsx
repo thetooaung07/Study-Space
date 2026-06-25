@@ -564,11 +564,19 @@ export default function SpaceManagePage() {
 																		/>
 																		<Input
 																			type="file"
-																			onChange={(e) =>
-																				setSelectedFile(
-																					e.target.files?.[0] || null,
-																				)
-																			}
+																			onChange={(e) => {
+																				const file =
+																					e.target.files?.[0] || null;
+																				setSelectedFile(file);
+																				if (file && !materialTitle.trim()) {
+																					const nameWithoutExt =
+																						file.name.replace(
+																							/\.[^/.]+$/,
+																							"",
+																						);
+																					setMaterialTitle(nameWithoutExt);
+																				}
+																			}}
 																			className="text-xs file:h-full file:bg-transparent file:border-0"
 																		/>
 																		<Button

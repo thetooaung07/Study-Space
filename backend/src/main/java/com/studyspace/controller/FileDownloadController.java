@@ -51,6 +51,13 @@ public class FileDownloadController {
             throw new IllegalArgumentException("Invalid material type");
         }
 
+        // If the URL is an absolute HTTP/HTTPS URL (e.g., from S3/Tigris), redirect the user directly to it
+        if (fileUrl.startsWith("http://") || fileUrl.startsWith("https://")) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .header(HttpHeaders.LOCATION, fileUrl)
+                    .build();
+        }
+
         // Convert URL like /uploads/courses/file.pdf → absolute path under uploadDir
         String relativePath = fileUrl.replace("/uploads/", "");
         Path filePath = Paths.get(uploadDir, relativePath).toAbsolutePath().normalize();

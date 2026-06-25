@@ -54,6 +54,7 @@ require an invitation or explicit approval workflow before granting student acce
 Materials in restricted courses.
 
 Finally, the backend was deployed to a single-instance PaaS environment. Achieving true
-horizontal scalability under concurrent load would require externalising the WebSocket session
-state through a shared STOMP broker such as RabbitMQ or ActiveMQ, and provisioning the JWT
-signing secret through a dedicated secrets vault rather than a plain environment variable.
+horizontal scalability under concurrent load would require two infrastructure upgrades:
+externalising the WebSocket session state through a shared STOMP broker (such as RabbitMQ or
+ActiveMQ), and provisioning the JWT signing secret through a dedicated secrets vault rather
+than a plain environment variable.

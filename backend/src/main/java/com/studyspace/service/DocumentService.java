@@ -19,7 +19,7 @@ import java.net.URL;
  * <ul>
  *   <li>A local file path (e.g. {@code /uploads/abc.pdf}) – used during local development.</li>
  *   <li>An absolute file URI (e.g. {@code file:///data/uploads/abc.pdf}).</li>
- *   <li>Any HTTP/HTTPS URL – ready for S3, GCS, or any future cloud storage.</li>
+ *   <li>Any HTTP/HTTPS URL – ready for S3, Tigris, or any future object storage.</li>
  * </ul>
  */
 @Service

@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 @Slf4j
 @Service
-@Profile("!gcs")
+@Profile("!docker")
 @RequiredArgsConstructor
 public class LocalFileStorageService implements FileStorageService {
 

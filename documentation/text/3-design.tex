@@ -260,19 +260,20 @@ materials. The storage backend must be swappable between a local development mod
 production cloud target.
 
 \textbf{Local file storage} (writing files to a directory under the working directory) is zero-cost
-and requires no external service in development. It is unsuitable for production because files are
-lost when the container is recreated and cannot be shared across multiple server instances.
+and requires no external service, making it highly efficient for local development. However, it is
+unsuitable for production because files are lost when a PaaS container is recreated, and the
+storage cannot be shared across multiple server instances for horizontal scaling.
 
-\textbf{Google Cloud Storage (GCS)} is a managed object store with high durability, direct URL
-serving, and a Java client library. It requires a GCP project and credentials, which adds setup
-overhead during development.
+\textbf{Distributed Object Storage (Tigris)} provides high durability, direct URL serving, and
+persistent scaling. Tigris offers an Amazon S3-compatible API, allowing the use of the standard
+AWS SDK v2. This guarantees that uploaded files persist safely independent of the application container's
+lifecycle.
 
 A \texttt{FileStorage\allowbreak Service} interface with two concrete implementations was designed:
-\texttt{Local\allowbreak FileStorage\allowbreak Service} for development and \texttt{Gcs\allowbreak FileStorage\allowbreak Service} for production.
-The active implementation is selected by a Spring profile, keeping the storage backend transparent
-to the rest of the application and satisfying NFR-04. The interface defines three methods:
-\texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed
-by FR-01 and FR-02.
+\texttt{Local\allowbreak FileStorage\allowbreak Service} for development and \texttt{S3\allowbreak FileStorage\allowbreak Service} for production.
+The active implementation is selected automatically by the Spring \texttt{docker} profile, keeping the storage
+backend transparent to the rest of the application and satisfying NFR-04. The interface defines three methods:
+\texttt{store}, \texttt{copy}, and \texttt{delete}, which are the only storage operations needed by FR-01 and FR-02.
 
 % ----------------------------------------------------------------
 \section{LLM API Integration}
