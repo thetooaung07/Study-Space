@@ -8,9 +8,13 @@ import lombok.NoArgsConstructor;
  * Response body for POST /api/chat/query.
  */
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 public class ChatQueryResponse {
+
+    /**
+     * Default constructor.
+     */
+    public ChatQueryResponse() {}
 
     /** The AI-generated answer (TITLE: prefix already stripped). */
     private String answer;

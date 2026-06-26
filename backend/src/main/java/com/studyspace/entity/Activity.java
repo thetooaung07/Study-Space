@@ -10,10 +10,20 @@ import java.time.ZoneOffset;
 @Entity
 @Table(name = "activity")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Javadoc for Activity.
+ */
+/**
+ * Javadoc for Activity.
+ */
 public class Activity {
+
+    /**
+     * Default constructor.
+     */
+    public Activity() {}
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,6 +49,12 @@ public class Activity {
     
     // Before Insert to database
     @PrePersist
+    /**
+     * Javadoc for Activity.
+     */
+    /**
+     * Javadoc for Activity.
+     */
     protected void onCreate() {
         if (timestamp == null) {
             timestamp = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();

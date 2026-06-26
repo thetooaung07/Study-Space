@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
  *
  * <p>The frontend maps {@code role = "assistant"} to its internal {@code "ai"} role
  * for rendering purposes.
+ * @param id the id
+ * @param role the role
  */
 public record MessageDTO(
         Long id,

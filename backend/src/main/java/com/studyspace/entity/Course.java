@@ -12,11 +12,18 @@ import java.util.List;
 @Table(name = "courses")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+/**
+ * Javadoc for Course.
+ */
 public class Course {
+
+    /**
+     * Default constructor.
+     */
+    public Course() {}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -53,12 +60,18 @@ public class Course {
     private List<CourseEnrollment> enrollments = new ArrayList<>();
 
     @PrePersist
+    /**
+     * Javadoc for Course.
+     */
     protected void onCreate() {
         createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }
 
     @PreUpdate
+    /**
+     * Javadoc for Course.
+     */
     protected void onUpdate() {
         updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }

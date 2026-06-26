@@ -11,11 +11,21 @@ import java.time.ZoneOffset;
 @Table(name = "contribution_proposals")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+/**
+ * Javadoc for ContributionProposal.
+ */
+/**
+ * Javadoc for ContributionProposal.
+ */
 public class ContributionProposal {
+
+    /**
+     * Default constructor.
+     */
+    public ContributionProposal() {}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,6 +73,12 @@ public class ContributionProposal {
     private LocalDateTime reviewedAt;
 
     @PrePersist
+    /**
+     * Javadoc for ContributionProposal.
+     */
+    /**
+     * Javadoc for ContributionProposal.
+     */
     protected void onCreate() {
         createdAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }

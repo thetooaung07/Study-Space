@@ -6,10 +6,20 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Javadoc for ActivityDTO.
+ */
+/**
+ * Javadoc for ActivityDTO.
+ */
 public class ActivityDTO {
+
+    /**
+     * Default constructor.
+     */
+    public ActivityDTO() {}
     private Long id;
     private ActivityType type;
     private String message;

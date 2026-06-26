@@ -154,6 +154,7 @@ deploy_frontend:
         - vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
     rules:
         - if: $CI_COMMIT_BRANCH == "master"
+          when: manual
 
 # ----------------------------------------
 # 7. Deploy Backend to Render
@@ -181,3 +182,4 @@ deploy_backend:
         - wget -q -O /dev/null --post-data="" $RENDER_DEPLOY_HOOK_URL
     rules:
         - if: $CI_COMMIT_BRANCH == "master"
+          when: manual

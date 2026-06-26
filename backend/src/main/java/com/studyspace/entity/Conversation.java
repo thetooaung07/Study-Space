@@ -21,10 +21,14 @@ import java.time.ZoneOffset;
 @Table(name = "conversations")
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Conversation {
+
+    /**
+     * Default constructor.
+     */
+    public Conversation() {}
 
     /** Client-supplied UUID. */
     @Id
@@ -63,6 +67,12 @@ public class Conversation {
     private LocalDateTime updatedAt;
 
     @PrePersist
+    /**
+     * Javadoc for Conversation.
+     */
+    /**
+     * Javadoc for Conversation.
+     */
     protected void onCreate() {
         LocalDateTime now = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
         createdAt = now;
@@ -70,6 +80,12 @@ public class Conversation {
     }
 
     @PreUpdate
+    /**
+     * Javadoc for Conversation.
+     */
+    /**
+     * Javadoc for Conversation.
+     */
     protected void onUpdate() {
         updatedAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime();
     }

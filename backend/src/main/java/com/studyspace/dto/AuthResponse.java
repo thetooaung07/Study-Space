@@ -8,8 +8,18 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
+/**
+ * Javadoc for AuthResponse.
+ */
+/**
+ * Javadoc for AuthResponse.
+ */
 public class AuthResponse {
+
+    /**
+     * Default constructor.
+     */
+    public AuthResponse() {}
     private String token;
     private UserDTO user;
 }

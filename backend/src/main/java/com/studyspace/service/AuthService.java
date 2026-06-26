@@ -8,7 +8,6 @@ import com.studyspace.entity.User;
 import com.studyspace.mapper.UserMapper;
 import com.studyspace.repository.UserRepository;
 import com.studyspace.security.JwtUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,16 +20,40 @@ import org.springframework.stereotype.Service;
  * <p>Handles authentication logic, including JWT token generation and password hashing.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AuthService {
+
+    /**
+     * Constructor.
+     * @param userRepository the userRepository
+     * @param passwordEncoder the passwordEncoder
+     * @param jwtUtil the jwtUtil
+     * @param authenticationManager the authenticationManager
+     * @param userMapper the userMapper
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, AuthenticationManager authenticationManager, UserMapper userMapper) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
+        this.userMapper = userMapper;
+    }
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
-
+    /**
+     * Registers a new user in the system.
+     * Validates that the email and username are unique, encrypts the password,
+     * and generates a JWT token for immediate login.
+     *
+     * @param request the registration details
+     * @return an AuthResponse containing the JWT token and user details
+     * @throws IllegalStateException if the email or username is already taken
+     */
     public AuthResponse register(RegisterRequest request) {
         log.info("Registration attempt for email: {}", request.getEmail());
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -61,7 +84,14 @@ public class AuthService {
                 .user(userMapper.toDTO(savedUser))
                 .build();
     }
-
+    /**
+     * Authenticates a user's credentials and issues a new JWT token.
+     * Uses Spring Security's AuthenticationManager to verify the credentials.
+     *
+     * @param request the login credentials (email/username and password)
+     * @return an AuthResponse containing the new JWT token and user details
+     * @throws org.springframework.security.core.AuthenticationException if authentication fails
+     */
     public AuthResponse login(LoginRequest request) {
         log.info("Login attempt for: {}", request.getEmail());
         try {
@@ -86,7 +116,13 @@ public class AuthService {
                 .user(userMapper.toDTO(user))
                 .build();
     }
-
+    /**
+     * Retrieves the profile information for the currently authenticated user.
+     *
+     * @param email the email or username extracted from the Security Context
+     * @return the UserDTO containing the user's profile data
+     * @throws RuntimeException if the user cannot be found in the database
+     */
     public UserDTO getCurrentUser(String email) {
         log.debug("Fetching current user for: {}", email);
         User user = userRepository.findByEmail(email)

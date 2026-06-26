@@ -2,13 +2,26 @@ package com.studyspace.dto;
 
 import com.studyspace.types.ProposalStatus;
 import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@AllArgsConstructor
+/**
+ * Javadoc for ContributionProposalDTO.
+ */
+/**
+ * Javadoc for ContributionProposalDTO.
+ */
 public class ContributionProposalDTO {
+
+    /**
+     * Default constructor.
+     */
+    public ContributionProposalDTO() {}
     private Long id;
     private ProposalStatus status;
     private String message;

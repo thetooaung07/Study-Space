@@ -5,7 +5,6 @@ import com.studyspace.dto.MessageDTO;
 import com.studyspace.entity.Conversation;
 import com.studyspace.repository.ConversationRepository;
 import com.studyspace.repository.MessageRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,9 +24,19 @@ import java.util.List;
  * the owner of the {@link Conversation} to prevent cross-user access.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ConversationService {
+
+/**
+ * Constructor.
+     * @param conversationRepository the conversationRepository
+     * @param messageRepository the messageRepository
+ */
+@org.springframework.beans.factory.annotation.Autowired
+public ConversationService(ConversationRepository conversationRepository, MessageRepository messageRepository) {
+        this.conversationRepository = conversationRepository;
+        this.messageRepository = messageRepository;
+}
 
     private final ConversationRepository conversationRepository;
     private final MessageRepository      messageRepository;
@@ -37,6 +46,8 @@ public class ConversationService {
     /**
      * Returns a summary list of all conversations owned by the user,
      * ordered newest-first (by {@code updated_at}).
+     * @param userId the userId
+     * @return the result
      */
     @Transactional(readOnly = true)
     public List<ConversationSummaryDTO> listConversations(Long userId) {
@@ -54,6 +65,9 @@ public class ConversationService {
     /**
      * Returns the full message history for the given conversation.
      * Verifies ownership before returning data.
+     * @param conversationId the conversationId
+     * @param userId the userId
+     * @return the result
      */
     @Transactional(readOnly = true)
     public List<MessageDTO> getMessages(String conversationId, Long userId) {
@@ -68,6 +82,8 @@ public class ConversationService {
     /**
      * Hard-deletes a conversation and all its messages (via CASCADE).
      * Verifies ownership before deleting.
+     * @param conversationId the conversationId
+     * @param userId the userId
      */
     @Transactional
     public void deleteConversation(String conversationId, Long userId) {

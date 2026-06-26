@@ -7,7 +7,6 @@ import com.studyspace.dto.MessageDTO;
 import com.studyspace.service.ConversationService;
 import com.studyspace.service.DocumentVectorService;
 import com.studyspace.service.MemoryManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,10 +36,22 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/chat")
-@RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
 @Slf4j
 public class ChatController {
+
+    /**
+     * Constructor.
+     * @param documentVectorService the documentVectorService
+     * @param memoryManager the memoryManager
+     * @param conversationService the conversationService
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public ChatController(DocumentVectorService documentVectorService, MemoryManager memoryManager, ConversationService conversationService) {
+        this.documentVectorService = documentVectorService;
+        this.memoryManager = memoryManager;
+        this.conversationService = conversationService;
+    }
 
     private final DocumentVectorService documentVectorService;
     private final MemoryManager         memoryManager;
@@ -62,6 +73,7 @@ public class ChatController {
      *
      * @param request JSON body containing question, optional documentUrl, conversationId,
      *                userId, and provider
+     * @return the result
      */
     @PostMapping("/query")
     public ResponseEntity<ChatQueryResponse> query(@RequestBody ChatQueryRequest request) {
@@ -119,6 +131,7 @@ public class ChatController {
      * Used to populate the History popup in the AI chat panel.
      *
      * @param userId the authenticated user's ID
+     * @return the result
      */
     @GetMapping("/conversations")
     public ResponseEntity<List<ConversationSummaryDTO>> listConversations(@RequestParam Long userId) {
@@ -132,6 +145,7 @@ public class ChatController {
      *
      * @param id     the conversation UUID
      * @param userId the authenticated user's ID
+     * @return the result
      */
     @DeleteMapping("/conversations/{id}")
     public ResponseEntity<Void> deleteConversation(@PathVariable String id,
@@ -147,6 +161,7 @@ public class ChatController {
      *
      * @param id     the conversation UUID
      * @param userId the authenticated user's ID
+     * @return the result
      */
     @GetMapping("/conversations/{id}/messages")
     public ResponseEntity<List<MessageDTO>> getMessages(@PathVariable String id,

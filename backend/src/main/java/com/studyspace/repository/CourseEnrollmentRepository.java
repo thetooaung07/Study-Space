@@ -13,13 +13,30 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+/**
+ * Repository for tracking student enrollments in courses.
+ * Includes custom queries for retrieving published courses a student is enrolled in.
+ */
 public interface CourseEnrollmentRepository extends JpaRepository<CourseEnrollment, Long> {
 
     List<CourseEnrollment> findByCourseId(Long courseId);
 
+    /**
+     * Retrieves a paginated list of active enrollments for a student, ensuring only published courses are returned.
+     * @param studentId the ID of the student
+     * @param pageable pagination details
+     * @return a page of CourseEnrollment entities
+     */
     @Query("SELECT e FROM CourseEnrollment e WHERE e.student.id = :studentId AND e.course.isPublished = true")
     Page<CourseEnrollment> findPublishedByStudentId(@Param("studentId") Long studentId, Pageable pageable);
 
+    /**
+     * Retrieves a paginated list of enrollments for a student, filtered by a search term against the course title or description.
+     * @param studentId the ID of the student
+     * @param search the search term to filter courses
+     * @param pageable pagination details
+     * @return a page of CourseEnrollment entities
+     */
     @Query("SELECT e FROM CourseEnrollment e WHERE e.student.id = :studentId AND e.course.isPublished = true AND " +
            "(:search IS NULL OR :search = '' OR " +
            "LOWER(e.course.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

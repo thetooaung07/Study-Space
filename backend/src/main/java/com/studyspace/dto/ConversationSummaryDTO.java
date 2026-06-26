@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
  *
  * <p>Only the fields needed to render the sidebar entry are included — the full message
  * list is fetched separately when the user selects a conversation.
+ * @param id the id
+ * @param title the title
  */
 public record ConversationSummaryDTO(
         String id,

@@ -59,7 +59,7 @@ public CourseMaterialDTO uploadMaterial(Long sectionId, Long requestingUserId,
 }
 \end{lstlisting}
 
-The \texttt{FileStorageService} interface defines three methods (\texttt{store}, \texttt{copy},
+The \texttt{File\allowbreak Storage\allowbreak Service} interface defines three methods (\texttt{store}, \texttt{copy},
 \texttt{delete}), and the active implementation is injected by Spring. This design satisfies
 NFR-04 (maintainability) by keeping the service layer unaware of the storage backend, and means
 that switching to a cloud provider for production requires only an environment variable change,
@@ -508,16 +508,9 @@ production.
 
 This section describes the tooling and processes used to manage the codebase, automate quality
 checks and deployment, and maintain project documentation throughout the development lifecycle.
-
-\subsection{Workflow and Version Management}
-\label{subsec:workflow-vcs}
-
-The project is maintained in a single Git repository with a monorepo layout separating the
-\texttt{backend/}, \texttt{frontend/}, and \texttt{documentation/} directories. Development
-follows a branch-based workflow: each feature or fix is developed on a dedicated branch and
-merged into \texttt{main} via a pull request after passing all automated checks. Commits follow
-the Conventional Commits specification to keep the history readable and to support automated
-changelog generation.
+The project is maintained in a single Git repository, adopting a monorepo layout that separates the
+\texttt{backend/}, \texttt{frontend/}, and \texttt{documentation/} directories. Version control
+is managed via Git, with changes committed directly to the main repository to facilitate rapid iteration in development stage.
 
 \subsection{CI/CD Pipeline}
 \label{subsec:cicd}

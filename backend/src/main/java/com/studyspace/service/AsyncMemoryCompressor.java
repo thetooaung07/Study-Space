@@ -4,7 +4,6 @@ import com.studyspace.entity.Conversation;
 import com.studyspace.entity.Message;
 import com.studyspace.repository.ConversationRepository;
 import com.studyspace.repository.MessageRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -31,9 +30,23 @@ import java.util.stream.Collectors;
  * </ol>
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class AsyncMemoryCompressor {
+
+    /**
+     * Constructor.
+     * @param messageRepository the messageRepository
+     * @param conversationRepository the conversationRepository
+     * @param promptBuilder the promptBuilder
+     * @param geminiService the geminiService
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public AsyncMemoryCompressor(MessageRepository messageRepository, ConversationRepository conversationRepository, PromptBuilder promptBuilder, GeminiService geminiService) {
+        this.messageRepository = messageRepository;
+        this.conversationRepository = conversationRepository;
+        this.promptBuilder = promptBuilder;
+        this.geminiService = geminiService;
+    }
 
     private final MessageRepository      messageRepository;
     private final ConversationRepository conversationRepository;

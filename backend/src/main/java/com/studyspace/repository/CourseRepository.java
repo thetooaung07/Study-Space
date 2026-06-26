@@ -11,6 +11,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 @Repository
+/**
+ * Repository for managing Course entities (Feature F1).
+ * Supports fetching courses by instructor and filtering published courses.
+ */
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
     @Query("SELECT c FROM Course c WHERE c.instructor = :instructor AND " +
@@ -19,6 +23,12 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
            "LOWER(c.description) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Course> findByInstructorWithSearch(@Param("instructor") User instructor, @Param("search") String search, Pageable pageable);
 
+    /**
+     * Retrieves a paginated list of all published courses, filtered by a search term.
+     * @param search the search term for course title or description
+     * @param pageable pagination details
+     * @return a page of filtered Course entities
+     */
     @Query("SELECT c FROM Course c WHERE c.isPublished = true AND " +
            "(:search IS NULL OR :search = '' OR " +
            "LOWER(c.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

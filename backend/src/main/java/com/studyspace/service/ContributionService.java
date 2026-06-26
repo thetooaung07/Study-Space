@@ -4,7 +4,6 @@ import com.studyspace.dto.*;
 import com.studyspace.entity.*;
 import com.studyspace.repository.*;
 import com.studyspace.types.ProposalStatus;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +20,35 @@ import java.util.stream.Collectors;
  * and allows instructors to review (approve/reject) these proposals.
  */
 @Service
-@RequiredArgsConstructor
 @Transactional
+/**
+ * Service implementation for the Content Extension System (Feature F2).
+ *
+ * <p>Manages the lifecycle of merge proposals, enabling students to submit their private notes 
+ * and instructors to review and merge them into the main course material.
+ */
 public class ContributionService {
+
+    /**
+     * Constructor.
+     * @param proposalRepository the proposalRepository
+     * @param workspaceMaterialRepository the workspaceMaterialRepository
+     * @param courseSectionRepository the courseSectionRepository
+     * @param courseMaterialRepository the courseMaterialRepository
+     * @param courseRepository the courseRepository
+     * @param userRepository the userRepository
+     * @param fileStorageService the fileStorageService
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContributionService(ContributionProposalRepository proposalRepository, WorkspaceMaterialRepository workspaceMaterialRepository, CourseSectionRepository courseSectionRepository, CourseMaterialRepository courseMaterialRepository, CourseRepository courseRepository, UserRepository userRepository, FileStorageService fileStorageService) {
+        this.proposalRepository = proposalRepository;
+        this.workspaceMaterialRepository = workspaceMaterialRepository;
+        this.courseSectionRepository = courseSectionRepository;
+        this.courseMaterialRepository = courseMaterialRepository;
+        this.courseRepository = courseRepository;
+        this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
+    }
 
     private final ContributionProposalRepository proposalRepository;
     private final WorkspaceMaterialRepository workspaceMaterialRepository;
@@ -40,6 +65,14 @@ public class ContributionService {
      * @param studentId the student submitting the proposal
      * @param request the submission details including source materials and target section
      * @return a list of created proposals
+     */
+    /**
+     * Submits a batch of new contribution proposals from a student's private workspace.
+     * Validates that the target course and sections exist, and that the student is enrolled.
+     *
+     * @param studentId the ID of the student making the contribution
+     * @param request the request body containing the proposals data
+     * @return a list of newly created ContributionProposalDTOs
      */
     public List<ContributionProposalDTO> submitProposals(Long studentId, SubmitProposalRequest request) {
         User student = findUser(studentId);
@@ -101,6 +134,16 @@ public class ContributionService {
      * @param instructorId the instructor reviewing the proposal
      * @param request the review decision and optional message
      * @return the updated proposal
+     */
+    /**
+     * Reviews a pending contribution proposal, updating its status to ACCEPTED or REJECTED.
+     * If accepted, the instructor may choose to showcase the proposed material to the main course.
+     *
+     * @param proposalId the ID of the proposal being reviewed
+     * @param instructorId the ID of the instructor performing the review
+     * @param request the review decision and optional feedback message
+     * @return the updated ContributionProposalDTO
+     * @throws RuntimeException if the proposal is not found or the reviewer is unauthorized
      */
     public ContributionProposalDTO reviewProposal(Long proposalId, Long instructorId, ReviewProposalRequest request) {
         ContributionProposal proposal = findProposal(proposalId);

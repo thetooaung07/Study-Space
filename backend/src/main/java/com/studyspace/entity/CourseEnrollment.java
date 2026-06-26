@@ -18,6 +18,9 @@ import java.time.ZoneOffset;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+/**
+ * Javadoc for CourseEnrollment.
+ */
 public class CourseEnrollment {
 
     @Id

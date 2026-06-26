@@ -49,7 +49,7 @@ via \texttt{CascadeType.ALL} with orphan removal, ensuring no orphaned sections 
 remain after a course is removed.
 
 \textbf{CourseSection} organises Course Materials within a course into named, ordered groups. It
-carries a title, an optional text description, and an \texttt{orderIndex} integer that determines
+carries a title, an optional text description, and an \texttt{order\allowbreak Index} integer that determines
 the display sequence. Each section belongs to exactly one \texttt{Course}, and each section owns
 an ordered list of \texttt{CourseMaterial} records. Deleting a section cascades to all its
 materials.
@@ -133,38 +133,10 @@ is required.
 \end{figure}
 
 % ----------------------------------------------------------------
-\section{System and Logical Architecture}
-\label{sec:system-logical-architecture}
+\section{Architectural Design}
+\label{sec:architectural-design}
 
-\subsection{Conceptual Architecture}
-\label{subsec:conceptual-architecture}
-\label{subsec:system-architecture}
-
-At the highest level, StudySpace is a web application that separates the browser-based user
-interface from the server-side application logic and the persistent data store. The user interface
-runs entirely in the browser and communicates with the backend over two channels: a standard
-request-response channel for operations such as loading course content, uploading materials, and
-submitting contribution proposals, and a persistent real-time channel for events that must reach
-all connected participants without a manual page refresh, such as chat messages and study-session
-activity feeds.
-
-The backend is a single application that handles all business logic, enforces access control,
-processes file uploads, calls the external AI API, and broadcasts real-time events. The data store
-holds all persistent state, including user accounts, course structures, Private Workspace records,
-Merge Proposals, and conversation history.
-
-All three tiers run as isolated containers managed by a single container orchestration file, so the
-complete application can be started with one command and requires no manual environment
-configuration. The final architecture diagram is presented in section~\ref{sec:system-architecture}
-after the technology choices have been made.
-
-% TODO: Insert high-level system architecture diagram here
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_2_1_system-architecture.png}
-%     \caption{Conceptual three-tier system architecture of StudySpace}
-%     \label{fig:conceptual-architecture}
-% \end{figure}
+At the highest level, StudySpace is a web application that separates the browser-based user interface from the server-side application logic and the persistent data store. The frontend communicates with the backend over a standard request-response channel for RESTful operations and a persistent real-time channel for live events such as chat messages. The backend handles all application logic, access control, and external API integrations, while the data store manages all persistent state. These tiers are orchestrated as isolated containers, ensuring a consistent and portable deployment environment.
 
 \subsection{System Architecture}
 \label{subsec:system-architecture}
@@ -181,10 +153,32 @@ is deployed to a dedicated hosting platform (e.g., Vercel), the backend runs as 
 service on a cloud platform (e.g., Render), and file storage is handled by an S3-compatible service
 (e.g., Tigris). This decoupling ensures independent scalability and simplifies deployment pipelines.
 
+% TODO: Insert final architecture diagram as Figure 3.3
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=0.9\textwidth]{images/fig_3_3_system-architecture-final.png}
+%     \caption{Final system architecture of StudySpace}
+%     \label{fig:system-architecture-final}
+% \end{figure}
+
+% ----------------------------------------------------------------
+
+\subsection{Logical Architecture}
+\label{subsec:logical-architecture}
+
+The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The
+\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
+the response. The \emph{service layer} contains all business logic, orchestrates data access, and
+enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
+provides data access through named query methods and custom queries for complex lookups. Entity
+classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
+contract and decouple the internal entity structure from the shape of the JSON responses, so the
+two can evolve independently.
+
 The backend is organised into the following packages, each with a single responsibility and
 dependencies flowing only from controller to service to repository:
 
-\begin{table}[htbp]
+\begin{table}[!ht]
     \centering
     \caption{Backend package structure}
     \label{tab:backend-packages}
@@ -217,40 +211,23 @@ dependencies flowing only from controller to service to repository:
     \end{tabularx}
 \end{table}
 
-% TODO: Insert final architecture diagram as Figure 3.3
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_3_3_system-architecture-final.png}
-%     \caption{Final system architecture of StudySpace}
-%     \label{fig:system-architecture-final}
-% \end{figure}
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/uml_diagrams/logical_backend.png}
+    \caption{Logical package architecture of the StudySpace backend}
+    \label{fig:logical-backend}
+\end{figure}
 
-% ----------------------------------------------------------------
+Similarly, the frontend follows a layered component architecture, separating presentation (UI components and pages) from business logic (hooks and contexts) and utilities (types and API integrations). 
 
-\subsection{Logical Architecture}
-\label{subsec:logical-architecture}
-\label{subsec:logical-architecture}
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/uml_diagrams/logical_frontend.png}
+    \caption{Logical package architecture of the StudySpace frontend}
+    \label{fig:logical-frontend}
+\end{figure}
 
-The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The
-\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
-the response. The \emph{service layer} contains all business logic, orchestrates data access, and
-enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
-provides data access through named query methods and custom queries for complex lookups. Entity
-classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
-contract and decouple the internal entity structure from the shape of the JSON responses, so the
-two can evolve independently.
-
-% TODO: Insert MVC layered architecture diagram here
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/fig_2_2_logical-architecture.png}
-%     \caption{Logical (MVC) architecture of the StudySpace backend}
-%     \label{fig:logical-architecture}
-% \end{figure}
-
-% ----------------------------------------------------------------
-
-
+\clearpage
 % ----------------------------------------------------------------
 \section{File Storage}
 \label{sec:storage-tech}
@@ -282,7 +259,7 @@ backend transparent to the rest of the application and satisfying NFR-04. The in
 FR-04 requires an LLM API capable of answering questions grounded in a provided document context
 within a single prompt, without fine-tuning.
 
-\textbf{Google Gemini API (gemini-3-flash-preview)} provides a large context window, competitive
+\textbf{Google Gemini API (gemini-\allowbreak 3-\allowbreak flash-\allowbreak preview)} provides a large context window, competitive
 quality on open-domain question answering, and an official Java SDK that integrates directly with
 the Spring Boot application. The free tier is sufficient for prototype-level usage.
 
@@ -291,7 +268,7 @@ question answering tasks. However, the Java SDK is less mature than the official
 
 The Google Gemini API was selected as the default provider because the official Google GenAI Java SDK~\cite{GoogleGenAI}
 integrates directly with Spring Boot without additional HTTP client configuration, the
-\texttt{gemini-3-flash-preview} model's context window comfortably accommodates the semantically relevant chunks
+\texttt{gemini-\allowbreak 3-\allowbreak flash-\allowbreak preview} model's context window comfortably accommodates the semantically relevant chunks
 retrieved from the \texttt{pgvector} database required by FR-04, and the free tier capacity is sufficient for the prototype.
 
 % ----------------------------------------------------------------
@@ -346,18 +323,47 @@ The full API is documented through the Swagger UI available at \texttt{/swagger\
 when the backend is running, auto-generated by Springdoc OpenAPI from controller annotations.
 
 % ----------------------------------------------------------------
-\section{UI and Wireframe Design}
+\section{Wireframes and UI}
 \label{sec:ui-design}
 
-The interface is role-aware: students and Instructors see different navigation options and action
-buttons depending on their role. The application uses a sidebar navigation layout with the main
-content area to the right.
+The design process began with wireframes to establish the core user flows and layout structure before advancing to the high-fidelity implementation. These initial designs focused on the most critical interactions: querying the AI, submitting a merge proposal, and reviewing contributions.
+
+\subsection{Initial Wireframes}
+\label{subsec:initial-wireframes}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/wireframes/ai_assistant_chat_student_view.png}
+    \caption{Wireframe: AI assistant conversational interface}
+    \label{fig:wireframe-ai}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/wireframes/merge_proporsal_student_view.png}
+    \caption{Wireframe: Student merge proposal submission}
+    \label{fig:wireframe-merge-proposal}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/wireframes/contribution_preview_instructor_view.png}
+    \caption{Wireframe: Instructor contribution review interface}
+    \label{fig:wireframe-review}
+\end{figure}
+
+\clearpage
+
+\subsection{Implemented User Interface}
+\label{subsec:implemented-ui}
+
+Following the structural guidelines established by the wireframes, the final user interface was developed. The interface is role-aware: students and Instructors see different navigation options and action buttons depending on their role. The application uses a sidebar navigation layout with the main content area to the right.
 
 \subsection{Navigation and Layout}
 \label{subsec:navigation}
 
-The sidebar items differ by role. Students see links to their enrolled courses, their Private
-Workspaces, and their study sessions. Instructors additionally see course management, enrollment
+The sidebar items differ by role. Students see links to their enrolled courses and their Private
+Workspaces. Instructors additionally see course management, enrollment
 management, and Merge Proposal review links. The role check is performed client-side from the
 JWT payload, but all data-sensitive actions are re-validated server-side.
 
@@ -366,13 +372,6 @@ JWT payload, but all data-sensitive actions are re-validated server-side.
     \includegraphics[width=0.9\textwidth]{images/ui/student_dashboard_view.png}
     \caption{Student dashboard: The primary entry point featuring recent activities and quick navigation}
     \label{fig:student-dashboard}
-\end{figure}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/ui/student_sessions_view.png}
-    \caption{Study sessions view: Managing active and scheduled collaborative sessions}
-    \label{fig:student-sessions}
 \end{figure}
 
 \subsection{Course and Workspace Views}
@@ -423,7 +422,7 @@ appropriate.
 The Merge Proposal dialog reflects the FR-02 use case \texttt{Submit Merge Proposal}: the student
 selects one or more materials, picks a target section or proposes a new one, and submits.
 The design keeps the form minimal to reduce friction and mirrors the Git-inspired workflow that
-technically experienced students will recognise.
+technically experienced students will recognise. Once submitted, the proposal enters the instructor review workflow. As illustrated in figure~\ref{fig:instructor-review}, the review interface allows the Instructor to evaluate the submitted materials and decide whether to integrate them into the official Course Material.
 
 \begin{figure}[htbp]
     \centering

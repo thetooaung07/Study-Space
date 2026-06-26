@@ -10,6 +10,11 @@ import lombok.Data;
 public class ChatQueryRequest {
 
     /**
+     * Default constructor.
+     */
+    public ChatQueryRequest() {}
+
+    /**
      * Client-generated UUID that identifies the chat session.
      * If null or blank, the backend treats the call as a stateless
      * (no-memory) request — backward-compatible.

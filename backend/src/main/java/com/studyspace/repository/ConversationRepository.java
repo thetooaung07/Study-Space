@@ -18,6 +18,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, Stri
     /**
      * Returns all conversations owned by the given user, newest-first.
      * Used to populate the History popup in the AI chat panel.
+     * @param userId the userId
+     * @return the result
      */
     List<Conversation> findByUserIdOrderByUpdatedAtDesc(Long userId);
 }

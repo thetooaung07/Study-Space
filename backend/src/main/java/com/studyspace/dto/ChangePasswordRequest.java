@@ -8,8 +8,18 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
+/**
+ * Javadoc for ChangePasswordRequest.
+ */
+/**
+ * Javadoc for ChangePasswordRequest.
+ */
 public class ChangePasswordRequest {
+
+    /**
+     * Default constructor.
+     */
+    public ChangePasswordRequest() {}
     private String currentPassword;
     private String newPassword;
 }
