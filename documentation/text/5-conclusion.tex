@@ -1,47 +1,16 @@
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-Higher-education students and instructors routinely operate across multiple disconnected platforms
-to accomplish tasks that are intrinsically related: reading a Course Material, raising a question
-grounded in it, proposing an improvement to it, and receiving AI assistance about it. No existing
-tool examined during the analysis phase combined all four of these activities within a single,
-role-aware environment. This thesis set out to determine whether a unified web application could
-eliminate that fragmentation and preserve the connections between these activities for all
-participants.
+The main goal of this thesis was to solve the tool fragmentation experienced by higher-education students and instructors. Rather than treating document viewing, communication, and AI assistance as isolated processes, this project aimed to develop a unified web application, StudySpace, that bridges the gap between passive content consumption and active collaboration. The resulting system serves as a functional proof of concept demonstrating the viability of this unified approach.
 
-The work proceeded in three stages. The analysis chapter defined five functional and five
-non-functional requirements derived from the identified problem, surveyed the existing platforms,
-and selected the technology stack through a structured comparison of alternatives. The design
-chapter translated those requirements into a relational data model, a layered backend
-architecture, and a set of user interface views. The implementation chapter described how each
-feature was built, the non-trivial algorithmic decisions involved, and how the application was
-tested and deployed.
+The resulting application successfully fulfils all functional requirements established at the start of the project. It provides Instructors with a course administration module to manage content and enrollments. For students, the system introduces a content extension system, allowing them to clone courses into a Private Workspace and submit Merge Proposals. The application also features a contextual messaging system that anchors discussions directly to source documents, and an integrated AI assistant that provides answers grounded exclusively in the uploaded Course Materials. 
 
-The five functional requirements were addressed in full. A hierarchical course administration
-module allowed Instructors to publish structured content and manage enrollment. A content
-extension system enabled students to fork a course into a Private Workspace, develop their own
-materials independently, and submit a Merge Proposal for Instructor review and publication, with
-the contributor attributed on the resulting Course Material. A contextual messaging system
-introduced a portable anchor token that embeds a deep link to a specific Course Material into any
-chat message, preserving the connection between discussion and source material across the entire
-chat history. An AI assistant grounded its answers in the actual course document through a
-structured prompt pipeline and a hybrid memory model, rather than relying on general knowledge
-alone. An access control layer enforced role separation at the API level through stateless JWT
-authentication, ensuring that Student accounts could not execute Instructor-only operations.
-
-The primary contribution of this thesis is the integration of these four collaboration
-capabilities into a coherent, role-aware environment through a copy-on-write workspace model and
-a persistent Contextual Anchor mechanism. Neither the clone-then-propose contribution workflow
-nor the material-anchored chat token has a direct equivalent in any of the surveyed platforms.
-The resulting system was deployed as a publicly accessible prototype, demonstrating that the
-integration is practically realisable within the scope of a bachelor thesis.
-
+By delivering these core capabilities within a secure, role-aware application, this thesis demonstrates that a unified workspace can effectively eliminate the need for disjointed learning and communication platforms.
 % ----------------------------------------------------------------
 \section{Future Work}
 \label{sec:future-work}
 
-The prototype established the core workflows but left several directions open for subsequent
-development.
+While the current deployment successfully establishes the core workflows, it leaves several directions open for subsequent development.
 
 The Contextual Anchor currently stores only the material identifier and title. A natural
 extension would be to encode a page number or byte offset alongside the material reference,
@@ -52,6 +21,15 @@ The enrollment model supports two statuses (\texttt{ACTIVE} and \texttt{DROPPED}
 include an enrollment request or Instructor approval step. A real faculty deployment would
 require an invitation or explicit approval workflow before granting student access to Course
 Materials in restricted courses.
+
+Although the system already records cumulative study time and daily streak data per user,
+this information is currently surfaced only in individual profile and dashboard views.
+A practical extension would be to aggregate these metrics into a cohort-level engagement
+overview, giving students a sense of their own progress relative to peers and providing
+instructors with a lightweight tool for identifying students who may require additional
+support. Such a feature would make fuller use of the data the system already collects
+and could serve as a concrete motivational signal without introducing any change to the
+existing database schema.
 
 Finally, the backend was deployed to a single-instance PaaS environment. Achieving true
 horizontal scalability under concurrent load would require two infrastructure upgrades:

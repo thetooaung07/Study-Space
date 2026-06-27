@@ -39,6 +39,7 @@ public class WorkspaceService {
     private final UserRepository userRepository;
     private final SpaceGuestRepository guestRepository;
     private final FileStorageService fileStorageService;
+    private final com.studyspace.repository.CourseMaterialRepository courseMaterialRepository;
 
     // ─── Workspace CRUD ─────────────────────────────────────────────────────────
 
@@ -83,8 +84,10 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
-    public StudentWorkspaceDTO getWorkspaceById(Long workspaceId) {
-        return toWorkspaceDTO(findWorkspace(workspaceId));
+    public StudentWorkspaceDTO getWorkspaceById(Long workspaceId, Long requestingUserId) {
+        StudentWorkspace workspace = findWorkspace(workspaceId);
+        assertOwner(workspace, requestingUserId);
+        return toWorkspaceDTO(workspace);
     }
 
     // ─── Space CRUD ─────────────────────────────────────────────────────────────
@@ -101,9 +104,11 @@ public class WorkspaceService {
     }
 
     @Transactional(readOnly = true)
-    public Page<WorkspaceSpaceDTO> getSpacesByWorkspace(Long workspaceId, String search, Pageable pageable) {
+    public Page<WorkspaceSpaceDTO> getSpacesByWorkspace(Long workspaceId, Long requestingUserId, String search, Pageable pageable) {
+        StudentWorkspace workspace = findWorkspace(workspaceId);
+        assertOwner(workspace, requestingUserId);
         return spaceRepository.findByWorkspaceIdWithSearch(workspaceId, search, pageable)
-                .map(s -> toSpaceDTO(s, s.getWorkspace().getOwner().getId()));
+                .map(s -> toSpaceDTO(s, requestingUserId));
     }
 
     /**
@@ -396,9 +401,17 @@ public class WorkspaceService {
             materialRepository.save(material);
         } else {
             if (!Boolean.TRUE.equals(material.getIsReference())) {
-                fileStorageService.delete(material.getFileUrl());
+                String fileUrl = material.getFileUrl();
+                materialRepository.delete(material);
+
+                boolean hasCourseRefs = courseMaterialRepository.existsByFileUrl(fileUrl);
+                boolean hasWorkspaceRefs = materialRepository.existsByFileUrl(fileUrl);
+                if (!hasCourseRefs && !hasWorkspaceRefs) {
+                    fileStorageService.delete(fileUrl);
+                }
+            } else {
+                materialRepository.delete(material);
             }
-            materialRepository.delete(material);
         }
     }
 

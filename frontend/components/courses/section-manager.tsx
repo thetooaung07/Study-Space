@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
 import { API_BASE_URL } from "@/lib/api";
 import type { CourseSection, MaterialType } from "@/types/courses";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function MatIcon({ type }: Readonly<{ type: MaterialType }>) {
@@ -145,14 +146,19 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 		}
 	};
 
+	const [deleteSectionTarget, setDeleteSectionTarget] = useState<number | null>(null);
+	const [deleteMaterialTarget, setDeleteMaterialTarget] = useState<{sectionId: number, materialId: number} | null>(null);
+
 	// ─── delete section ──────────────────────────────────────────────────────────
-	const deleteSection = async (sectionId: number) => {
-		if (!confirm("Delete this section and all its materials?")) return;
+	const executeDeleteSection = async () => {
+		if (deleteSectionTarget === null) return;
 		try {
-			await coursesApi.deleteSection(sectionId, userId);
-			update(sections.filter((s) => s.id !== sectionId));
+			await coursesApi.deleteSection(deleteSectionTarget, userId);
+			update(sections.filter((s) => s.id !== deleteSectionTarget));
 		} catch (e: any) {
 			alert(e.message);
+		} finally {
+			setDeleteSectionTarget(null);
 		}
 	};
 
@@ -181,17 +187,19 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 	};
 
 	// ─── material delete ─────────────────────────────────────────────────────────
-	const handleDeleteMaterial = async (sectionId: number, materialId: number) => {
-		if (!confirm("Delete this material?")) return;
+	const executeDeleteMaterial = async () => {
+		if (deleteMaterialTarget === null) return;
 		try {
-			await coursesApi.deleteMaterial(materialId, userId);
+			await coursesApi.deleteMaterial(deleteMaterialTarget.materialId, userId);
 			update(
 				sections.map((s) =>
-					s.id === sectionId ? { ...s, materials: s.materials.filter((m) => m.id !== materialId) } : s,
+					s.id === deleteMaterialTarget.sectionId ? { ...s, materials: s.materials.filter((m) => m.id !== deleteMaterialTarget.materialId) } : s,
 				),
 			);
 		} catch (e: any) {
 			alert(e.message);
+		} finally {
+			setDeleteMaterialTarget(null);
 		}
 	};
 
@@ -288,7 +296,7 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 										className="h-7 w-7 shrink-0"
 										onClick={(e) => {
 											e.stopPropagation();
-											deleteSection(section.id);
+											setDeleteSectionTarget(section.id);
 										}}
 										title="Delete section"
 									>
@@ -335,7 +343,7 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 										</Badge>
 										{isEditing && (
 											<button
-												onClick={() => handleDeleteMaterial(section.id, m.id)}
+												onClick={() => setDeleteMaterialTarget({sectionId: section.id, materialId: m.id})}
 												title="Delete material"
 												className="text-muted-foreground hover:text-destructive transition-colors ml-2"
 											>
@@ -428,6 +436,27 @@ export function SectionManager({ courseId, userId, initialSections, onSectionsCh
 					Add Section
 				</Button>
 			)}
+			{/* Delete Section Dialog */}
+			<ConfirmDialog
+				open={deleteSectionTarget !== null}
+				onOpenChange={(open) => !open && setDeleteSectionTarget(null)}
+				title="Delete Section"
+				description="Are you sure you want to delete this section and all its materials? This action cannot be undone."
+				confirmText="Delete"
+				variant="destructive"
+				onConfirm={executeDeleteSection}
+			/>
+
+			{/* Delete Material Dialog */}
+			<ConfirmDialog
+				open={deleteMaterialTarget !== null}
+				onOpenChange={(open) => !open && setDeleteMaterialTarget(null)}
+				title="Delete Material"
+				description="Are you sure you want to delete this material? This action cannot be undone."
+				confirmText="Delete"
+				variant="destructive"
+				onConfirm={executeDeleteMaterial}
+			/>
 		</div>
 	);
 }

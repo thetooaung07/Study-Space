@@ -2,11 +2,12 @@
 \label{ch:analysis}
 
 This chapter establishes the foundation for all subsequent design and implementation decisions.
-It begins by defining the problem and the target audience whose needs motivated this project, then
-describes the intended architecture at a conceptual level before any technology is named. The formal
-functional and non-functional requirements are stated next, followed by a use-case view grouped by
-actor. The chapter closes by examining existing platforms and identifying the integration gap that
-none of them currently fills.
+It begins by defining the problem and the target audience whose needs motivated this project.
+This is followed by an examination of existing platforms to identify the integration gap that none
+of them currently fills. A use-case view grouped by actor is then presented to illustrate system
+interactions, from which the formal functional and non-functional requirements are derived. Finally,
+the chapter justifies the major technology choices by evaluating available alternatives against
+these established requirements.
 
 % ----------------------------------------------------------------
 \section{Problem Statement and Target Audience}
@@ -35,356 +36,7 @@ materials, and AI tools are used in isolation without any connection to the cour
 
 StudySpace aims to unify course management, student collaboration, contextual discussion, and AI
 assistance into a single platform, so that the interactions between these activities are preserved
-and visible to all participants.
-
-% ----------------------------------------------------------------
-\section{Architecture Analysis}
-\label{sec:architecture-analysis}
-
-\label{sec:technologies}
-
-This section justifies each major technology choice by comparing the available alternatives against
-the requirements established in Chapter~\ref{ch:analysis}. The goal was to select a stack that is
-well suited for the required features, has strong community support and ecosystem maturity, and is
-practical to use within the scope of a bachelor thesis prototype.
-
-% ----------------------------------------------------------------
-\subsection{Frontend Framework}
-\label{subsec:frontend-tech}
-
-The core capabilities of the system (such as course administration, content cloning, contextual
-messaging, and AI assistance) require a responsive and component-rich user interface that manages complex
-shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
-simultaneously on the same screen.
-
-\textbf{React~19}~\cite{React} is a declarative UI library maintained by Meta. Its component model
-encourages decomposing the interface into small, reusable pieces, each responsible for a single
-part of the view. The unidirectional data flow makes state changes predictable and easier to trace
-during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
-rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
-
-\textbf{Vue.js}~\cite{Vuejs} is a progressive framework with a smaller bundle size and a gentler learning
-curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
-components, and the TypeScript integration, while improving, is less seamless than in React.
-
-\textbf{Angular}~\cite{Angular} is a full-featured framework backed by Google that includes dependency injection,
-a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
-module system exceeds what is justified for a single-team prototype of this scope.
-
-React was selected because its component model aligns directly with the StudySpace screen layout
-(course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
-first-class, and its ecosystem provides the resizable panel, rich-text input, and WebSocket hook
-primitives needed for the content extension and contextual messaging features without significant additional integration effort.
-
-React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
-routing via the App Router, server-side rendering where applicable, and built-in image
-optimisation. Compared to a plain Vite or Create React App setup, Next.js removes boilerplate
-routing configuration and makes the project structure self-documenting through the directory
-layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
-\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}~\cite{RadixUI}, which provide accessible, unstyled
-component primitives that Tailwind classes are applied to. State management across the application
-uses React's native \textbf{Context API} and custom hooks, providing a lightweight, predictable
-data flow for all API interactions without the overhead of external state libraries.
-
-% ----------------------------------------------------------------
-\subsection{Backend Framework}
-\label{subsec:backend-tech}
-
-The system requires robust access control with role-based authorisation. Furthermore, the content
-extension workflows and AI assistance feature involve complex transactional operations over relational data. These requirements favour a statically
-typed language with mature transaction management and security libraries.
-
-\textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
-object-oriented foundation with a mature ecosystem. Spring Boot's convention-over-configuration
-approach applies sensible defaults automatically, embeds a Tomcat web server, and offers
-first-class integration with Spring Security, Spring Data JPA, Spring WebSocket, and Springdoc
-OpenAPI --- all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
-improve the throughput of concurrent request handling without the complexity of reactive
-programming~\cite{VirtualThreadsJEP444}.
-
-\textbf{Node.js}~\cite{Nodejs} with \textbf{NestJS}~\cite{NestJS} or \textbf{Express}~\cite{ExpressJS} excels in I/O-bound tasks due to its event-driven
-architecture. However, its single-threaded event loop can be a bottleneck for the multi-step
-transactional operations required by the Content Extension System, and the ORM ecosystem
-does not reach the integration depth and stability of Spring Data JPA.
-
-\textbf{Python}~\cite{Python} with \textbf{Django}~\cite{Django} or \textbf{FastAPI}~\cite{FastAPI} is excellent for rapid prototyping and AI integration.
-Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
-without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
-concurrent CPU-bound tasks.
-
-Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model~\cite{FowlerEAA,RichardsSAP}
-maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
-authentication and method-level authorisation out of the box (directly addressing the access
-control requirements), and the mature transaction management ensures referential integrity across the complex clone and proposal
-approval operations required by the content extension workflow.
-
-% ----------------------------------------------------------------
-\subsection{Database and Vector Store}
-\label{subsec:database-tech}
-
-The application's data model is inherently relational: users own workspaces, workspaces belong
-to courses, clone records track inheritance, and proposals reference both student materials and
-instructor courses. The content extension system requires ACID transaction guarantees across multi-entity writes.
-
-\textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
-system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
-foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
-and higher-level access is provided by Spring Data JPA~\cite{SpringDataJPA} with Hibernate~\cite{Hibernate} as the ORM provider.
-
-\textbf{MongoDB}~\cite{MongoDB} (NoSQL document store) and \textbf{Cassandra}~\cite{Cassandra} (wide-column store) are optimised
-for unstructured or semi-structured data and horizontal scalability. However, they lack strict
-schema enforcement and standard join operations. Using a document store would require significant
-denormalisation, duplicating data to avoid application-level joins~\cite{NoSQLDistilled}, which introduces the risk of
-inconsistency when a Course Material is approved and must be reflected in both the workspace and
-the course tables atomically.
-
-PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
-transactions are required for the clone and approval workflows, and foreign-key
-constraints enforce referential integrity between proposals and their source materials.
-Additionally, the AI assistant leverages the \texttt{pgvector} extension~\cite{pgvector} to provide similarity
-search over document embeddings directly within the same database, eliminating the need for a separate dedicated vector store.
-
-% ----------------------------------------------------------------
-\subsection{Authentication and Authorisation}
-\label{subsec:auth-tech}
-
-The access control system requires stateless authentication suitable for a REST API consumed by a single-page
-application, with role-based restrictions enforced on the server side.
-
-\textbf{JSON Web Tokens (JWT)}~\cite{JWT_RFC7519} with Spring Security~\cite{SpringSecurity} enables stateless
-authentication: after login, the server issues a signed token that the client stores and sends
-with every subsequent request. The server validates the token signature without consulting a
-session store, which simplifies horizontal scaling.
-
-\textbf{Server-side sessions} with Spring Session~\cite{SpringSession} require a shared session store (such as Redis)
-across instances and add network latency to every request. For a stateless REST API served to a
-browser-based SPA, this overhead is unnecessary.
-
-\textbf{OAuth~2.0 only}~\cite{OAuth2} (without local credentials) would prevent users without a Google or
-GitHub account from registering, which is inappropriate for a faculty application where students
-may not use third-party providers for academic accounts.
-
-JWT with Spring Security was selected because it achieves stateless session management (directly
-satisfying NFR-02), requires no external session store, and Spring Security's filter chain
-integrates the JWT validation and role check into a single, reusable \texttt{OncePerRequestFilter}
-implementation. Google OAuth~2.0 login is supported as an optional alternative authentication
-path alongside the primary local credential flow.
-
-% ----------------------------------------------------------------
-\subsection{Real-Time Communication}
-\label{subsec:websocket-tech}
-
-The Contextual Messaging System requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
-
-
-\textbf{WebSocket}~\cite{WebSocketRFC6455} with \textbf{STOMP}~\cite{STOMP} over SockJS~\cite{SockJS} layers a publish-subscribe model on top
-of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
-per-session topics, allowing the server to push participant-list updates and activity events to
-all subscribers without the clients polling.
-
-\textbf{Server-Sent Events (SSE)}~\cite{SSE} provide a unidirectional push channel from server to client.
-They lack the bidirectional subscription model needed for clients to send activity events (such as
-a hand-raise) back to the server over the same connection.
-
-\textbf{Long Polling} achieves real-time delivery but requires each client to maintain a pending
-request and re-establish it after every response, producing significant per-client overhead on
-the server.
-
-WebSocket with STOMP over SockJS was selected because the bidirectional subscription model covers
-both server-to-client pushes (participant list updates, activity events) and client-to-server
-messages (hand raises) over a single connection, and Spring Boot's built-in STOMP message broker
-requires no additional infrastructure.
-
-% ----------------------------------------------------------------
-
-\subsection{Quality Assurance}
-\label{subsec:quality-assurance}
-
-Ensuring the reliability of the StudySpace web application requires a robust quality assurance strategy, encompassing both isolated component testing and full-system end-to-end (E2E) verification. The selection of appropriate testing frameworks must account for the project's reliance on the Next.js framework, the need for rapid developer feedback, and the complexity of real-time browser interactions.
-
-\subsubsection{Unit and Integration Testing}
-\label{subsubsec:unit-integration-testing}
-
-Unit and integration tests verify individual application components, such as the contextual chat panel or the course material upload logic, in isolation from the full backend server. The two primary candidates for the React ecosystem are Jest and Vitest.
-
-Jest~\cite{Jest} is a mature, widely adopted testing framework maintained by the open-source community. It provides a comprehensive set of assertion libraries and mocking utilities out of the box, and Next.js offers built-in configuration wrappers for it. However, Jest relies on a traditional Node.js execution model and requires complex transformations to handle modern ECMAScript modules (ESM) and TypeScript natively. As the StudySpace codebase grows, this transformation overhead can significantly slow down test execution.
-
-Vitest~\cite{Vitest} is a newer framework built on top of Vite. It is designed to be API-compatible with Jest, allowing developers to use identical syntax for assertions and mocks, but it uses Vite's highly optimised build pipeline for module resolution and transformation. This results in significantly faster test execution and near-instantaneous Hot Module Replacement (HMR) during test-driven development. In the context of StudySpace, where frequent iterations on the user interface and complex state management hooks are required, minimising the feedback loop is critical. Although Next.js uses Webpack and Turbopack rather than Vite for its production builds, Vitest can be configured to understand the Next.js environment seamlessly.
-
-Given the performance advantages of its modern execution pipeline and its seamless compatibility with the React Testing Library, Vitest was selected as the unit and integration testing framework. The speed improvements directly support the rapid development cycles required for the project, while the familiar Jest-like API minimises the learning curve.
-
-\subsubsection{End-to-End Testing}
-\label{subsubsec:e2e-testing}
-
-End-to-end testing simulates real user behaviour by driving an actual web browser, ensuring that the frontend, backend, and database interact correctly. This is particularly important for StudySpace, as features like the Merge Proposal workflow and the real-time Contextual Messaging System involve complex cross-tier interactions. Cypress and Playwright are the leading solutions for modern web applications.
-
-Cypress~\cite{Cypress} offers a highly visual, interactive test runner that executes directly within the browser alongside the application under test. This architecture provides excellent debugging capabilities and a shallow learning curve. However, Cypress traditionally struggles with testing multi-tab workflows and cross-origin navigations, which can be problematic when testing OAuth flows or interactions that open course materials in new tabs. Furthermore, its execution speed is relatively slow when running large test suites in headless Continuous Integration (CI) environments.
-
-Playwright~\cite{Playwright}, developed by Microsoft, takes a different architectural approach by communicating with browsers over the Chrome DevTools Protocol (CDP). It natively supports parallel test execution across multiple browser engines (Chromium, WebKit, and Firefox) and handles multi-tab, multi-origin scenarios effortlessly. Playwright also includes a powerful trace viewer that captures DOM snapshots, network requests, and console logs for every step of a failed test, significantly easing debugging without requiring the interactive test runner to be open.
-
-For StudySpace, the ability to test complex user journeys efficiently is paramount. The parallel execution model of Playwright drastically reduces the time required to run the full E2E suite compared to Cypress. Additionally, its robust handling of modern web APIs and multi-context scenarios ensures that the real-time communication channels and file viewing features can be tested reliably. Consequently, Playwright was chosen as the end-to-end testing framework for the project.
-
-% ----------------------------------------------------------------
-
-
-% ----------------------------------------------------------------
-\section{Functional Requirements}
-\label{sec:requirements}
-
-The following requirements are derived directly from the problem statement and the target audience
-description in section~\ref{sec:problem-statement}. Each requirement is identified by an ID that
-is referenced throughout the remainder of the thesis.
-
-\bigskip
-\noindent\textbf{FR-01 (Course Administration)}:
-An Instructor must be able to create, update, and delete courses and organise their content into
-named sections, while a Student must be able to browse and read any course they are enrolled in.
-
-The Instructor creates a course with a title and description and controls whether it is published
-and visible to students. Within a published course the Instructor defines \emph{sections}, each
-with an ordered index that determines the display sequence. Course Materials (PDF documents,
-slide sets, video files, or images) are uploaded into sections; the backend infers the file type
-from the MIME type and extension and stores it alongside the file URL so the frontend can render
-the appropriate viewer without an additional request. Enrollment is managed per student: the
-Instructor can activate or drop individual students, and a student sees only the courses in which
-their enrollment status is \texttt{ACTIVE}.
-
-\bigskip
-\noindent\textbf{FR-02 (Content Extension System)}:
-A Student must be able to clone a course into a Private Workspace, add or modify materials
-independently, and submit a Merge Proposal for the Instructor to review and optionally publish.
-
-When a student clones a course, the backend performs a deep copy of the course structure into a
-new \texttt{StudentWorkspace}: every section and every Course Material is mirrored as a
-\texttt{Workspace\allowbreak Section} and a \texttt{Workspace\allowbreak Material}. Cloned materials carry the flag
-\texttt{isReference = true}, meaning they point to the original file URL rather than a new copy,
-which saves storage. The student may then upload additional materials into the Private Workspace.
-When satisfied, the student submits a Merge Proposal, which the Instructor reviews in a dedicated
-queue. On approval, the backend copies the student's file into the course storage and publishes it
-as a new Course Material credited to the contributor.
-
-\bigskip
-\noindent\textbf{FR-03 (Contextual Messaging System)}:
-Users must be able to post messages in the workspace chat and attach a direct reference to a
-specific Course Material, so that other users can open the material from within the message.
-
-The chat panel is embedded in the workspace view alongside the material list. Users compose
-messages in a rich-text input and can type \texttt{@} followed by a material name to trigger an
-autocomplete dropdown. Selecting a material embeds a non-editable tag chip in the message. When
-the message is submitted, the chip is serialised into a portable token of the form
-\texttt{@[id:title]}, which is stored as the message text. On render, the token is parsed back into
-a clickable badge, which the user clicks to download or open the referenced Course Material. This
-Contextual Anchor persists in the chat history and remains accessible to every enrolled student who
-opens the workspace later.
-
-\bigskip
-\noindent\textbf{FR-04 (AI-Based Content Querying)}:
-Users must be able to ask natural-language questions about the content of the currently open
-workspace and receive answers grounded in that content.
-
-The AI panel is a collapsible sidebar within the workspace view. When the user submits a question,
-the frontend sends the question together with the URL of the selected Course Material to the
-backend. The backend extracts the plain text from the document, constructs a structured prompt
-that includes a system instruction, the document context truncated to 10\,000 characters, and the
-user's question, then forwards the prompt to the Large Language Model (LLM) API. The response is
-streamed back to the frontend and displayed with a typewriter animation. Conversation history is
-preserved in the database through a hybrid memory model: a rolling buffer of recent messages and a
-compressed long-term summary, ensuring that the AI can reference earlier turns in a session even
-after the short-term buffer overflows.
-
-\bigskip
-\noindent\textbf{FR-05 (Access Control)}:
-The system must recognise two roles, Student and Instructor, and enforce role-based restrictions
-at the API level so that students cannot perform instructor-only operations.
-
-Role assignment happens at registration and is stored as the \texttt{role} field of the
-\texttt{User} entity. The authentication flow issues a signed JSON Web Token (JWT) upon successful
-login; the token encodes the user's email and is valid for ten hours. Every subsequent request must
-carry the token in the \texttt{Authorization: Bearer} header. The \texttt{JwtAuthenticationFilter}
-intercepts each request, extracts and validates the token, and populates the Spring Security
-context. Instructor-only endpoints are protected with \texttt{@PreAuthorize} annotations or
-explicit ownership checks in the service layer so that a student account receives an HTTP 403
-response if it attempts a restricted operation.
-
-\section{Non-Functional Requirements}
-\label{sec:nonfunctional-requirements}
-
-The following non-functional requirements define the quality constraints the system must satisfy
-regardless of the specific feature being used.
-
-\begin{itemize}
-    \item \textbf{NFR-01 (Usability)}: The interface should be straightforward enough for
-          students with no prior training to use without a manual.
-    \item \textbf{NFR-02 (Security)}: All endpoints except login and registration must
-          require a valid JWT token. Role-based access must be enforced on the server side.
-    \item \textbf{NFR-03 (Performance)}: Course and workspace pages should load within
-          three seconds under normal conditions.
-    \item \textbf{NFR-04 (Maintainability)}: The backend and frontend must be clearly
-          separated and independently deployable. The project structure should
-          follow established conventions for its respective framework.
-    \item \textbf{NFR-05 (Deployability)}: The frontend and backend must be clearly
-          separated and independently deployable via automated CI/CD pipelines to
-          modern cloud platforms. Local development should still be achievable with
-          a single Docker Compose command.
-\end{itemize}
-
-% ----------------------------------------------------------------
-\section{Use Cases}
-\label{sec:use-cases}
-
-The system has two types of actors: \emph{Student} and \emph{Instructor}. The use cases below
-describe the main interactions each actor has with the system, grouped by role. Pre-conditions
-are stated for the non-trivial cases that have dependencies on prior system state.
-
-\subsection*{Instructor Use Cases}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/instructor_uc_diagram.png}
-    \caption{UML use case diagram for Instructor}
-    \label{fig:instructor-use-case-diagram}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{\texttt{Create course}}: The Instructor creates a course with a title and
-          description and sets its published status.
-    \item \textbf{\texttt{Upload Course Material}}: Pre-condition: the course and at least one
-          section exist. The Instructor selects a file, assigns a title, and uploads it into a
-          named section. The backend infers the file type and persists the file URL.
-    \item \textbf{\texttt{Manage enrollments}}: The Instructor approves or drops individual
-          student enrollments from the course management panel.
-    \item \textbf{\texttt{Review Merge Proposal}}: Pre-condition: at least one student has
-          submitted a Merge Proposal for this course. The Instructor inspects the proposed
-          Course Material and either approves it (publishing it on the main course page with the
-          contributor's name attached) or rejects it with an optional review note.
-\end{itemize}
-
-\subsection*{Student Use Cases}
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/student_uc_diagram.png}
-    \caption{UML use case diagram for Student}
-    \label{fig:student-use-case-diagram}
-\end{figure}
-
-\begin{itemize}
-    \item \textbf{\texttt{Browse course materials}}: The student navigates to an enrolled course
-          and opens individual sections to read the uploaded Course Materials.
-    \item \textbf{\texttt{Clone course to Private Workspace}}: Pre-condition: the student is
-          enrolled in a published course. The student triggers a clone action; the backend creates
-          a Private Workspace containing mirror copies of all sections and Course Materials.
-    \item \textbf{Submit Merge Proposal}: Pre-condition: the student owns a Private
-          Workspace with at least one non-reference material or a modified reference material.
-          The student selects materials and a target section, optionally adds a message, and
-          submits the proposal for Instructor review.
-    \item \textbf{\texttt{Sent contextual message}}: The student types a message in the workspace
-          chat, uses \texttt{@} to attach a Contextual Anchor to a specific Course Material, and
-          submits. All enrolled users can see the message and follow the anchor.
-    \item \textbf{\texttt{Query AI assistant}}: The student opens the AI panel, selects a Course
-          Material for context, and types a question. The system sends the question and the
-          extracted document text to the LLM API and displays the answer.
-\end{itemize}
+and available to all participants.
 
 % ----------------------------------------------------------------
 \section{Existing Solutions}
@@ -458,7 +110,7 @@ to a course section or curriculum structure. There is no role hierarchy that dis
 Instructors from students at the permission level beyond basic moderation roles; an Instructor
 cannot publish a set of Course Materials in a read-only area that students can then clone and
 annotate. Content disappears into scroll history, there is no access control aligned with course
-enrolment, and there is no mechanism for structured content contribution or AI-assisted querying
+enrollment, and there is no mechanism for structured content contribution or AI-assisted querying
 of Course Materials.
 
 % ----------------------------------------------------------------
@@ -469,7 +121,7 @@ Moodle is a mature, open-source Learning Management System (LMS) used by thousan
 universities worldwide, including CTU. It provides the most comprehensive course management
 feature set of any platform considered: Instructors can define courses with hierarchical sections,
 upload files and links, set up graded assignments and quizzes, track student progress, and manage
-enrolment through a role-based permission model.
+enrollment through a role-based permission model.
 
 Despite this breadth, Moodle has well-documented limitations with respect to student agency and
 contextual collaboration. Its discussion model is based on forums that are standalone modules
@@ -518,6 +170,319 @@ StudySpace addresses this integration gap by combining structured course managem
 clone-based student contribution workflow with Instructor review, chat messages with Contextual
 Anchors tied to specific Course Materials, and an AI assistant grounded in the actual course
 content, all within a single application with role-based access control.
+
+% ----------------------------------------------------------------
+\section{Use Cases}
+\label{sec:use-cases}
+
+The system has two types of actors: \emph{Student} and \emph{Instructor}. The use cases below
+describe the main interactions each actor has with the system, grouped by role. Pre-conditions
+are stated for the non-trivial cases that have dependencies on prior system state.
+
+\subsection*{Instructor Use Cases}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/instructor_uc_diagram.png}
+    \caption{UML use case diagram for Instructor}
+    \label{fig:instructor-use-case-diagram}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{\texttt{Create course}}: The Instructor creates a course with a title and
+          description and sets its published status.
+    \item \textbf{\texttt{Upload Course Material}}: Pre-condition: the course and at least one
+          section exist. The Instructor selects a file, assigns a title, and uploads it into a
+          named section. The backend infers the file type and persists the file URL.
+    \item \textbf{\texttt{Manage enrollments}}: The Instructor approves or drops individual
+          student enrollments from the course management panel.
+    \item \textbf{\texttt{Review Merge Proposal}}: Pre-condition: at least one student has
+          submitted a Merge Proposal for this course. The Instructor inspects the proposed
+          Course Material and either approves it (publishing it on the main course page with the
+          contributor's name attached) or rejects it with an optional review note.
+\end{itemize}
+
+\subsection*{Student Use Cases}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/student_uc_diagram.png}
+    \caption{UML use case diagram for Student}
+    \label{fig:student-use-case-diagram}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{\texttt{Browse course materials}}: The student navigates to an enrolled course
+          and opens individual sections to read the uploaded Course Materials.
+    \item \textbf{\texttt{Clone course to Private Workspace}}: Pre-condition: the student is
+          enrolled in a published course. The student triggers a clone action; the backend creates
+          a Private Workspace containing mirror copies of all sections and Course Materials.
+    \item \textbf{Submit Merge Proposal}: Pre-condition: the student owns a Private
+          Workspace with at least one non-reference material or a modified reference material.
+          The student selects materials and a target section, optionally adds a message, and
+          submits the proposal for Instructor review.
+    \item \textbf{\texttt{Sent contextual message}}: The student types a message in the workspace
+          chat, uses \texttt{@} to attach a Contextual Anchor to a specific Course Material, and
+          submits. All enrolled users can see the message and follow the anchor.
+    \item \textbf{\texttt{Query AI assistant}}: The student opens the AI panel, selects a Course
+          Material for context, and types a question. The system sends the question and the
+          extracted document text to the LLM API and displays the answer.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\section{Functional Requirements}
+\label{sec:requirements}
+
+The following requirements are derived directly from the problem statement (section~\ref{sec:problem-statement}),
+the use cases (section~\ref{sec:use-cases}), and the identified gaps in existing solutions (section~\ref{sec:existing-solutions}). Each requirement is identified by an ID that
+is referenced throughout the remainder of the thesis.
+
+\begin{itemize}
+    \item \textbf{FR-01 (Course Administration Module)}:
+          An Instructor must be able to create, update, and delete courses and organise their content into
+          named sections, while a Student must be able to browse and read any course they are enrolled in.
+          The Instructor controls whether a course is published and manages enrollment per student.
+          Course Materials (PDF documents, slide sets, video files, or images) are grouped into named
+          sections, and the appropriate viewer is selected automatically based on the file type.
+
+    \item \textbf{FR-02 (Content Extension System)}:
+          A Student must be able to clone a course into a Private Workspace, add or modify materials
+          independently, and submit a Merge Proposal for the Instructor to review and optionally publish.
+          The clone operation creates a private mirror of the course structure that the student may enrich
+          with additional materials. A submitted Merge Proposal enters an Instructor review queue where
+          it can be approved and published back to the course, crediting the contributing student.
+
+    \item \textbf{FR-03 (Contextual Messaging System)}:
+          Users must be able to post messages in the workspace chat and attach a direct reference to a
+          specific Course Material, so that other users can open the material from within the message.
+          The Contextual Anchor is embedded in the message as a clickable badge and persists in the chat
+          history, remaining accessible to all enrolled students regardless of when they join the course.
+
+    \item \textbf{FR-04 (AI-Based Content Querying)}:
+          Users must be able to ask natural-language questions about the content of the currently open
+          workspace and receive answers grounded in that content.
+          The AI assistant operates on the uploaded Course Materials rather than on general knowledge,
+          and maintains conversation history so that follow-up questions can reference earlier turns
+          within the same session.
+
+    \item \textbf{FR-05 (Access Control)}:
+          The system must recognise two roles, Student and Instructor, and enforce role-based restrictions
+          at the API level so that students cannot perform instructor-only operations.
+          Role assignment occurs at registration and is enforced on every request through token-based
+          authentication. A student attempting an Instructor-only operation receives an authorisation
+          error without the request reaching the business logic layer.
+\end{itemize}
+
+\section{Non-Functional Requirements}
+\label{sec:nonfunctional-requirements}
+
+The following non-functional requirements define the quality constraints the system must satisfy
+regardless of the specific feature being used.
+
+\begin{itemize}
+    \item \textbf{NFR-01 (Usability)}: The interface should be straightforward enough for
+          students with no prior training to use without a manual.
+    \item \textbf{NFR-02 (Security)}: All endpoints except login and registration must
+          require a valid JWT token. Role-based access must be enforced on the server side.
+    \item \textbf{NFR-03 (Performance)}: Course and workspace pages should load within
+          three seconds under normal conditions.
+    \item \textbf{NFR-04 (Maintainability)}: The backend and frontend must be clearly
+          separated and independently deployable. The project structure should
+          follow established conventions for its respective framework.
+    \item \textbf{NFR-05 (Deployability)}: The frontend and backend must be clearly
+          separated and independently deployable via automated CI/CD pipelines to
+          modern cloud platforms. Local development should still be achievable with
+          a single Docker Compose command.
+\end{itemize}
+
+% ----------------------------------------------------------------
+\section{Architecture Analysis}
+\label{sec:architecture-analysis}
+
+\label{sec:technologies}
+
+This section justifies each major technology choice by comparing the available alternatives against
+the requirements established in the preceding sections. The goal was to select a stack that is
+well suited for the required features, has strong community support and ecosystem maturity, and is
+practical to use within the scope of a bachelor thesis prototype.
+
+% ----------------------------------------------------------------
+\subsection{Frontend Framework}
+\label{subsec:frontend-tech}
+
+The core capabilities of the system (such as course administration, content cloning, contextual
+messaging, and AI assistance) require a responsive and component-rich user interface that manages complex
+shared state across a course-material viewer, a chat panel, and an AI assistant panel rendered
+simultaneously on the same screen.
+
+\textbf{React~19}~\cite{React} is a declarative UI library maintained by Meta. Its component model
+encourages decomposing the interface into small, reusable pieces, each responsible for a single
+part of the view. The unidirectional data flow makes state changes predictable and easier to trace
+during debugging. React's large ecosystem provides ready-made solutions for drag-and-drop panels,
+rich-text editing, and real-time subscriptions, all of which are needed for StudySpace.
+
+\textbf{Vue.js}~\cite{Vuejs} is a progressive framework with a smaller bundle size and a gentler learning
+curve. For StudySpace, however, the Vue ecosystem is shallower for complex, enterprise-grade
+components, and the TypeScript integration, while improving, is less seamless than in React.
+
+\textbf{Angular}~\cite{Angular} is a full-featured framework backed by Google that includes dependency injection,
+a router, and a form library out of the box. The overhead of Angular's concepts, decorators, and
+module system exceeds what is justified for a single-team prototype of this scope.
+
+React was selected because its component model aligns directly with the StudySpace screen layout
+(course panel, chat sidebar, AI panel as discrete components), its TypeScript support is
+first-class, and its ecosystem provides the resizable panel, rich-text input, and \textbf{WebSocket}~\cite{WebSocketRFC6455} hook
+primitives needed for the content extension and contextual messaging features without significant additional integration effort.
+
+React is used through the \textbf{Next.js~15}~\cite{Nextjs} framework, which provides file-based
+routing via the App Router, server-side rendering where applicable, and built-in image
+optimisation. Compared to a plain Vite~\cite{Vite} or Create React App~\cite{CreateReactApp} setup, Next.js removes boilerplate
+routing configuration and makes the project structure self-documenting through the directory
+layout. Styling is handled by \textbf{Tailwind CSS}~\cite{TailwindCSS} combined with
+\textbf{Shadcn/ui}~\cite{ShadcnUI} and \textbf{Radix UI}~\cite{RadixUI}, which provide accessible, unstyled
+component primitives that Tailwind classes are applied to. State management across the application
+uses React's native \textbf{Context API}~\cite{ReactContextAPI} and custom hooks, providing a lightweight, predictable
+data flow for all API interactions without the overhead of external state libraries.
+
+% ----------------------------------------------------------------
+\subsection{Backend Framework}
+\label{subsec:backend-tech}
+
+The system requires robust access control with role-based authorisation. Furthermore, the content
+extension workflows and AI assistance feature involve complex transactional operations over relational data. These requirements favour a statically
+typed language with mature transaction management and security libraries.
+
+\textbf{Java~21 with Spring Boot~3}~\cite{Java21,SpringBoot} provides a statically typed,
+object-oriented foundation with a mature ecosystem. Spring Boot's convention-over-configuration
+approach applies sensible defaults automatically, embeds a Tomcat web server, and offers
+first-class integration with \textbf{Spring Security}~\cite{SpringSecurity}, \textbf{Spring Data JPA}~\cite{SpringDataJPA}, \textbf{Spring WebSocket}~\cite{SpringWebSocket}, and \textbf{Springdoc OpenAPI}~\cite{SpringdocOpenAPI} - all of which are essential for StudySpace. Virtual Threads, introduced in Java~21,
+improve the throughput of concurrent request handling without the complexity of reactive
+programming~\cite{VirtualThreadsJEP444}.
+
+\textbf{Node.js}~\cite{Nodejs} with \textbf{NestJS}~\cite{NestJS} or \textbf{Express}~\cite{ExpressJS} excels in I/O-bound tasks due to its event-driven
+architecture~\cite{NodejsAbout}. However, its single-threaded event loop can be a bottleneck for the multi-step
+transactional operations required by the Content Extension System, and the ORM ecosystem
+does not reach the integration depth and stability of Spring Data JPA.
+
+\textbf{Python}~\cite{Python} with \textbf{Django}~\cite{Django} or \textbf{FastAPI}~\cite{FastAPI} is excellent for rapid prototyping and AI integration.
+Python's dynamic typing, however, makes maintaining large-scale backend codebases more challenging
+without strict tooling, and its Global Interpreter Lock can become a bottleneck for highly
+concurrent CPU-bound tasks~\cite{PythonGIL}.
+
+Java~21 with Spring Boot~3 was selected because the controller-service-repository layered model~\cite{FowlerEAA,RichardsSAP}
+maps directly onto the StudySpace domain structure, Spring Security provides JWT-based
+authentication and method-level authorisation out of the box (directly addressing the access
+control requirements), and the mature transaction management ensures referential integrity across the complex clone and proposal
+approval operations required by the content extension workflow.
+
+% ----------------------------------------------------------------
+\subsection{Database and Vector Store}
+\label{subsec:database-tech}
+
+The application's data model is inherently relational: users own workspaces, workspaces belong
+to courses, clone records track inheritance, and proposals reference both student materials and
+instructor courses. The content extension system requires ACID transaction guarantees across multi-entity writes.
+
+\textbf{PostgreSQL~17}~\cite{PostgreSQL} is a mature, open-source relational database management
+system (RDBMS) that follows the SQL standard and supports complex queries, transactions, and
+foreign key constraints. It integrates seamlessly with the Java backend through the JDBC driver,
+and higher-level access is provided by Spring Data JPA~\cite{SpringDataJPA} with Hibernate~\cite{Hibernate} as the ORM provider.
+
+\textbf{MongoDB}~\cite{MongoDB} (NoSQL document store) and \textbf{Cassandra}~\cite{Cassandra} (wide-column store) are optimised
+for unstructured or semi-structured data and horizontal scalability. However, they lack strict
+schema enforcement and standard join operations. Using a document store would require significant
+denormalisation, duplicating data to avoid application-level joins~\cite{NoSQLDistilled}, which introduces the risk of
+inconsistency when a Course Material is approved and must be reflected in both the workspace and
+the course tables atomically.
+
+PostgreSQL was selected because the StudySpace data model is fundamentally relational, ACID
+transactions are required for the clone and approval workflows, and foreign-key
+constraints enforce referential integrity between proposals and their source materials.
+Additionally, the AI assistant leverages the \texttt{pgvector} extension~\cite{pgvector} to provide similarity
+search over document embeddings directly within the same database, eliminating the need for a separate dedicated vector store.
+
+% ----------------------------------------------------------------
+\subsection{Authentication and Authorisation}
+\label{subsec:auth-tech}
+
+The access control system requires stateless authentication suitable for a REST API consumed by a single-page
+application, with role-based restrictions enforced on the server side.
+
+\textbf{JSON Web Tokens (JWT)}~\cite{JWT_RFC7519} with Spring Security~\cite{SpringSecurity} enables stateless
+authentication: after login, the server issues a signed token that the client stores and sends
+with every subsequent request. The server validates the token signature without consulting a
+session store, which simplifies horizontal scaling.
+
+\textbf{Server-side sessions} with Spring Session~\cite{SpringSession} require a shared session store (such as Redis)
+across instances and add network latency to every request. For a stateless REST API served to a
+browser-based SPA, this overhead is unnecessary.
+
+\textbf{OAuth~2.0 only}~\cite{OAuth2} (without local credentials) would prevent users without a Google or
+GitHub account from registering, which is inappropriate for a faculty application where students
+may not use third-party providers for academic accounts.
+
+JWT with Spring Security was selected because it achieves stateless session management (directly
+satisfying NFR-02), requires no external session store, and Spring Security's filter chain
+integrates the JWT validation and role check into a single, reusable \texttt{OncePerRequestFilter}
+implementation. Google OAuth~2.0 login is supported as an optional alternative authentication
+path alongside the primary local credential flow.
+
+% ----------------------------------------------------------------
+\subsection{Real-Time Communication}
+\label{subsec:websocket-tech}
+
+The Contextual Messaging System requires peer-to-peer discussion to occur in real time. This necessitates bidirectional event delivery to all connected participants, ruling out traditional request-response and simple polling-based approaches.
+
+
+\textbf{WebSocket}~\cite{WebSocketRFC6455} with \textbf{STOMP}~\cite{STOMP} over \textbf{SockJS}~\cite{SockJS} layers a publish-subscribe model on top
+of the raw WebSocket connection. Spring Boot registers a broker endpoint and routes messages to
+per-session topics, allowing the server to push participant-list updates and activity events to
+all subscribers without the clients polling.
+
+\textbf{Server-Sent Events (SSE)}~\cite{SSE} provide a unidirectional push channel from server to client.
+They lack the bidirectional subscription model needed for clients to send activity events (such as
+a hand-raise) back to the server over the same connection.
+
+\textbf{Long Polling}~\cite{LongPollingRFC6202} achieves real-time delivery but requires each client to maintain a pending
+request and re-establish it after every response, producing significant per-client overhead on
+the server.
+
+WebSocket with STOMP over SockJS was selected because the bidirectional subscription model covers
+both server-to-client pushes (participant list updates, activity events) and client-to-server
+messages (hand raises) over a single connection, and Spring Boot's built-in STOMP message broker
+requires no additional infrastructure.
+
+% ----------------------------------------------------------------
+
+\subsection{Quality Assurance}
+\label{subsec:quality-assurance}
+
+Ensuring the reliability of the StudySpace web application requires a robust quality assurance strategy, encompassing both isolated component testing and full-system end-to-end (E2E) verification. The selection of appropriate testing frameworks must account for the project's reliance on the Next.js framework, the need for rapid developer feedback, and the complexity of real-time browser interactions.
+
+\subsubsection{Unit and Integration Testing}
+\label{subsubsec:unit-integration-testing}
+
+Unit and integration tests verify individual application components, such as the contextual chat panel or the course material upload logic, in isolation from the full backend server. The two primary candidates for the React ecosystem are Jest and Vitest.
+
+Jest~\cite{Jest} is a mature, widely adopted testing framework maintained by the open-source community. It provides a comprehensive set of assertion libraries and mocking utilities out of the box, and Next.js offers built-in configuration wrappers for it. However, Jest relies on a traditional Node.js execution model and requires complex transformations to handle modern ECMAScript modules (ESM) and TypeScript natively. As the StudySpace codebase grows, this transformation overhead can significantly slow down test execution.
+
+Vitest~\cite{Vitest} is a newer framework built on top of Vite. It is designed to be API-compatible with Jest, allowing developers to use identical syntax for assertions and mocks, but it uses Vite's highly optimised build pipeline for module resolution and transformation. This results in significantly faster test execution and near-instantaneous Hot Module Replacement (HMR) during test-driven development. In the context of StudySpace, where frequent iterations on the user interface and complex state management hooks are required, minimising the feedback loop is critical. Although Next.js uses Webpack and Turbopack rather than Vite for its production builds, Vitest can be configured to understand the Next.js environment seamlessly.
+
+Given the performance advantages of its modern execution pipeline and its seamless compatibility with the React Testing Library, Vitest was selected as the unit and integration testing framework. The speed improvements directly support the rapid development cycles required for the project, while the familiar Jest-like API minimises the learning curve.
+
+\subsubsection{End-to-End Testing}
+\label{subsubsec:e2e-testing}
+
+End-to-end testing simulates real user behaviour by driving an actual web browser, ensuring that the frontend, backend, and database interact correctly. This is particularly important for StudySpace, as features like the Merge Proposal workflow and the real-time Contextual Messaging System involve complex cross-tier interactions. Cypress and Playwright are the leading solutions for modern web applications.
+
+Cypress~\cite{Cypress} offers a highly visual, interactive test runner that executes directly within the browser alongside the application under test. This architecture provides excellent debugging capabilities and a shallow learning curve. However, Cypress traditionally struggles with testing multi-tab workflows and cross-origin navigations, which can be problematic when testing OAuth flows or interactions that open course materials in new tabs. Furthermore, its execution speed is relatively slow when running large test suites in headless Continuous Integration (CI) environments.
+
+Playwright~\cite{Playwright}, developed by Microsoft, takes a different architectural approach by communicating with browsers over the Chrome DevTools Protocol (CDP). It natively supports parallel test execution across multiple browser engines (Chromium, WebKit, and Firefox) and handles multi-tab, multi-origin scenarios effortlessly. Playwright also includes a powerful trace viewer that captures DOM snapshots, network requests, and console logs for every step of a failed test, significantly easing debugging without requiring the interactive test runner to be open.
+
+For StudySpace, the ability to test complex user journeys efficiently is paramount. The parallel execution model of Playwright drastically reduces the time required to run the full E2E suite compared to Cypress~\cite{Jadhav2024, Playwright}. Additionally, its robust handling of modern web APIs and multi-context scenarios ensures that the real-time communication channels and file viewing features can be tested reliably. Consequently, Playwright was chosen as the end-to-end testing framework for the project.
+
+% ----------------------------------------------------------------
+
 
 % ----------------------------------------------------------------
 \section{Conclusions from Analysis}

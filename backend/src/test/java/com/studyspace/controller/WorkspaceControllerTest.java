@@ -97,9 +97,10 @@ class WorkspaceControllerTest {
     void getWorkspace() throws Exception {
         StudentWorkspaceDTO dto = StudentWorkspaceDTO.builder().id(1L).build();
 
-        when(workspaceService.getWorkspaceById(1L)).thenReturn(dto);
+        when(workspaceService.getWorkspaceById(1L, 1L)).thenReturn(dto);
 
-        mockMvc.perform(get("/api/workspaces/1"))
+        mockMvc.perform(get("/api/workspaces/1")
+                .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
@@ -154,10 +155,11 @@ class WorkspaceControllerTest {
     @WithMockUser
     void getSpaces() throws Exception {
         WorkspaceSpaceDTO dto = WorkspaceSpaceDTO.builder().id(10L).build();
-        when(workspaceService.getSpacesByWorkspace(eq(1L), any(), any(Pageable.class)))
+        when(workspaceService.getSpacesByWorkspace(eq(1L), eq(1L), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
-        mockMvc.perform(get("/api/workspaces/1/spaces"))
+        mockMvc.perform(get("/api/workspaces/1/spaces")
+                .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1));
     }

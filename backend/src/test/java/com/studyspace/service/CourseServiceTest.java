@@ -29,6 +29,7 @@ class CourseServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private FileStorageService fileStorageService;
     @Mock private ContributionProposalRepository proposalRepository;
+    @Mock private WorkspaceMaterialRepository workspaceMaterialRepository;
 
     @InjectMocks
     private CourseService courseService;

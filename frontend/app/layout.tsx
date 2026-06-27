@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
 	title: "StudySpace - Collaborative Study Platform",
-	description: "Track study sessions, form study groups, and compete on leaderboards",
+	description: "Manage course materials, collaborate on workspaces, and get AI-powered answers from your study content.",
 	icons: {
 		icon: [
 			{

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { coursesApi } from "@/lib/courses-api";
 import { API_BASE_URL } from "@/lib/api";
 import type { CourseMaterial, MaterialType } from "@/types/courses";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 
 const MaterialIcon = ({ type }: Readonly<{ type: MaterialType }>) => {
   const cls = "h-4 w-4 shrink-0";
@@ -69,13 +70,17 @@ export function MaterialUploader({
     }
   };
 
-  const handleDelete = async (materialId: number) => {
-    if (!confirm("Delete this material?")) return;
+  const [deleteMaterialTarget, setDeleteMaterialTarget] = useState<number | null>(null);
+
+  const executeDeleteMaterial = async () => {
+    if (deleteMaterialTarget === null) return;
     try {
-      await coursesApi.deleteMaterial(materialId, userId);
-      onDeleted(materialId);
+      await coursesApi.deleteMaterial(deleteMaterialTarget, userId);
+      onDeleted(deleteMaterialTarget);
     } catch (e: any) {
       alert(e.message);
+    } finally {
+      setDeleteMaterialTarget(null);
     }
   };
 
@@ -102,7 +107,7 @@ export function MaterialUploader({
                 <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
               </a>
               <button
-                onClick={() => handleDelete(m.id)}
+                onClick={() => setDeleteMaterialTarget(m.id)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Delete"
               >
@@ -152,6 +157,15 @@ export function MaterialUploader({
           {uploading ? "Uploading…" : "Upload File"}
         </Button>
       </div>
+      <ConfirmDialog
+        open={deleteMaterialTarget !== null}
+        onOpenChange={(open) => !open && setDeleteMaterialTarget(null)}
+        title="Delete Material"
+        description="Are you sure you want to delete this material? This action cannot be undone."
+        confirmText="Delete"
+        variant="destructive"
+        onConfirm={executeDeleteMaterial}
+      />
     </div>
   );
 }

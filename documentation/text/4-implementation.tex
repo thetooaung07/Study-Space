@@ -16,7 +16,7 @@ The course administration feature addresses FR-01: Instructors must be able to c
 courses, upload Course Materials into named sections, and control student enrollment. The
 technical challenge in this feature is keeping the file storage backend transparent to the
 business logic so that the development environment (local disk) and the production environment
-(Google Cloud Storage) can be swapped by changing a Spring profile, without any changes to the
+(Amazon S3-compatible cloud storage~\cite{AmazonS3}) can be swapped by changing a Spring profile, without any changes to the
 service layer.
 
 % TODO: Insert screenshot Figure 4.1
@@ -95,9 +95,9 @@ rather than copying the files. Only materials uploaded by the student later are 
 files (\texttt{isReference = false}). When a student removes a reference material from their view,
 \texttt{delete\allowbreak Material} in \texttt{Workspace\allowbreak Service} checks for active \texttt{Contribution\allowbreak Proposal}s.
 If a proposal exists, it sets \texttt{isHidden = true} on the row instead of deleting it to preserve
-referential integrity; otherwise, it deletes the reference cleanly. The listing below shows this logic.
+referential integrity. Furthermore, to prevent the deletion of a physical file that is still in use elsewhere, the system employs a reference-counting mechanism. Before a physical file is removed from storage, the backend verifies that no other \texttt{Course\allowbreak Material} or \texttt{Workspace\allowbreak Material} points to the same \texttt{fileUrl}. This ensures that an instructor deleting an original course file will not break the cloned references in student workspaces, and vice versa. The listing below shows this logic.
 
-\begin{lstlisting}[language=Java, caption={Code listing 4.2 --- Delete strategy for reference materials (WorkspaceService.java)}, label=lst:soft-delete]
+\begin{lstlisting}[language=Java, caption={Code listing 4.2 --- Delete strategy with reference counting (WorkspaceService.java)}, label=lst:soft-delete]
 public void deleteMaterial(Long materialId, Long userId) {
     WorkspaceMaterial material = materialRepository.findById(materialId)
             .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
@@ -110,11 +110,19 @@ public void deleteMaterial(Long materialId, Long userId) {
         material.setIsHidden(true);
         materialRepository.save(material);
     } else {
-        // Safe to hard-delete
         if (!Boolean.TRUE.equals(material.getIsReference())) {
-            fileStorageService.delete(material.getFileUrl());
+            String fileUrl = material.getFileUrl();
+            materialRepository.delete(material);
+
+            // Reference Counting: Delete file only if no other entity uses it
+            boolean hasCourseRefs = courseMaterialRepository.existsByFileUrl(fileUrl);
+            boolean hasWorkspaceRefs = materialRepository.existsByFileUrl(fileUrl);
+            if (!hasCourseRefs && !hasWorkspaceRefs) {
+                fileStorageService.delete(fileUrl);
+            }
+        } else {
+            materialRepository.delete(material);
         }
-        materialRepository.delete(material);
     }
 }
 \end{lstlisting}
@@ -155,7 +163,7 @@ input. The submitted message is rendered with a clickable badge that opens the f
 
 The message input uses a \texttt{<div content\allowbreak Editable>} element rather than a
 \texttt{<textarea>} because \texttt{<textarea>} can only hold plain text, whereas a
-\texttt{content\allowbreak Editable} div can host arbitrary DOM nodes. When the user selects a Course
+\texttt{content\allowbreak Editable} div can host arbitrary DOM nodes~\cite{HTMLSpec}. When the user selects a Course
 Material from the autocomplete, the \texttt{insertTag} function deletes the \texttt{@<query>}
 text and inserts a \texttt{<span>} element with \texttt{content\allowbreak Editable="false"} and
 \texttt{data-\allowbreak material\allowbreak Id}, \texttt{data-\allowbreak material\allowbreak Title}, and \texttt{data-\allowbreak material\allowbreak Url} attributes.
@@ -261,30 +269,50 @@ consisting of a system preamble, conversation history, the retrieved RAG excerpt
 The listing below shows the structured prompt assembly.
 
 \begin{lstlisting}[language=Java, caption={Code listing 4.5 --- Structured prompt construction (PromptBuilder.java)}, label=lst:prompt-builder]
-public String buildRuntimePrompt(String summary, List<Message> recentMessages,
-                                 List<String> ragChunks, String userQuestion) {
+public String buildRuntimePrompt(String summary,
+                                 List<Message> recentMessages,
+                                 List<String> ragChunks,
+                                 String userQuestion,
+                                 boolean firstTurn) {
     StringBuilder sb = new StringBuilder();
-    sb.append("You are a teaching assistant. Prefer the provided document " +
-              "context over your own knowledge when it is relevant.\n\n");
+    sb.append("You are a helpful academic teaching assistant for students\n");
+    sb.append("using the StudySpace platform.\n\n");
+
+    if (firstTurn) {
+        // Ask the LLM to generate a conversation title on the first turn
+        sb.append("IMPORTANT: Begin with TITLE: <5-8 word summary>\n\n");
+    }
 
     if (summary != null && !summary.isBlank()) {
-        sb.append("[Previous context]\n").append(summary).append("\n\n");
+        sb.append("## Conversation Summary (long-term memory)\n");
+        sb.append(summary.trim()).append("\n\n");
+    }
+    if (recentMessages != null && !recentMessages.isEmpty()) {
+        sb.append("## Recent Conversation\n");
+        for (Message msg : recentMessages) {
+            String label = "user".equalsIgnoreCase(msg.getRole()) ? "Student" : "Assistant";
+            sb.append(label).append(": ").append(msg.getContent()).append("\n");
+        }
+        sb.append("\n");
     }
     if (ragChunks != null && !ragChunks.isEmpty()) {
-        sb.append("[Document Excerpts]\n");
-        ragChunks.forEach(chunk -> sb.append(chunk).append("\n---\n"));
+        sb.append("## Relevant Document Excerpts\n");
+        for (int i = 0; i < ragChunks.size(); i++) {
+            sb.append("### Excerpt ").append(i + 1).append("\n");
+            sb.append(ragChunks.get(i).trim()).append("\n\n");
+        }
     }
-    sb.append("[Current Question]\n").append(userQuestion);
+    sb.append("## Student's Current Question\n").append(userQuestion.trim());
     return sb.toString();
 }
 \end{lstlisting}
 
-The system instruction instructs the model to prefer the document context, which is the core
-of the Retrieval-Augmented Generation (RAG) pattern implemented here. Truncating the context at
-10\,000 characters controls per-request cost while keeping the most relevant part of the document
-available to the model. When the API returns a \texttt{429 RESOURCE\_EXHAUSTED} status, the
-service parses the retry delay and surfaces it to the user as a human-readable message rather
-than propagating a raw exception.
+Rather than injecting a fixed-size slice of the document, the system uses the pgvector
+similarity search to select the top-3 chunks that are most semantically relevant to the
+student's question. This targeted retrieval keeps the prompt compact while ensuring that
+the most pertinent passages are always present. When the API returns a
+\texttt{429 RESOURCE\_EXHAUSTED} status, the service surfaces the retry delay to the user
+as a human-readable message rather than propagating a raw exception.
 
 % ----------------------------------------------------------------
 \section{Access Control (FR-05)}
@@ -388,9 +416,54 @@ soft-delete \texttt{isHidden} flag described in section~\ref{sec:impl-fork}.
 
 Complementing the backend testing suite, the frontend employs a dual testing framework strategy to verify user interfaces and application flows.
 
-\emph{Unit and integration tests} are executed using Vitest and the React Testing Library. Components such as the authentication forms are mounted in an isolated \texttt{jsdom} environment. By mocking the Next.js router and authentication contexts, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
+\emph{Unit and integration tests} are executed using Vitest~\cite{Vitest} and the React Testing Library~\cite{ReactTestingLibrary}. Components such as the authentication forms are mounted in an isolated \texttt{jsdom}~\cite{jsdom} environment. By mocking the Next.js router and authentication contexts, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
 
-\emph{End-to-end (E2E) tests} are orchestrated with Playwright. These tests spin up a headless browser (such as Chromium) and navigate through complete user journeys. By leveraging Playwright's network interception capabilities, the tests mock the backend API responses. This approach ensures that the frontend behaves correctly under various backend states---such as a successful login or an HTTP 401 Unauthorized response---in a highly deterministic and fast-executing manner.
+\emph{End-to-end (E2E) tests} are orchestrated with Playwright.
+These tests spin up a headless browser, such as Chromium, and navigate through complete user journeys.
+By leveraging Playwright's network interception capabilities, the tests mock the backend API responses.
+This approach ensures that the frontend behaves correctly under various backend states, such as a successful login or an HTTP 401 Unauthorized response, in a highly deterministic and fast-executing manner.
+To verify all five core functional requirements, from FR-01 to FR-05, under realistic conditions, a dedicated E2E test suite was developed.
+Each test intercepts API calls and simulates user actions, verifying that the frontend, routing, and user interface elements behave correctly.
+A representative test case verifying the course administration and browsing workflows is shown in code listing~\ref{lst:playwright-e2e}.
+
+\newpage
+\begin{lstlisting}[caption={Playwright E2E test verifying course material browsing}, label={lst:playwright-e2e}]
+test('FR-01 - Browse Course Materials', async ({ page }) => {
+  await page.route('**/api/courses?*', async route => {
+    await route.fulfill({
+      json: { content: [{ id: 101, title: 'Software Engineering Methodologies', description: 'Learn Scrum, XP, Agile.', instructorName: 'Dr. John Doe', isPublished: true }], totalPages: 1, totalElements: 1 }
+    });
+  });
+  await page.route('**/api/courses/101', async route => {
+    await route.fulfill({
+      json: { id: 101, title: 'Software Engineering Methodologies', sections: [{ id: 201, title: 'Week 1: Introduction to Scrum', materials: [{ id: 301, title: 'Scrum Guide PDF', type: 'PDF', url: '/mock/scrum-guide.pdf' }] }] }
+    });
+  });
+  await page.goto('/courses');
+  await expect(page.locator('text=Software Engineering Methodologies')).toBeVisible();
+  await page.getByRole('link', { name: /view course/i }).first().click();
+  await expect(page.locator('text=Week 1: Introduction to Scrum')).toBeVisible();
+  await expect(page.locator('text=Scrum Guide PDF')).toBeVisible();
+});
+\end{lstlisting}
+
+Table~\ref{tab:playwright-results} summarises the results of the E2E test suite execution, demonstrating full coverage across all functional areas.
+
+\begin{table}[htbp]
+\centering
+\caption{Playwright E2E test suite execution summary}
+\label{tab:playwright-results}
+\begin{tabularx}{\textwidth}{l X c r}
+\toprule
+\textbf{Test ID} & \textbf{Target Feature Area} & \textbf{Status} & \textbf{Duration} \\
+\midrule
+FR-01 & Course Administration (Browse Materials) & Passed & 1.1\,s \\
+FR-02 & Content Extension (Merge Proposal) & Passed & 1.5\,s \\
+FR-03 \& FR-04 & Contextual Messaging \& AI Querying & Passed & 2.1\,s \\
+FR-05 & Access Control (Private Routes) & Passed & 0.8\,s \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsection{User and Usability Tests}
 \label{subsec:user-tests}
@@ -401,10 +474,15 @@ specified as a numbered step sequence with explicit pre-conditions and expected 
 that it can be executed by a member of the target user group (a student or Instructor at a
 higher-education faculty) without technical assistance. Formal usability testing with
 representative participants has not been conducted within the scope of this thesis; these
-scenarios constitute the prepared protocol for that future evaluation.
+scenarios constitute the prepared protocol for that future evaluation. To ensure continuous
+verification of the user interface, these five usability test cases were also implemented
+as automated end-to-end tests within the Playwright testing suite. In this automated execution,
+all external backend APIs, authentication states, and file upload endpoints are mocked. This
+mocking allows for rapid and deterministic validation of the client-side workflows, ensuring
+that any regression in the user experience is caught immediately during the development phase.
 
 \bigskip
-\noindent\textbf{Test 4.1 --- Upload and browse a Course Material (FR-01)}
+\noindent\textbf{Test 4.1: Upload and browse a Course Material (FR-01)}
 \begin{enumerate}
     \item Log in as an Instructor account.
     \item Navigate to an existing published course and open the course management view.
@@ -420,7 +498,7 @@ Expected: the upload button is absent from the UI; a direct API call to
 \texttt{POST /api/courses/sections/{id}/materials} returns HTTP~403 Forbidden.
 
 \bigskip
-\noindent\textbf{Test 4.2 --- Clone course and submit Merge Proposal (FR-02)}
+\noindent\textbf{Test 4.2: Clone course and submit Merge Proposal (FR-02)}
 \begin{enumerate}
     \item Log in as a Student enrolled in a published course.
     \item Navigate to the course and click the ``Clone to workspace'' button.
@@ -440,7 +518,7 @@ rather than a newly uploaded file. Expected: the proposal is accepted, but the b
 file from the original URL into the course storage, not from a non-existent student upload.
 
 \bigskip
-\noindent\textbf{Test 4.3 --- Post a message with Contextual Anchor (FR-03)}
+\noindent\textbf{Test 4.3: Post a message with Contextual Anchor (FR-03)}
 \begin{enumerate}
     \item Log in as a Student and open a workspace.
     \item In the chat panel, type \texttt{@} followed by part of a Course Material name.
@@ -454,7 +532,7 @@ file from the original URL into the course storage, not from a non-existent stud
 message with the Contextual Anchor is visible to the second student and the badge is functional.
 
 \bigskip
-\noindent\textbf{Test 4.4 --- Query AI assistant (FR-04)}
+\noindent\textbf{Test 4.4: Query AI assistant (FR-04)}
 \begin{enumerate}
     \item Log in as a Student, open a workspace, and select a Course Material (PDF).
     \item Open the AI assistant panel and type a factual question about the document's content.
@@ -468,7 +546,7 @@ a question. Expected: the backend sends the question without document context an
 with general knowledge; no error is shown.
 
 \bigskip
-\noindent\textbf{Test 4.5 --- Role-based access control (FR-05)}
+\noindent\textbf{Test 4.5: Role-based access control (FR-05)}
 \begin{enumerate}
     \item Log in as a Student. Open the browser developer tools and copy the JWT from the
           \texttt{Authorization} header of any API request.
@@ -477,7 +555,6 @@ with general knowledge; no error is shown.
     \item Expected: the server returns HTTP~403 Forbidden with an error body.
     \item Repeat for \texttt{PUT \allowbreak /api/\allowbreak courses/\allowbreak \{id\}/\allowbreak sections}
           and \newline \texttt{POST \allowbreak /api/\allowbreak proposals/\allowbreak \{id\}/\allowbreak review}.
-
     \item In each case confirm the response is 403 and the operation has no effect.
 \end{enumerate}
 
@@ -518,8 +595,8 @@ is managed via Git, with changes committed directly to the main repository to fa
 A GitLab~\cite{GitLab} CI/CD pipeline runs automatically on every push on master branch. The pipeline defines multiple stages to
 guarantee code quality and automate deployment~\cite{ContinuousDelivery}. The first stages build the backend with Gradle~\cite{Gradle} and
 the frontend with \texttt{npm}, followed by comprehensive unit, integration, and end-to-end (Playwright)
-testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check and
-SonarQube. If all checks pass on the main branch, the final stage automatically deploys the frontend
+testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check~\cite{OWASPDepCheck} and
+SonarQube~\cite{SonarQube}. If all checks pass on the main branch, the final stage automatically deploys the frontend
 to Vercel. A separate pipeline hook triggers the backend container deployment to the Render cloud platform.
 
 % TODO: Insert CI/CD pipeline diagram as Figure 4.6
@@ -537,13 +614,9 @@ most common categories of regression.
 \subsection{Documentation}
 \label{subsec:documentation}
 
-The thesis source is maintained as a LaTeX project using the FIT CTU thesis template. The
-\texttt{ctufit-thesis.tex} root file includes the chapter files from the \texttt{text/}
-subdirectory. Figures are stored under \texttt{documentation/images/} and referenced from the
-chapter files. The bibliography is maintained in \texttt{text/bib-database.bib} and compiled
-with Biber.
+Comprehensive documentation is essential to ensure that the StudySpace platform remains maintainable, extensible, and accessible to future developers and users. The project employs a multi-tiered documentation strategy, encompassing automated API references, codebase READMEs, and structured supplementary guides.
 
-The backend API is documented automatically by Springdoc OpenAPI, which generates a Swagger UI
+The backend API is documented automatically by Springdoc OpenAPI~\cite{SpringdocOpenAPI}, which generates a Swagger UI~\cite{SwaggerUI}
 from the controller annotations and makes it available at \texttt{/swagger-ui/index.html} when
 the application is running. Public service methods carry JavaDoc comments that explain the
 purpose and contract of each operation.

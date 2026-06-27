@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface WorkspaceMaterialRepository extends JpaRepository<WorkspaceMaterial, Long> {
+    boolean existsByFileUrl(String fileUrl);
 }

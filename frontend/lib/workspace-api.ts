@@ -35,7 +35,7 @@ export const workspacesApi = {
 	): Promise<PaginatedResponse<StudentWorkspace>> => api.get(`/workspaces/public?page=${page}&size=${size}`),
 
 	/** Get workspace detail */
-	getById: (id: number): Promise<StudentWorkspace> => api.get(`/workspaces/${id}`),
+	getById: (id: number, userId: number): Promise<StudentWorkspace> => api.get(`/workspaces/${id}?userId=${userId}`),
 
 	/** Create a workspace */
 	create: (userId: number, data: CreateWorkspaceRequest): Promise<StudentWorkspace> =>
@@ -56,12 +56,13 @@ export const workspacesApi = {
 
 	getSpaces: (
 		workspaceId: number,
+		userId: number,
 		page: number = 0,
 		size: number = DEFAULT_PAGE_SIZE,
 		search?: string,
 	): Promise<PaginatedResponse<WorkspaceSpace>> =>
 		api.get(
-			`/workspaces/${workspaceId}/spaces?page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
+			`/workspaces/${workspaceId}/spaces?userId=${userId}&page=${page}&size=${size}${search ? `&search=${encodeURIComponent(search)}` : ""}`,
 		),
 
 	createSpace: (workspaceId: number, userId: number, data: CreateSpaceRequest): Promise<WorkspaceSpace> =>

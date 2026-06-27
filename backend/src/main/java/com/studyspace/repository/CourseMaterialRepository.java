@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CourseMaterialRepository extends JpaRepository<CourseMaterial, Long> {
+    boolean existsByFileUrl(String fileUrl);
 }

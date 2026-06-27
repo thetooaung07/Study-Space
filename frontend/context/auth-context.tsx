@@ -46,7 +46,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
 				setUser(fetchedUser);
 
 				if (fetchedUser.role === UserRole.INSTRUCTOR) {
-					const restrictedRoutes = ["/dashboard", "/sessions", "/groups"];
+					const restrictedRoutes = ["/dashboard", "/sessions", "/groups", "/workspaces"];
 					if (restrictedRoutes.some((route) => pathname.startsWith(route)) || pathname === "/") {
 						router.push("/courses");
 					}

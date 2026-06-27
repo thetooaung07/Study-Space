@@ -31,6 +31,7 @@ class WorkspaceServiceTest {
     @Mock private FileStorageService fileStorageService;
     @Mock private ContributionProposalRepository proposalRepository;
     @Mock private SpaceGuestRepository guestRepository;
+    @Mock private CourseMaterialRepository courseMaterialRepository;
 
     @InjectMocks
     private WorkspaceService workspaceService;
@@ -432,9 +433,15 @@ class WorkspaceServiceTest {
     @Test
     void getWorkspaceById_Success() {
         when(workspaceRepository.findById(10L)).thenReturn(Optional.of(workspace));
-        StudentWorkspaceDTO result = workspaceService.getWorkspaceById(10L);
+        StudentWorkspaceDTO result = workspaceService.getWorkspaceById(10L, 1L);
         assertNotNull(result);
         assertEquals("My Workspace", result.getName());
+    }
+
+    @Test
+    void getWorkspaceById_Forbidden_ThrowsException() {
+        when(workspaceRepository.findById(10L)).thenReturn(Optional.of(workspace));
+        assertThrows(IllegalStateException.class, () -> workspaceService.getWorkspaceById(10L, 2L));
     }
 
     // ─── Missing Space Tests ────────────────────────────────────────────────────
@@ -442,12 +449,19 @@ class WorkspaceServiceTest {
     @Test
     void getSpacesByWorkspace_ReturnsList() {
         space.setWorkspace(workspace);
+        when(workspaceRepository.findById(10L)).thenReturn(Optional.of(workspace));
         when(spaceRepository.findByWorkspaceIdWithSearch(eq(10L), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(space)));
         
-        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L, null, org.springframework.data.domain.PageRequest.of(0, 10));
+        org.springframework.data.domain.Page<WorkspaceSpaceDTO> result = workspaceService.getSpacesByWorkspace(10L, 1L, null, org.springframework.data.domain.PageRequest.of(0, 10));
         assertEquals(1, result.getContent().size());
         assertEquals("DS Space", result.getContent().get(0).getTitle());
+    }
+
+    @Test
+    void getSpacesByWorkspace_Forbidden_ThrowsException() {
+        when(workspaceRepository.findById(10L)).thenReturn(Optional.of(workspace));
+        assertThrows(IllegalStateException.class, () -> workspaceService.getSpacesByWorkspace(10L, 2L, null, org.springframework.data.domain.PageRequest.of(0, 10)));
     }
 
     @Test

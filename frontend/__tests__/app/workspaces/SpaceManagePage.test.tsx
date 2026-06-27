@@ -6,15 +6,24 @@ import { useAuth } from '@/context/auth-context';
 import React from 'react';
 
 // Mock Next.js hooks
+const mockRouter = { push: vi.fn() };
+const mockParams = { id: '1', spaceId: '2' };
 vi.mock('next/navigation', () => ({
-	useParams: () => ({ id: '1', spaceId: '2' }),
-	useRouter: () => ({ push: vi.fn() }),
+	useParams: () => mockParams,
+	useRouter: () => mockRouter,
 	usePathname: () => '/workspaces/1/spaces/2'
 }));
 
 // Mock Auth context
 vi.mock('@/context/auth-context', () => ({
 	useAuth: vi.fn()
+}));
+
+// Mock useSpaceSocket hook to prevent real websocket connections
+vi.mock('@/hooks/useSpaceSocket', () => ({
+	useSpaceSocket: vi.fn(() => ({
+		sendMessage: vi.fn()
+	}))
 }));
 
 // Mock API

@@ -5,8 +5,9 @@ Based on the requirements and gaps identified in Chapter 2, the following design
 
 This chapter translates the requirements and architecture analysis established in
 Chapter~\ref{ch:analysis} into a concrete technical design. The domain model defines the
-entities and their relationships. The system and logical architecture outlines the overarching
-application structure, while the database schema and entity-relationship diagram document the
+entities and their relationships. The architectural design outlines the overarching
+application structure, followed by specific design decisions for file storage and the integration
+of large language models (LLM). The database schema documents the
 persistent data model. Finally, the API design and user interface design detail how the system
 will be accessed and experienced by its users.
 
@@ -14,7 +15,7 @@ will be accessed and experienced by its users.
 \section{Domain Model}
 \label{sec:domain-model}
 
-The domain model consists of the entities that carry the application's persistent state. To ensure clarity, the complete model is divided into four functional subsystems corresponding to the core features described in Chapter~\ref{ch:analysis}. Each subsystem and its entities are described below. Additionally, the complete machine-readable domain model schema is provided in the enclosed electronic media as an attached resource.
+The domain model consists of the entities that carry the application's persistent state. To ensure clarity, the complete model is divided into four functional subsystems corresponding to the core features described in Chapter~\ref{ch:analysis}. Each subsystem and its entities are described below. The domain model diagrams in this section were produced using DrawDB, a browser-based entity-relationship diagram editor. Additionally, the complete domain model schema is provided in the enclosed electronic media as an attached resource.
 
 \subsection{User Management and Access Control}
 \label{subsec:domain-user}
@@ -149,24 +150,15 @@ PostgreSQL database that stores all persistent data.
 
 For local development, all three tiers can be orchestrated using \texttt{docker-\allowbreak compose.yml}
 to run in the same virtual network. For production deployment, the architecture is decoupled: the frontend
-is deployed to a dedicated hosting platform (e.g., Vercel), the backend runs as a containerised
-service on a cloud platform (e.g., Render), and file storage is handled by an S3-compatible service
-(e.g., Tigris). This decoupling ensures independent scalability and simplifies deployment pipelines.
+is deployed to a dedicated hosting platform (e.g., Vercel~\cite{Vercel}), the backend runs as a containerised
+service on a cloud platform (e.g., Render~\cite{Render}), and file storage is handled by an S3-compatible service
+(e.g., Tigris~\cite{Tigris}). This decoupling ensures independent scalability and simplifies deployment pipelines.
 
-% TODO: Insert final architecture diagram as Figure 3.3
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_3_3_system-architecture-final.png}
-%     \caption{Final system architecture of StudySpace}
-%     \label{fig:system-architecture-final}
-% \end{figure}
-
-% ----------------------------------------------------------------
 
 \subsection{Logical Architecture}
 \label{subsec:logical-architecture}
 
-The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The
+The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The package and sequence diagrams in this chapter were generated using PlantUML, a plain-text markup tool for UML diagram generation. The
 \emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
 the response. The \emph{service layer} contains all business logic, orchestrates data access, and
 enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
@@ -241,8 +233,8 @@ and requires no external service, making it highly efficient for local developme
 unsuitable for production because files are lost when a PaaS container is recreated, and the
 storage cannot be shared across multiple server instances for horizontal scaling.
 
-\textbf{Distributed Object Storage (Tigris)} provides high durability, direct URL serving, and
-persistent scaling. Tigris offers an Amazon S3-compatible API, allowing the use of the standard
+\textbf{Distributed Object Storage (Tigris~\cite{Tigris})} provides high durability, direct URL serving, and
+persistent scaling. Tigris offers an Amazon S3-compatible API~\cite{AmazonS3}, allowing the use of the standard
 AWS SDK v2. This guarantees that uploaded files persist safely independent of the application container's
 lifecycle.
 
@@ -296,13 +288,6 @@ the system uses the \texttt{document\_chunks} table. This table leverages the
 segments, enabling fast semantic similarity search during the retrieval-augmented generation
 process.
 
-% TODO: Insert ERD as Figure 3.2
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{images/fig_3_2_er-diagram.png}
-%     \caption{Entity-relationship diagram of the StudySpace database schema}
-%     \label{fig:er-diagram}
-% \end{figure}
 
 % ----------------------------------------------------------------
 \section{API Design}
@@ -319,7 +304,7 @@ token. The client stores the token in memory and includes it in the \texttt{Auth
 header of all subsequent requests. The server's \texttt{JwtAuthenticationFilter} validates the
 token on each request before passing control to the controller.
 
-The full API is documented through the Swagger UI available at \texttt{/swagger\allowbreak -ui/\allowbreak index.html}
+The full API is documented through the Swagger UI~\cite{SwaggerUI} available at \texttt{/swagger\allowbreak -ui/\allowbreak index.html}
 when the backend is running, auto-generated by Springdoc OpenAPI from controller annotations.
 
 % ----------------------------------------------------------------
@@ -330,6 +315,8 @@ The design process began with wireframes to establish the core user flows and la
 
 \subsection{Initial Wireframes}
 \label{subsec:initial-wireframes}
+
+The wireframes were produced using Figma, a browser-based collaborative interface design tool.
 
 \begin{figure}[!ht]
     \centering

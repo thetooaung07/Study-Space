@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
 	Plus,
 	Loader2,
@@ -75,6 +75,7 @@ const removeMaterialFromSpace = (space: WorkspaceSpace, sectionId: number, mater
 
 export default function SpaceManagePage() {
 	const { id: workspaceId, spaceId } = useParams<{ id: string; spaceId: string }>();
+	const router = useRouter();
 	const { user } = useAuth();
 	const [space, setSpace] = useState<WorkspaceSpace | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -131,11 +132,12 @@ export default function SpaceManagePage() {
 				new Set(idsWithMaterials.length > 0 ? idsWithMaterials : [s.sections[0]?.id].filter(Boolean)),
 			);
 		} catch (e: any) {
-			alert(e.message);
+			toast.error(e.message || "You do not have access to this space.");
+			router.push("/workspaces");
 		} finally {
 			setLoading(false);
 		}
-	}, [spaceId, user]);
+	}, [spaceId, user, router]);
 
 	const handleRemoveGuest = async () => {
 		if (!space || !user || removeGuestId === null) return;

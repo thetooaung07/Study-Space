@@ -53,8 +53,10 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StudentWorkspaceDTO> getWorkspace(@PathVariable Long id) {
-        return ResponseEntity.ok(workspaceService.getWorkspaceById(id));
+    public ResponseEntity<StudentWorkspaceDTO> getWorkspace(
+            @PathVariable Long id,
+            @RequestParam Long userId) {
+        return ResponseEntity.ok(workspaceService.getWorkspaceById(id, userId));
     }
 
     @PutMapping("/{id}")
@@ -87,10 +89,11 @@ public class WorkspaceController {
     @GetMapping("/{id}/spaces")
     public ResponseEntity<Page<WorkspaceSpaceDTO>> getSpaces(
             @PathVariable Long id,
+            @RequestParam Long userId,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(workspaceService.getSpacesByWorkspace(id, search, PageRequest.of(page, size)));
+        return ResponseEntity.ok(workspaceService.getSpacesByWorkspace(id, userId, search, PageRequest.of(page, size)));
     }
 
     @PostMapping("/{id}/spaces/fork")

@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { workspacesApi } from "@/lib/workspace-api";
 import { WORKSPACE_SPACES_PAGE_SIZE } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
@@ -78,10 +79,15 @@ export default function WorkspaceDetailPage() {
 	const refreshWorkspace = async () => {
 		if (!user) return;
 		try {
-			const ws = await workspacesApi.getById(Number(id));
+			const ws = await workspacesApi.getById(Number(id), user.id);
+			if (ws.ownerId !== user.id) {
+				router.push("/workspaces");
+				return;
+			}
 			setWorkspace(ws);
 		} catch (e: any) {
 			console.error("Refresh workspace failed", e);
+			router.push("/workspaces");
 		} finally {
 			setLoading(false);
 		}
@@ -94,6 +100,7 @@ export default function WorkspaceDetailPage() {
 		try {
 			const res = await workspacesApi.getSpaces(
 				Number(id),
+				user.id,
 				spacesPage,
 				WORKSPACE_SPACES_PAGE_SIZE,
 				searchQuery || undefined,
@@ -152,14 +159,18 @@ export default function WorkspaceDetailPage() {
 		}
 	};
 
-	const handleDeleteSpace = async (spaceId: number) => {
-		if (!user || !confirm("Delete this space and all its contents?")) return;
+	const [deleteSpaceTarget, setDeleteSpaceTarget] = useState<number | null>(null);
+
+	const executeDeleteSpace = async () => {
+		if (!user || !deleteSpaceTarget) return;
 		try {
-			await workspacesApi.deleteSpace(spaceId, user.id);
-			setSpaces((prev) => prev.filter((s) => s.id !== spaceId));
+			await workspacesApi.deleteSpace(deleteSpaceTarget, user.id);
+			setSpaces((prev) => prev.filter((s) => s.id !== deleteSpaceTarget));
 			setWorkspace((prev) => (prev ? { ...prev, spaceCount: Math.max(0, prev.spaceCount - 1) } : prev));
 		} catch (e: any) {
 			alert(e.message);
+		} finally {
+			setDeleteSpaceTarget(null);
 		}
 	};
 
@@ -342,8 +353,8 @@ export default function WorkspaceDetailPage() {
 															Edit
 														</DropdownMenuItem>
 														<DropdownMenuItem
-															className="text-destructive"
-															onClick={() => handleDeleteSpace(space.id)}
+															className="text-destructive focus:text-destructive"
+															onClick={() => setDeleteSpaceTarget(space.id)}
 														>
 															<Trash2 className="mr-2 h-4 w-4" />
 															Delete
@@ -416,6 +427,15 @@ export default function WorkspaceDetailPage() {
 					</div>
 				</DialogContent>
 			</Dialog>
+		<ConfirmDialog
+				open={deleteSpaceTarget !== null}
+				onOpenChange={(open) => !open && setDeleteSpaceTarget(null)}
+				title="Delete Space"
+				description="Are you sure you want to permanently delete this space and all its contents? This action cannot be undone."
+				confirmText="Delete"
+				variant="destructive"
+				onConfirm={executeDeleteSpace}
+			/>
 		</div>
 	);
 }

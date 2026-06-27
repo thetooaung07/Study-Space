@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sidebar } from "@/components/common/sidebar";
 import { Header } from "@/components/common/header";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { SectionManager } from "@/components/courses/section-manager";
 import { EnrollmentTable } from "@/components/courses/enrollment-table";
 import { ContributionReview } from "@/components/courses/contribution-review";
@@ -16,6 +17,7 @@ import { contributionsApi } from "@/lib/workspace-api";
 import { useAuth } from "@/context/auth-context";
 import type { Course, CourseEnrollment } from "@/types/courses";
 import type { ContributionProposal } from "@/types/workspaces";
+import { UserRole } from "@/types";
 import Link from "next/link";
 
 export default function CourseManagePage() {
@@ -39,19 +41,30 @@ export default function CourseManagePage() {
 
 	useEffect(() => {
 		if (!user) return;
+		if (user.role !== UserRole.INSTRUCTOR) {
+			router.push("/courses");
+			return;
+		}
 		Promise.all([
 			coursesApi.getById(Number(id)),
 			coursesApi.getEnrollments(Number(id), user.id).catch(() => []),
 			contributionsApi.getForCourse(Number(id), user.id).catch(() => []),
 		])
 			.then(([c, e, p]) => {
+				if (c.instructorId !== user.id) {
+					router.push("/courses");
+					return;
+				}
 				console.log(p);
 				setCourse(c);
 				setEnrollments(e);
 				setProposals(p);
 			})
+			.catch(() => {
+				router.push("/courses");
+			})
 			.finally(() => setLoading(false));
-	}, [id, user]);
+	}, [id, user, router]);
 
 	const handleTogglePublish = async () => {
 		if (!course || !user) return;
@@ -66,8 +79,10 @@ export default function CourseManagePage() {
 		}
 	};
 
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
 	const handleDelete = async () => {
-		if (!course || !user || !confirm("Permanently delete this course?")) return;
+		if (!course || !user) return;
 		try {
 			await coursesApi.delete(course.id, user.id);
 			router.push("/courses");
@@ -89,7 +104,7 @@ export default function CourseManagePage() {
 			</div>
 		);
 
-	if (!course || !user) return null;
+	if (!course || !user || user.role !== UserRole.INSTRUCTOR || course.instructorId !== user.id) return null;
 
 	return (
 		<div className="flex h-screen bg-background">
@@ -134,9 +149,9 @@ export default function CourseManagePage() {
 									)}
 									{course.isPublished ? "Unpublish" : "Publish"}
 								</Button>
-								<Button variant="destructive" size="sm" onClick={handleDelete}>
-									<Trash2 className="mr-1.5 h-4 w-4" />
-									Delete
+								<Button variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>
+									<Trash2 className="h-4 w-4 mr-2" />
+									Delete Course
 								</Button>
 							</div>
 						</div>
@@ -205,6 +220,15 @@ export default function CourseManagePage() {
 					</div>
 				</main>
 			</div>
+			<ConfirmDialog
+				open={showDeleteConfirm}
+				onOpenChange={setShowDeleteConfirm}
+				title="Delete Course"
+				description="Are you sure you want to permanently delete this course and all its contents? This action cannot be undone."
+				confirmText="Delete"
+				variant="destructive"
+				onConfirm={handleDelete}
+			/>
 		</div>
 	);
 }

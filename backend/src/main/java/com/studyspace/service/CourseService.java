@@ -31,6 +31,7 @@ public class CourseService {
     private final ContributionProposalRepository proposalRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final com.studyspace.repository.WorkspaceMaterialRepository workspaceMaterialRepository;
 
     // ─── Course CRUD ────────────────────────────────────────────────────────────
 
@@ -147,8 +148,16 @@ public class CourseService {
         CourseMaterial material = materialRepository.findById(materialId)
                 .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
         assertInstructor(material.getSection().getCourse(), requestingUserId);
-        fileStorageService.delete(material.getFileUrl());
+
+        String fileUrl = material.getFileUrl();
         materialRepository.delete(material);
+        
+        // Reference Counting for copy-on-write
+        boolean hasWorkspaceRefs = workspaceMaterialRepository.existsByFileUrl(fileUrl);
+        boolean hasCourseRefs = materialRepository.existsByFileUrl(fileUrl);
+        if (!hasWorkspaceRefs && !hasCourseRefs) {
+            fileStorageService.delete(fileUrl);
+        }
     }
 
     // ─── Enrollment ──────────────────────────────────────────────────────────────
