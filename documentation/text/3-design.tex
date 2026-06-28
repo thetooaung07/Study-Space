@@ -15,22 +15,21 @@ will be accessed and experienced by its users.
 \section{Domain Model}
 \label{sec:domain-model}
 
-The domain model consists of the entities that carry the application's persistent state. To ensure clarity, the complete model is divided into four functional subsystems corresponding to the core features described in Chapter~\ref{ch:analysis}. Each subsystem and its entities are described below. The domain model diagrams in this section were produced using DrawDB, a browser-based entity-relationship diagram editor. Additionally, the complete domain model schema is provided in the enclosed electronic media as an attached resource.
+The domain model consists of the entities that carry the application's persistent state. To ensure clarity, the complete model is divided into four functional subsystems corresponding to the core features described in Chapter~\ref{ch:analysis}. Each subsystem and its entities are described below. The domain model diagrams in this section were produced using DrawDB~\cite{DrawDB}, a browser-based entity-relationship diagram editor. Additionally, a bird's-eye view of all entity relationships is presented in the complete domain model diagram in Appendix~\ref{ch:appendix}, and the schema is provided in the enclosed electronic media as an attached resource.
 
 \subsection{User Management and Access Control}
 \label{subsec:domain-user}
 
 \textbf{User} is the central actor entity. It stores the account credentials (username, email,
 and bcrypt-hashed password), the display name, a profile picture URL, and a role field that
-takes one of two values: \texttt{STUDENT} or \texttt{INSTRUCTOR}. The entity also tracks a
-cumulative study-time counter and a current-streak counter that are updated by the gamification
-subsystem. A user can create many \texttt{Course} records (as an Instructor), own many
+takes one of two values: \texttt{STUDENT} or \texttt{INSTRUCTOR}. The entity also includes
+fields for a cumulative study-time counter and a current-streak counter to support future
+gamification features. A user can create many \texttt{Course} records (as an Instructor), own many
 \texttt{StudentWorkspace} records (as a Student), and participate in many \texttt{StudySession}
 records through the \texttt{SessionParticipant} junction entity.
 
-\textbf{Activity} represents an event logged by the gamification subsystem, such as completing a
-study session. It carries a type, an optional text message, a timestamp, and a reference to the
-owning user, optionally linked to a specific study session.
+\textbf{Activity} is designed to represent study-related events, carrying a type, an optional text
+message, a timestamp, and a reference to the owning user, optionally linked to a specific study session.
 
 \begin{figure}[htbp]
     \centering
@@ -148,7 +147,7 @@ sessions. The \emph{business logic layer} is a Spring Boot application that hand
 data access, real-time session broadcasting, and LLM API calls. The \emph{data layer} is a
 PostgreSQL database that stores all persistent data.
 
-For local development, all three tiers can be orchestrated using \texttt{docker-\allowbreak compose.yml}
+For local development, all three tiers can be orchestrated using \texttt{docker-\allowbreak compose.yml}~\cite{DockerCompose}
 to run in the same virtual network. For production deployment, the architecture is decoupled: the frontend
 is deployed to a dedicated hosting platform (e.g., Vercel~\cite{Vercel}), the backend runs as a containerised
 service on a cloud platform (e.g., Render~\cite{Render}), and file storage is handled by an S3-compatible service
@@ -158,14 +157,7 @@ service on a cloud platform (e.g., Render~\cite{Render}), and file storage is ha
 \subsection{Logical Architecture}
 \label{subsec:logical-architecture}
 
-The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The package and sequence diagrams in this chapter were generated using PlantUML, a plain-text markup tool for UML diagram generation. The
-\emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises
-the response. The \emph{service layer} contains all business logic, orchestrates data access, and
-enforces domain rules such as ownership checks and status transitions. The \emph{repository layer}
-provides data access through named query methods and custom queries for complex lookups. Entity
-classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API
-contract and decouple the internal entity structure from the shape of the JSON responses, so the
-two can evolve independently.
+The server-side application follows the Model-View-Controller (MVC) layered pattern~\cite{FowlerEAA,RichardsSAP}. The domain model diagrams in this chapter were generated using PlantUML, a plain-text markup tool for UML diagram generation. The \emph{controller layer} receives HTTP requests, delegates to the appropriate service, and serialises the response. The \emph{service layer} contains all business logic, orchestrates data access, and enforces domain rules such as ownership checks and status transitions. The \emph{repository layer} provides data access through named query methods and custom queries for complex lookups. Entity classes map the relational schema to Java objects. Data Transfer Objects (DTOs) define the API contract and decouple the internal entity structure from the shape of the JSON responses, so the two can evolve independently.
 
 The backend is organised into the following packages, each with a single responsibility and
 dependencies flowing only from controller to service to repository:
@@ -194,30 +186,30 @@ dependencies flowing only from controller to service to repository:
         \texttt{dto} & Data Transfer Objects used as the API contract, decoupling the
                       API response shape from the internal entity structure. \\
         \hline
+        \texttt{mapper} & Stateless mapper classes that convert between entity and DTO
+                         representations. \\
+        \hline
         \texttt{security} & JWT filter, \texttt{UserDetailsService} implementation, and
                            Spring Security configuration. \\
         \hline
         \texttt{config} & Application-level configuration beans: CORS policy, Swagger
                          setup, and WebSocket registration. \\
         \hline
+        \texttt{exception} & Custom exception classes and a global
+                            \texttt{@ControllerAdvice} handler that maps them to
+                            appropriate HTTP error responses. \\
+        \hline
+        \texttt{types} & Shared enumerations used across multiple layers, such as
+                        \texttt{UserRole}, \texttt{ProposalStatus}, and
+                        \texttt{MaterialType}. \\
+        \hline
+        \texttt{util} & Stateless utility helpers, such as date and time formatting
+                       utilities. \\
+        \hline
     \end{tabularx}
 \end{table}
 
-\begin{figure}[!ht]
-    \centering
-    \includegraphics[width=0.85\textwidth]{images/uml_diagrams/logical_backend.png}
-    \caption{Logical package architecture of the StudySpace backend}
-    \label{fig:logical-backend}
-\end{figure}
-
-Similarly, the frontend follows a layered component architecture, separating presentation (UI components and pages) from business logic (hooks and contexts) and utilities (types and API integrations). 
-
-\begin{figure}[!ht]
-    \centering
-    \includegraphics[width=0.85\textwidth]{images/uml_diagrams/logical_frontend.png}
-    \caption{Logical package architecture of the StudySpace frontend}
-    \label{fig:logical-frontend}
-\end{figure}
+The frontend follows an equivalent layered approach, separating presentation (UI components and pages) from business logic (hooks and contexts) and data access utilities (types and API integrations).
 
 \clearpage
 % ----------------------------------------------------------------
@@ -308,132 +300,28 @@ The full API is documented through the Swagger UI~\cite{SwaggerUI} available at 
 when the backend is running, auto-generated by Springdoc OpenAPI from controller annotations.
 
 % ----------------------------------------------------------------
-\section{Wireframes and UI}
+\section{User Interface Design and Wireframes}
 \label{sec:ui-design}
 
-The design process began with wireframes to establish the core user flows and layout structure before advancing to the high-fidelity implementation. These initial designs focused on the most critical interactions: querying the AI, submitting a merge proposal, and reviewing contributions.
+The design process began by producing low-fidelity wireframes to establish the basic structural layouts and core user flows before initiating frontend development. These initial wireframes represent rough draft layouts, using simple crossed boxes to outline visual element placeholders and minimal outlines to define interface boundaries. The design focused on the most critical interactions of the application: querying the AI assistant (shown in Figure~\ref{fig:wireframe-ai}), submitting a merge proposal (illustrated in Figure~\ref{fig:wireframe-merge-proposal}), and reviewing contribution proposals (depicted in Figure~\ref{fig:wireframe-review}). The wireframes were designed in Figma, a browser-based collaborative interface design tool.
 
-\subsection{Initial Wireframes}
-\label{subsec:initial-wireframes}
-
-The wireframes were produced using Figma, a browser-based collaborative interface design tool.
-
-\begin{figure}[!ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{images/wireframes/ai_assistant_chat_student_view.png}
-    \caption{Wireframe: AI assistant conversational interface}
+    \caption{Low-fidelity wireframe: AI assistant conversational interface}
     \label{fig:wireframe-ai}
 \end{figure}
 
-\begin{figure}[!ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{images/wireframes/merge_proporsal_student_view.png}
-    \caption{Wireframe: Student merge proposal submission}
+    \caption{Low-fidelity wireframe: Student merge proposal submission}
     \label{fig:wireframe-merge-proposal}
 \end{figure}
 
-\begin{figure}[!ht]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{images/wireframes/contribution_preview_instructor_view.png}
-    \caption{Wireframe: Instructor contribution review interface}
+    \caption{Low-fidelity wireframe: Instructor contribution review interface}
     \label{fig:wireframe-review}
 \end{figure}
-
-\clearpage
-
-\subsection{Implemented User Interface}
-\label{subsec:implemented-ui}
-
-Following the structural guidelines established by the wireframes, the final user interface was developed. The interface is role-aware: students and Instructors see different navigation options and action buttons depending on their role. The application uses a sidebar navigation layout with the main content area to the right.
-
-\subsection{Navigation and Layout}
-\label{subsec:navigation}
-
-The sidebar items differ by role. Students see links to their enrolled courses and their Private
-Workspaces. Instructors additionally see course management, enrollment
-management, and Merge Proposal review links. The role check is performed client-side from the
-JWT payload, but all data-sensitive actions are re-validated server-side.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/ui/student_dashboard_view.png}
-    \caption{Student dashboard: The primary entry point featuring recent activities and quick navigation}
-    \label{fig:student-dashboard}
-\end{figure}
-
-\subsection{Course and Workspace Views}
-\label{subsec:course-workspace-views}
-
-The course list page shows all courses the user is enrolled in or manages. 
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/ui/instructor_courses_view.png}
-    \caption{Instructor courses view: Managing active course structures and enrollments}
-    \label{fig:instructor-courses}
-\end{figure}
-
-Selecting a workspace
-opens the workspace viewer, which renders the Course Material alongside a contextual chat panel.
-Students can use the chat panel to discuss the course content and attach a Contextual Anchor to
-a specific Course Material using the \texttt{@}-mention system.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/ui/student_workspace_view.png}
-    \caption{Workspace viewer: Course Material list with contextual chat panel}
-    \label{fig:workspace-view}
-\end{figure}
-
-The workspace viewer places the material list on the left and the contextual chat panel on the
-right. This layout satisfies the FR-03 use case \texttt{Post contextual message} by keeping the
-source material and the discussion visible simultaneously. The panel is resizable so students can
-balance reading space against chat space according to their preference.
-
-\subsection{Private Workspace and Merge Proposal Views}
-\label{subsec:clone-workspace}
-
-When a student clones a course, they receive a Private Workspace that they can edit freely. The
-cloned workspace view mirrors the course structure and adds upload controls for new materials.
-The Merge Proposal submission dialog allows the student to select materials and choose a target
-section, optionally typing a proposed new section name if none of the existing sections is
-appropriate.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\textwidth]{images/ui/student_merge_proposal_view.png}
-    \caption{Merge Proposal submission dialog}
-    \label{fig:merge-proposal}
-\end{figure}
-
-The Merge Proposal dialog reflects the FR-02 use case \texttt{Submit Merge Proposal}: the student
-selects one or more materials, picks a target section or proposes a new one, and submits.
-The design keeps the form minimal to reduce friction and mirrors the Git-inspired workflow that
-technically experienced students will recognise. Once submitted, the proposal enters the instructor review workflow. As illustrated in figure~\ref{fig:instructor-review}, the review interface allows the Instructor to evaluate the submitted materials and decide whether to integrate them into the official Course Material.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\textwidth]{images/ui/instructor_review_contribution_view.png}
-    \caption{Instructor review view: Evaluating a student's merge proposal}
-    \label{fig:instructor-review}
-\end{figure}
-
-\subsection{AI Assistant Panel}
-\label{subsec:ai-panel}
-
-The AI assistant is accessible through a collapsible side panel within the workspace viewer. The
-student types a question in natural language, and the system sends the question together with
-the content of the currently open Course Material to the LLM API. The response is displayed in
-a conversational format with a typewriter animation. The panel is designed not to obscure the
-Course Material so the student can consult both simultaneously.
-
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\textwidth]{images/ui/student_contextual_chat_ai_view.png}
-    \caption{AI assistant panel: Conversational interface for querying course materials}
-    \label{fig:ai-panel}
-\end{figure}
-
-The collapsible design satisfies FR-04 by making the AI assistant available at any point during
-material review without forcing the student to navigate to a separate page, preserving the reading
-context while the answer is displayed.

@@ -19,18 +19,17 @@ business logic so that the development environment (local disk) and the producti
 (Amazon S3-compatible cloud storage~\cite{AmazonS3}) can be swapped by changing a Spring profile, without any changes to the
 service layer.
 
-% TODO: Insert screenshot Figure 4.1
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_4_1_course-admin.png}
-%     \caption{Instructor course management page: section list with upload controls}
-%     \label{fig:course-admin}
-% \end{figure}
-
-The course management page presents the Instructor with a list of sections and a file upload
+The course management interface is shown in Figure~\ref{fig:course-admin}. The page presents the Instructor with a list of sections and a file upload
 button per section. Selecting a file triggers a multipart form data request to the
 backend; the Instructor does not see storage paths or file types, which are resolved automatically
 by the backend.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/instructor_courses_view.png}
+    \caption{Instructor course management page: section list with upload controls}
+    \label{fig:course-admin}
+\end{figure}
 
 The \texttt{Course\allowbreak Service} delegates all file operations to the \texttt{File\allowbreak Storage\allowbreak Service}
 interface. When \texttt{upload\allowbreak Material} is called, the service stores the file, infers the
@@ -39,6 +38,8 @@ interface. When \texttt{upload\allowbreak Material} is called, the service store
 only the course owner can modify sections or materials; any other authenticated user receives an
 HTTP~403 response. The listing below shows the upload method, which encapsulates this flow in
 under twenty lines.
+
+\newpage
 
 \begin{lstlisting}[language=Java, caption={Code listing 4.1 --- Course material upload with storage abstraction (CourseService.java)}, label=lst:course-upload]
 public CourseMaterialDTO uploadMaterial(Long sectionId, Long requestingUserId,
@@ -75,18 +76,24 @@ The key technical challenges are the copy-on-write cloning strategy (avoiding re
 copies for shared base materials) and the referential-integrity constraint that prevents hard
 deletion of materials that are still referenced by pending proposals.
 
-% TODO: Insert screenshot Figure 4.2
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_4_2_content-extension.png}
-%     \caption{Student Private Workspace view with Merge Proposal submission dialog}
-%     \label{fig:content-extension}
-% \end{figure}
-
-The workspace view shows the student a mirror of the course structure. An upload button per
+The student Private Workspace interface and its Merge Proposal submission dialog are shown in Figure~\ref{fig:content-extension}. Once the student submits a proposal, the Instructor can review it through the interface illustrated in Figure~\ref{fig:instructor-review}. The workspace view shows the student a mirror of the course structure. An upload button per
 section allows the student to add new materials. The Merge Proposal dialog appears when the
 student selects one or more materials and clicks the contribute button; the student picks a
 target section (or names a new one) and submits.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_merge_proposal_view.png}
+    \caption{Student Merge Proposal View: Submission dialog from the Private Workspace}
+    \label{fig:content-extension}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/ui/instructor_review_contribution_view.png}
+    \caption{Instructor Review View: Evaluating a student's Merge Proposal}
+    \label{fig:instructor-review}
+\end{figure}
 
 When \texttt{fork\allowbreak Course} is called on \texttt{Workspace\allowbreak Service}, the backend iterates over all
 sections and Course Materials of the source course and creates \texttt{Workspace\allowbreak Section} and
@@ -101,7 +108,6 @@ referential integrity. Furthermore, to prevent the deletion of a physical file t
 public void deleteMaterial(Long materialId, Long userId) {
     WorkspaceMaterial material = materialRepository.findById(materialId)
             .orElseThrow(() -> new RuntimeException("Material not found: " + materialId));
-
     // Authorisation checks omitted for brevity
     
     boolean hasProposal = proposalRepository.existsBySourceMaterialId(materialId);
@@ -149,17 +155,16 @@ can open the material from within the message. The technical challenge is embedd
 interactive chip into a plain-text-like input field so that the anchor is preserved through
 submission, serialisation, and re-render.
 
-% TODO: Insert screenshot Figure 4.3
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_4_3_contextual-chat.png}
-%     \caption{Workspace chat panel: message with Contextual Anchor chip and autocomplete dropdown}
-%     \label{fig:contextual-chat}
-% \end{figure}
-
-The chat panel is shown after a student typed \texttt{@lecture} and the autocomplete dropdown
+The workspace viewer and its integrated contextual chat panel are shown in Figure~\ref{fig:contextual-chat}. The chat panel is shown after a student typed \texttt{@lecture} and the autocomplete dropdown
 appeared. After selecting a Course Material, a styled chip replaces the \texttt{@}-query in the
 input. The submitted message is rendered with a clickable badge that opens the file.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_workspace_view.png}
+    \caption{Workspace viewer: Course Material list with contextual chat panel}
+    \label{fig:contextual-chat}
+\end{figure}
 
 The message input uses a \texttt{<div content\allowbreak Editable>} element rather than a
 \texttt{<textarea>} because \texttt{<textarea>} can only hold plain text, whereas a
@@ -246,17 +251,16 @@ The technical challenges are normalising three distinct document URL formats int
 stream, constructing a structured prompt that keeps the model grounded in the document, and
 handling API rate limits gracefully so the student always receives a useful response.
 
-% TODO: Insert screenshot Figure 4.4
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/fig_4_4_ai-assistant.png}
-%     \caption{AI assistant panel: student question with grounded answer and typing animation}
-%     \label{fig:ai-assistant}
-% \end{figure}
-
-The AI panel shows the student's question at the top and the LLM-generated answer below,
+The AI assistant panel is shown in Figure~\ref{fig:ai-assistant}. The panel shows the student's question at the top and the LLM-generated answer below,
 displayed with a typewriter animation. The panel is collapsible so the student can read the
 Course Material alongside the answer.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{images/ui/student_contextual_chat_ai_view.png}
+    \caption{AI assistant panel: student question with grounded answer and typing animation}
+    \label{fig:ai-assistant}
+\end{figure}
 
 When the user submits a question, the frontend sends the question and the selected
 workspace references to \texttt{POST /api/chat/query}. The \texttt{Document\allowbreak Vector\allowbreak Service}
@@ -324,18 +328,17 @@ technical challenge is making the authentication filter stateless so that no ser
 store is required, while still providing the full user identity (including role) to every
 downstream service call.
 
-% TODO: Insert screenshot Figure 4.5
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.85\textwidth]{images/fig_4_5_access-control.png}
-%     \caption{Role-differentiated navigation: student view (left) versus Instructor view (right)}
-%     \label{fig:access-control}
-% \end{figure}
-
-The two navigation sidebars illustrate the role distinction. The student sees course browsing
+The student dashboard interface demonstrating the role-restricted layout and navigation options is shown in Figure~\ref{fig:access-control}. The two navigation sidebars illustrate the role distinction. The student sees course browsing
 and workspace links; the Instructor additionally sees the course management and Merge Proposal
 review links. Both views are generated from the same component by reading the role field from
 the JWT stored in the React context.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/ui/student_dashboard_view.png}
+    \caption{Student dashboard view illustrating the role-restricted navigation layout}
+    \label{fig:access-control}
+\end{figure}
 
 When a user authenticates, \texttt{AuthService} validates the credentials, looks up the
 \texttt{User} entity, and calls \texttt{JwtUtil.generateToken} to produce a signed JWT embedding
@@ -414,16 +417,11 @@ soft-delete \texttt{isHidden} flag described in section~\ref{sec:impl-fork}.
 \subsection{Frontend Automated Tests}
 \label{subsec:frontend-tests}
 
-Complementing the backend testing suite, the frontend employs a dual testing framework strategy to verify user interfaces and application flows.
+Complementing the backend testing suite, the frontend employs a dual strategy to verify user interfaces and application flows.
 
-\emph{Unit and integration tests} are executed using Vitest~\cite{Vitest} and the React Testing Library~\cite{ReactTestingLibrary}. Components such as the authentication forms are mounted in an isolated \texttt{jsdom}~\cite{jsdom} environment. By mocking the Next.js router and authentication contexts, the tests simulate user input and assert on the resulting DOM updates and validation errors without relying on a running server.
+\emph{Unit and integration tests} are executed using Vitest to isolate components such as authentication forms. By mocking the Next.js router and authentication contexts, the tests simulate user input and assert on the resulting DOM updates without relying on a running server.
 
-\emph{End-to-end (E2E) tests} are orchestrated with Playwright.
-These tests spin up a headless browser, such as Chromium, and navigate through complete user journeys.
-By leveraging Playwright's network interception capabilities, the tests mock the backend API responses.
-This approach ensures that the frontend behaves correctly under various backend states, such as a successful login or an HTTP 401 Unauthorized response, in a highly deterministic and fast-executing manner.
-To verify all five core functional requirements, from FR-01 to FR-05, under realistic conditions, a dedicated E2E test suite was developed.
-Each test intercepts API calls and simulates user actions, verifying that the frontend, routing, and user interface elements behave correctly.
+\emph{End-to-end (E2E) tests} are orchestrated with Playwright to navigate complete user journeys in a headless browser. To verify all five core functional requirements (FR-01 to FR-05) under realistic conditions, a dedicated E2E test suite intercepts API calls and simulates user actions, ensuring that the frontend behaves correctly under various backend states (e.g., successful login or HTTP 401 Unauthorized).
 A representative test case verifying the course administration and browsing workflows is shown in code listing~\ref{lst:playwright-e2e}.
 
 \newpage
@@ -474,12 +472,7 @@ specified as a numbered step sequence with explicit pre-conditions and expected 
 that it can be executed by a member of the target user group (a student or Instructor at a
 higher-education faculty) without technical assistance. Formal usability testing with
 representative participants has not been conducted within the scope of this thesis; these
-scenarios constitute the prepared protocol for that future evaluation. To ensure continuous
-verification of the user interface, these five usability test cases were also implemented
-as automated end-to-end tests within the Playwright testing suite. In this automated execution,
-all external backend APIs, authentication states, and file upload endpoints are mocked. This
-mocking allows for rapid and deterministic validation of the client-side workflows, ensuring
-that any regression in the user experience is caught immediately during the development phase.
+scenarios constitute the prepared protocol for that future evaluation.
 
 \bigskip
 \noindent\textbf{Test 4.1: Upload and browse a Course Material (FR-01)}
@@ -593,19 +586,17 @@ is managed via Git, with changes committed directly to the main repository to fa
 \label{subsec:cicd}
 
 A GitLab~\cite{GitLab} CI/CD pipeline runs automatically on every push on master branch. The pipeline defines multiple stages to
-guarantee code quality and automate deployment~\cite{ContinuousDelivery}. The first stages build the backend with Gradle~\cite{Gradle} and
+guarantee code quality and automate deployment~\cite{ContinuousDelivery}, as shown in Figure~\ref{fig:cicd-pipeline}. The first stages build the backend with Gradle~\cite{Gradle} and
 the frontend with \texttt{npm}, followed by comprehensive unit, integration, and end-to-end (Playwright)
 testing. Subsequent stages run security and code quality scans, including OWASP Dependency-Check~\cite{OWASPDepCheck} and
-SonarQube~\cite{SonarQube}. If all checks pass on the main branch, the final stage automatically deploys the frontend
-to Vercel. A separate pipeline hook triggers the backend container deployment to the Render cloud platform.
+SonarQube~\cite{SonarQube}. If all checks pass on the main branch, the final stage allows manual triggering of the deployment jobs. Once triggered, the frontend is deployed to Vercel. A separate pipeline job builds the backend container, pushes it to Docker Hub, and triggers the deployment hook on the Render cloud platform.
 
-% TODO: Insert CI/CD pipeline diagram as Figure 4.6
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{images/fig_4_6_cicd-pipeline.png}
-%     \caption{GitHub Actions CI/CD pipeline: three-stage build, test, and integration check}
-%     \label{fig:cicd-pipeline}
-% \end{figure}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/uml_diagrams/deployment.png}
+    \caption{GitLab CI/CD pipeline stages and deployment workflow}
+    \label{fig:cicd-pipeline}
+\end{figure}
 
 The pipeline enforces that \texttt{master} is always in a deployable state. No code reaches the
 branch without passing the backend tests and the frontend type check, which together cover the
@@ -618,7 +609,7 @@ Comprehensive documentation is essential to ensure that the StudySpace platform 
 
 The backend API is documented automatically by Springdoc OpenAPI~\cite{SpringdocOpenAPI}, which generates a Swagger UI~\cite{SwaggerUI}
 from the controller annotations and makes it available at \texttt{/swagger-ui/index.html} when
-the application is running. Public service methods carry JavaDoc comments that explain the
+the application is running. Public service methods carry JavaDoc~\cite{Javadoc} comments that explain the
 purpose and contract of each operation.
 
 The repository contains three README files that serve as the primary entry points for developers
@@ -629,8 +620,4 @@ required to run the server locally or in a containerised environment. The
 \texttt{frontend/README.md} details the frontend stack, the key architectural patterns, and
 local setup instructions for the Next.js development server.
 
-A user guide and a developer guide are planned as supplementary documents to accompany the
-final submission. The user guide will walk through the main student and Instructor workflows
-with annotated screenshots. The developer guide will provide step-by-step instructions for
-setting up the full development environment, configuring the required environment variables,
-running the test suites, and deploying a new version through the CI/CD pipeline.
+A separate user guide is provided as a supplementary document to walk through the main student and Instructor workflows with annotated screenshots. The developer guide is integrated directly into the repository across the three README files, which provide step-by-step instructions for setting up the full development environment, configuring the required environment variables, running the test suites, and deploying new versions.
